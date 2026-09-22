@@ -488,7 +488,7 @@ function renderGuests(){
     <td data-col="invitedCount">${g.invitedCount||g.partySize||1}</td><td data-col="confirmedCount">${g.confirmedCount||0}</td><td data-col="rsvpStatus"><span class="badge ${esc(status)}">${esc(statusText(status))}</span></td>
     <td data-col="seating">${guestSeatingCellV174_(g)}</td>
     <td class="send-cell"><input class="guest-send-toggle" data-send-guest="${g.guestId||g.id}" type="checkbox" ${guestSendChecked(g)?"checked":""} aria-label="שליחה ב-WhatsApp"></td>
-    <td class="guest-row-actions-v179">${state.session?.role==='Admin'?`<button type="button" class="guest-icon-action-v179" data-wa-test="${esc(g.guestId||g.id)}" title="שליחת הזמנת ניסיון ב-WhatsApp למוזמן יחיד" aria-label="שליחת הזמנת ניסיון אל ${esc(g.name)}">📨</button>`:''}<button type="button" class="guest-icon-action-v179" data-rsvp-link="${esc(g.guestId||g.id)}" title="העתק קישור אישור הגעה" aria-label="העתק קישור אישור הגעה עבור ${esc(g.name)}">🔗</button><button type="button" class="guest-icon-action-v179 edit" data-edit-guest="${esc(g.guestId||g.id)}" title="עריכת מוזמן" aria-label="עריכת ${esc(g.name)}">✎</button><button type="button" class="guest-icon-action-v179 delete" data-delete-guest="${esc(g.guestId||g.id)}" title="מחיקת מוזמן" aria-label="מחיקת ${esc(g.name)}" ${guestCanDeleteV179_(g)?"":"disabled"}>🗑</button></td></tr>`}).join("");
+    <td class="guest-row-actions-v179">${state.session?.role==='Admin'?`<button type="button" class="guest-icon-action-v179" data-wa-test="${esc(g.guestId||g.id)}" title="שליחת הזמנת ניסיון ב-WhatsApp למוזמן יחיד" aria-label="שליחת הזמנת ניסיון אל ${esc(g.name)}">💬</button>`:''}<button type="button" class="guest-icon-action-v179" data-rsvp-link="${esc(g.guestId||g.id)}" title="העתק קישור אישור הגעה" aria-label="העתק קישור אישור הגעה עבור ${esc(g.name)}">🔗</button><button type="button" class="guest-icon-action-v179 edit" data-edit-guest="${esc(g.guestId||g.id)}" title="עריכה" aria-label="עריכת ${esc(g.name)}">✎</button><button type="button" class="guest-icon-action-v179 delete" data-delete-guest="${esc(g.guestId||g.id)}" title="מחיקת מוזמן" aria-label="מחיקת ${esc(g.name)}" ${guestCanDeleteV179_(g)?"":"disabled"}>🗑</button></td></tr>`}).join("");
   const resetBtn=$('#resetEventGuestsV1190A10');
   if(resetBtn){resetBtn.hidden=state.session?.role!=="Admin"||!state.activeEventId;resetBtn.disabled=!visibleGuestsV178.length&&!state.guests.some(g=>String(g.eventId)===String(state.activeEventId));}
   updateGuestSortUI();
@@ -1183,7 +1183,7 @@ function waPhonePreviewV1190A16_(phone){
 function openWhatsAppTestConfirmV1190A16_(g){
   const to=waPhonePreviewV1190A16_(g.phone);
   modal(`<section class="wa-confirm-v1190a16" role="dialog" aria-labelledby="waConfirmTitleV1190A16">
-    <h2 id="waConfirmTitleV1190A16">אישור שליחת WhatsApp</h2>
+    <h2 id="waConfirmTitleV1190A16">אישור שליחת <bdi dir="ltr">WhatsApp</bdi></h2>
     <p>האם לשלוח הזמנה אחת למוזמן הבא?</p>
     <dl class="wa-confirm-details-v1190a16">
       <dt>שם המוזמן</dt><dd>${esc(g.name||'—')}</dd>
@@ -1216,7 +1216,12 @@ function openWhatsAppTestConfirmV1190A16_(g){
     }catch(err){
       status.textContent=err?.message||'שליחת ההזמנה נכשלה';
       status.className='wa-confirm-status-v1190a16 error';
-      send.innerHTML='נסה שוב';send.disabled=false;cancel.disabled=false;if(close)close.disabled=false;
+      if(err?.deliveryUncertain){
+        send.innerHTML='מצב שליחה לא ידוע';send.disabled=true;
+      }else{
+        send.innerHTML='נסה שוב';send.disabled=false;
+      }
+      cancel.disabled=false;if(close)close.disabled=false;
     }
   };
 }

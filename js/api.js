@@ -10,7 +10,20 @@ const API = {
       headers:{"Content-Type":"text/plain;charset=utf-8"},
       body:JSON.stringify(body)
     });
-    const data = await res.json();
+    const raw = await res.text();
+    let data;
+    try { data = JSON.parse(raw); }
+    catch (err) {
+      // A Google Apps Script redirect/login/error page can arrive as HTML even
+      // after Meta accepted the message. Never imply that retrying is safe.
+      const ambiguous = action === "sendOneInvitationV1190A14";
+      const message = ambiguous
+        ? "לא התקבל אישור JSON מהשרת. ייתכן שההזמנה כבר נשלחה; בדוק ב-WhatsApp לפני ניסיון נוסף. בדוק גם את כתובת פריסת Apps Script והרשאות הגישה שלה."
+        : "השרת החזיר תשובה שאינה JSON. בדוק את כתובת פריסת Apps Script והרשאות הגישה שלה.";
+      const error = new Error(message + " (HTTP " + res.status + ")");
+      error.deliveryUncertain = ambiguous;
+      throw error;
+    }
     if (!data.ok) throw new Error(data.error || data.message || "שגיאת API לא ידועה");
     return data;
   }
