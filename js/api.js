@@ -10,7 +10,20 @@ const API = {
       headers:{"Content-Type":"text/plain;charset=utf-8"},
       body:JSON.stringify(body)
     });
-    const data = await res.json();
+    const raw = await res.text();
+    let data;
+    try { data = JSON.parse(raw); }
+    catch (err) {
+      // A Google Apps Script redirect/login/error page can arrive as HTML even
+      // after Meta accepted the message. Never imply that retrying is safe.
+      const ambiguous = action === "sendOneInvitationV1190A14";
+      const message = ambiguous
+        ? "לא התקבל אישור JSON מהשרת. ייתכן שההזמנה כבר נשלחה; בדוק ב-WhatsApp לפני ניסיון נוסף. בדוק גם את כתובת פריסת Apps Script והרשאות הגישה שלה."
+        : "השרת החזיר תשובה שאינה JSON. בדוק את כתובת פריסת Apps Script והרשאות הגישה שלה.";
+      const error = new Error(message + " (HTTP " + res.status + ")");
+      error.deliveryUncertain = ambiguous;
+      throw error;
+    }
     if (!data.ok) throw new Error(data.error || data.message || "שגיאת API לא ידועה");
     return data;
   }
@@ -72,7 +85,7 @@ const MockAPI = {
     if(action==="deleteEvent"){this.events=this.events.filter(e=>e.id!==p.id);this.guests=this.guests.filter(g=>g.eventId!==p.id);return ok();}
     if(action==="diagnoseEventTypeAssignmentsV146") return ok({checked:this.events.length,issueCount:0,issues:[]});
     if(action==="repairEventTypeAssignmentsV146") return ok({changedCount:0,changes:[],backup:null,diagnosisAfter:{issueCount:0,issues:[]}});
-    if(action==="saveGuest"){const x={...p.guest,sendWhatsApp:p.guest.sendWhatsApp!==false&&String(p.guest.sendWhatsApp)!=="false"};if(!x.id)x.id="GST-"+Date.now();x.guestId=x.guestId||x.id;x.invitedCount=+x.invitedCount||1;x.confirmedCount=Math.max(0,+x.confirmedCount||0);x.rsvpStatus=x.rsvpStatus||"Pending";const i=this.guests.findIndex(g=>(g.guestId||g.id)===x.guestId);i<0?this.guests.push(x):this.guests[i]=x;return ok({guest:x});}
+    if(action==="saveGuest"){const x={...p.guest,sendWhatsApp:p.guest.sendWhatsApp!==false&&String(p.guest.sendWhatsApp)!=="false"};if(!x.id)x.id="GST-"+Date.now();x.guestId=x.guestId||x.id;x.invitedCount=+x.invitedCount||1;x.confirmedCount=Math.max(0,+x.confirmedCount||0);x.rsvpStatus=x.confirmedCount>0?"Confirmed":(x.rsvpStatus==="Confirmed"?"Pending":(x.rsvpStatus||"Pending"));const i=this.guests.findIndex(g=>(g.guestId||g.id)===x.guestId);i<0?this.guests.push(x):this.guests[i]=x;return ok({guest:x});}
     if(action==="setGuestSend"){const g=this.guests.find(g=>g.id===p.id);if(g)g.sendWhatsApp=!!p.enabled;return ok({id:p.id,sendWhatsApp:!!p.enabled});}
     if(action==="deleteGuest"){this.guests=this.guests.filter(g=>(g.guestId||g.id)!==p.id);return ok();}
     if(action==="saveTable"){const x={...p.table,seats:+p.table.seats||0};if(!x.id)x.id="TBL-"+Date.now();const i=this.tables.findIndex(t=>t.id===x.id);i<0?this.tables.push(x):this.tables[i]=x;return ok({table:x});}

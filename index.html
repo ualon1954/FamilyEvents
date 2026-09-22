@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Events Management</title>
-  <link rel="stylesheet" href="./css/styles.css?v=1.1.88A4">
+  <title>ניהול אירועים</title>
+  <link rel="stylesheet" href="./css/styles.css?v=1.1.90A16">
   <!-- V1.1.5: embedded CSS fallback. Keeps the UI styled even if hosting/path setup blocks the external CSS file. -->
   <style id="embeddedStylesV1112">
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
@@ -965,12 +965,125 @@ body.light #loginOverlay .login-field input{color-scheme:light}
 #loginOverlay .login-submit.is-loading .login-submit-arrow{display:none}
 @media(prefers-reduced-motion:reduce){#loginOverlay .login-submit{transition:none}}
 
+
+/* V1.1.90A5 — one login loading indicator */
+#loginOverlay #loginBtn.is-loading::before,#loginOverlay #loginBtn.is-loading::after{content:none!important;display:none!important;animation:none!important}
+#loginOverlay #loginBtn.is-loading .login-btn-spinner{display:block!important;flex:0 0 19px}
+
+/* V1.1.90A5 — switch before desktop navigation wraps */
+@media(max-width:1250px){
+  .topbar{
+    position:sticky!important;top:0;z-index:500!important;
+    min-height:68px!important;height:68px!important;
+    display:flex!important;align-items:center!important;
+    gap:7px!important;padding:7px 10px!important;
+    flex-wrap:nowrap!important;direction:rtl!important;
+    overflow:visible!important;
+  }
+  .mobile-menu-btn{
+    display:inline-flex!important;order:0!important;
+    flex:0 0 48px!important;width:48px!important;height:48px!important;border-radius:14px!important;
+  }
+  .brand{
+    order:1!important;flex:0 0 50px!important;width:50px!important;height:50px!important;
+    margin:0!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:visible!important;
+  }
+  .brand .brand-mark{
+    width:48px!important;height:44px!important;flex:0 0 48px!important;border-radius:13px!important;
+    display:grid!important;place-items:center!important;font-size:25px!important;
+    border:2px solid rgba(255,255,255,.72)!important;
+    box-shadow:0 5px 16px rgba(77,163,255,.25),0 0 0 2px rgba(77,163,255,.14)!important;
+    background:var(--card2)!important;
+  }
+  body.light .brand .brand-mark{border-color:rgba(24,33,43,.22)!important}
+  .brand .brand-name{display:none!important}
+  .mobile-page-name{
+    display:block!important;order:2!important;flex:1 1 auto!important;min-width:0!important;max-width:none!important;
+    margin:0 5px!important;text-align:center!important;font-size:16px!important;font-weight:900!important;
+    overflow:hidden!important;white-space:nowrap!important;text-overflow:ellipsis!important;
+  }
+  .header-user{
+    order:3!important;display:inline-flex!important;align-items:center!important;gap:5px!important;
+    flex:0 1 auto!important;max-width:118px!important;padding:4px 6px!important;border-radius:13px!important;
+  }
+  .header-user-avatar{display:grid!important;flex:0 0 24px!important;width:24px!important;height:24px!important;font-size:11px!important}
+  .header-user-copy strong{max-width:76px!important;font-size:11px!important}
+  .actions{order:4!important;gap:5px!important;flex:0 0 auto!important}
+  .actions button{min-width:42px!important;width:auto!important;height:42px!important;min-height:42px!important;padding:7px 9px!important;border-radius:13px!important}
+  .actions .header-logout{min-width:auto!important;padding:7px 10px!important;font-size:12px!important}
+
+  .topbar #mainNav{
+    display:none!important;position:absolute!important;top:calc(100% + 7px)!important;
+    right:12px!important;left:12px!important;width:auto!important;z-index:600!important;
+    flex-direction:column!important;flex-wrap:nowrap!important;gap:0!important;padding:8px!important;
+    background:var(--card)!important;border:1px solid var(--line)!important;border-radius:16px!important;
+    box-shadow:0 18px 45px rgba(0,0,0,.30)!important;max-height:calc(100dvh - 86px)!important;overflow:auto!important;
+  }
+  .topbar #mainNav.mobile-open{display:flex!important}
+  .topbar #mainNav button{
+    width:100%!important;min-height:46px!important;padding:13px 16px!important;margin:0!important;
+    display:flex!important;align-items:center!important;justify-content:flex-start!important;
+    text-align:right!important;direction:rtl!important;border-radius:0!important;border-bottom:1px solid var(--line)!important;white-space:nowrap!important;
+  }
+  .topbar #mainNav button:last-child{border-bottom:0!important}
+  .topbar #mainNav button.active{background:var(--card2)!important;font-weight:800!important}
+}
+
+
+
+/* V1.1.90A5 — compact collapsible guest filters */
+.guest-filters-toggle-a5{display:none}
+@media(max-width:1100px){
+ #page-guests .guest-filters-toggle-a5{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:12px 0 0;padding:12px 15px;border:1px solid var(--line);border-radius:13px;background:var(--card2);color:var(--text);font-weight:800;cursor:pointer;text-align:right}
+ #page-guests #guestFiltersA5{display:none!important;margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:13px;background:var(--card);grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ #page-guests #guestFiltersA5.filters-open-a5{display:grid!important}
+ #page-guests #guestFiltersA5 .search-field{grid-column:1/-1!important}
+ #page-guests #guestFiltersA5 .guest-clear-filters-v180{min-height:40px}
+}
+@media(max-width:560px){#page-guests #guestFiltersA5{grid-template-columns:1fr!important}}
+
+
+/* V1.1.90A8 — Hebrew wordmark: desktop only; keep compact mobile header. */
+@media (min-width:1251px){
+  .topbar .brand .brand-name{
+    display:inline-block!important;
+    font-family:"Noto Sans Hebrew","Segoe UI",Arial,sans-serif;
+    font-size:clamp(1.13rem,1.35vw,1.42rem);
+    font-weight:900;letter-spacing:-.035em;line-height:1.2;
+    color:var(--text);white-space:nowrap;
+    text-shadow:0 1px 12px rgba(77,163,255,.15);
+  }
+  .topbar .brand{gap:10px!important;min-width:max-content;}
+  .topbar .brand:hover .brand-name{color:var(--accent);}
+}
+
+/* V1.1.90A9 — festive Hebrew gradient wordmark; desktop only. */
+@media (min-width:1251px){
+ .topbar .brand .brand-name{position:relative;display:inline-flex!important;align-items:center;gap:.28em;padding:0 .02em .25em;font-family:"Noto Sans Hebrew","Segoe UI",Arial,sans-serif;font-weight:900;letter-spacing:-.045em;line-height:1.25;color:var(--text);isolation:isolate}
+ .topbar .brand .brand-name::after{content:"";position:absolute;inset-inline:2% 2%;bottom:.08em;height:2px;border-radius:100%;background:linear-gradient(90deg,#f5a83b,#ef65a2,#6889f6,#27c4dd);opacity:.85;transform:scaleX(.96);pointer-events:none}
+ .topbar .brand .brand-word{display:inline-block;background-clip:text;-webkit-background-clip:text;color:transparent;-webkit-text-fill-color:transparent;text-shadow:none}
+ .topbar .brand .brand-word-manage{background-image:linear-gradient(115deg,#1b80f6,#29c9e4)}
+ .topbar .brand .brand-word-events{background-image:linear-gradient(115deg,#f7b83e,#fb796b,#e65bb0)}
+ .topbar .brand:hover .brand-word{filter:brightness(1.13)}
+ body.light .topbar .brand .brand-word-manage{background-image:linear-gradient(115deg,#1760c9,#087e9b)}
+ body.light .topbar .brand .brand-word-events{background-image:linear-gradient(115deg,#a65d0b,#c2366e)}
+}
+
+/* A13: consistent required indicators and clearly actionable import row toggle. */
+.required-star,.seating-required-v176,.login-required{color:#ef4444!important;font-weight:900!important}
+.import-rows-action-a13{display:inline-flex!important;align-items:center;justify-content:center;gap:.5rem;border:2px solid var(--accent)!important;border-radius:12px!important;padding:10px 18px!important;font-weight:800!important;box-shadow:0 2px 10px rgba(0,0,0,.12);cursor:pointer}
+.import-rows-action-a13::before{content:"▤";font-size:1.15em}
+.import-rows-action-a13:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.seating-confirm-v171 .event-save-status{margin:12px 0;min-height:0}
+.seating-confirm-v171 .event-save-status.success{color:#16a34a!important;font-weight:800}
+.seating-confirm-v171 .event-save-status.error{color:#ef4444!important;font-weight:800}
+
 </style>
 </head>
 <body>
 <header class="topbar">
   <button id="mobileMenuBtn" class="mobile-menu-btn" type="button" aria-label="פתיחת תפריט" aria-expanded="false">☰</button>
-  <button class="brand" type="button" data-page="home" title="דף ראשי" aria-label="Events Management – דף הבית"><span class="brand-mark" aria-hidden="true">🎉</span><span class="brand-name">Events Management</span></button>
+  <button class="brand" type="button" data-page="home" title="דף ראשי" aria-label="ניהול אירועים – דף הבית"><span class="brand-mark" aria-hidden="true">🎉</span><span class="brand-name" lang="he"><span class="brand-word brand-word-manage">ניהול</span> <span class="brand-word brand-word-events">אירועים</span></span></button>
   <span id="mobilePageName" class="mobile-page-name" aria-current="page">ראשי</span>
   <nav id="mainNav">
     <button data-page="home" class="active">ראשי</button>
@@ -1003,7 +1116,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
     <div class="hero">
       <div class="hero-copy">
         <span class="eyebrow">ניהול אירועים משפחתיים במקום אחד</span>
-        <h1>Events Management</h1>
+        <h1>ניהול אירועים</h1>
         <p>מערכת מסודרת לניהול אירועים, מוזמנים, אישורי הגעה, ניהול שולחנות והודעות — עם הפרדה מלאה בין אירוע לאירוע.</p>
         <div class="hero-actions">
           <button class="primary" data-page="events">ניהול אירועים</button>
@@ -1046,12 +1159,13 @@ body.light #loginOverlay .login-field input{color-scheme:light}
   </section>
 
   <section id="page-guests" class="page">
-    <div class="page-head"><h1>מוזמנים</h1><div class="guest-page-actions"><button class="secondary" id="guestTemplateBtn">תבנית Excel</button><button class="secondary" id="guestExportBtn">ייצוא Excel</button><button class="secondary" id="guestImportBtn">ייבוא Excel</button><button class="primary" id="addGuestBtn">+ הוספת מוזמן</button><input id="guestImportFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></div></div>
+    <div class="page-head"><h1>מוזמנים</h1><div class="guest-page-actions"><button class="secondary" id="guestTemplateBtn">תבנית Excel</button><button class="secondary" id="guestExportBtn">ייצוא Excel</button><button class="secondary" id="guestImportBtn">ייבוא Excel</button><button type="button" class="danger" id="resetEventGuestsV1190A10" hidden>איפוס מוזמנים באירוע</button><button class="primary" id="addGuestBtn">+ הוספת מוזמן</button><input id="guestImportFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></div></div>
     <div class="guest-stat-sections-v178" id="guestStatsV178" aria-label="סטטיסטיקות מוזמנים">
       <section class="guest-stat-section-v178"><h2>אישורי הגעה</h2><div class="guest-stat-grid-v178" id="guestRsvpStatsV178"></div></section>
       <section class="guest-stat-section-v178"><h2>שיוך לשולחנות</h2><div class="guest-stat-grid-v178" id="guestSeatingStatsV178"></div></section>
     </div>
-    <div class="filters">
+    <button type="button" id="guestFiltersToggleA5" class="guest-filters-toggle-a5" aria-controls="guestFiltersA5" aria-expanded="false">⚲ <span>הצג סינון</span> <span aria-hidden="true">▾</span></button>
+    <div class="filters" id="guestFiltersA5">
       <div class="search-field">
         <span class="search-icon" aria-hidden="true">⌕</span>
         <input id="guestSearch" placeholder="חיפוש לפי שם או טלפון">
@@ -1089,7 +1203,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
         <h1>ניהול שולחנות</h1>
         <p class="muted">ניהול שולחנות לפי האירוע הנבחר</p>
       </div>
-      <button id="addTableBtn" class="primary">+ הוספת שולחן</button>
+      <button id="addTableBtn" class="primary">+ הוספת שולחן</button><button type="button" class="danger" id="deleteAllEventTablesV1190A10" hidden>מחיקת כל השולחנות</button>
     </div>
 
     <div class="panel">
@@ -1116,7 +1230,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
   <section id="page-about" class="page">
     <div class="about-hero">
       <span class="eyebrow">אודות המערכת</span>
-      <h1>Events Management</h1>
+      <h1>ניהול אירועים</h1>
       <p>מערכת משפחתית לניהול כל המידע סביב אירוע — משלב יצירת האירוע ועד ניהול המוזמנים, אישורי ההגעה, ניהול השולחנות והתקשורת.</p>
     </div>
     <div class="about-grid">
@@ -1177,9 +1291,9 @@ body.light #loginOverlay .login-field input{color-scheme:light}
 </div>
 
 <script src="js/config.js?v=1.1.36"></script>
-<script src="js/version.js?v=1.1.89A4"></script>
+<script src="js/version.js?v=1.1.90A16"></script>
 <script src="js/session.js?v=1.1.77"></script>
 <script src="js/api.js?v=1.1.36"></script>
-<script src="js/app.js?v=1.1.89A4"></script>
+<script src="js/app.js?v=1.1.90A16"></script>
 </body>
 </html>
