@@ -1,3 +1,12 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ניהול אירועים</title>
+  <link rel="stylesheet" href="./css/styles.css?v=1.1.90A16">
+  <!-- V1.1.5: embedded CSS fallback. Keeps the UI styled even if hosting/path setup blocks the external CSS file. -->
+  <style id="embeddedStylesV1112">
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Hebrew",sans-serif;background:var(--bg);color:var(--text)}
 body.light{--bg:#f5f7fa;--card:#fff;--card2:#eef2f6;--text:#18212b;--muted:#65727e;--line:#d8dee4}
@@ -780,20 +789,8 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 
 .build-mark{font-size:12px;color:var(--muted);font-weight:700;margin-inline-start:8px}
 
-/* V1.1.22 - Current Event context bar */
-.current-event-bar{
-  display:grid;grid-template-columns:auto minmax(220px,420px) 1fr;align-items:center;gap:12px;
-  margin:14px 0 18px;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:14px;
-}
-.current-event-bar strong{white-space:nowrap}
-.current-event-bar select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);padding:10px 12px;border-radius:10px}
-@media(max-width:850px){
-  .current-event-bar{grid-template-columns:1fr;gap:8px;margin:10px 0 14px;padding:10px 12px}
-  .current-event-bar strong{font-size:13px}
-  .current-event-bar .muted{font-size:12px}
-}
-
-/* V1.1.32 — current-event selector visibility + native option contrast */
+  
+/* V1.1.36 — current-event selector visibility + native option contrast */
 .current-event-bar select{
   color:var(--text)!important;
   background-color:var(--card)!important;
@@ -807,7 +804,8 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 }
 .current-event-bar select:disabled{opacity:.75!important;color:var(--muted)!important;-webkit-text-fill-color:var(--muted)!important}
 
-/* V1.1.49 — Stage 4 Excel guest import/export */
+
+/* V1.1.60 — Stage 4 Excel preview exceptions-first */
 .guest-page-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .import-summary{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
 .import-summary span{padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card2)}
@@ -817,13 +815,12 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 .ok-text{color:var(--ok)}.warning-text{color:#ffd700}
 .import-preview-modal{width:min(1120px,96vw)!important;max-height:92vh;overflow:auto}
 .import-preview-wrap{max-height:52vh}.import-preview-table{min-width:980px}.import-preview-table td.import-check{white-space:normal;min-width:260px}
-.import-preview-table tr.import-ok td{background:rgba(0,200,83,.22)!important}
-.import-preview-table tr.import-warning td{background:rgba(255,215,0,.30)!important}
-.import-preview-table tr.import-error td{background:rgba(255,0,0,.30)!important}
+.import-preview-table tr.import-error td{background:rgba(229,83,75,.09)}
+.import-preview-table tr.import-warning td{background:rgba(216,166,63,.07)}
 #commitGuestImportBtn:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:650px){.guest-page-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.guest-page-actions button{width:100%}}
 
-/* V1.1.62 — import status colors, persistent progress, faster event context UX */
+/* V1.1.64 — exact semantic Preview colors */
 .import-preview-table tr.import-ok td{background:rgba(0,200,83,.22)!important}
 .import-preview-table tr.import-warning td{background:rgba(255,215,0,.30)!important}
 .import-preview-table tr.import-error td{background:rgba(255,0,0,.30)!important}
@@ -836,6 +833,7 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 .import-progress-elapsed{margin:5px 0}
 .import-progress-note{line-height:1.55;margin-top:14px}
 @keyframes guest-import-progress-slide{0%{transform:translateX(180%)}50%{transform:translateX(55%)}100%{transform:translateX(-180%)}}
+
 
 /* V1.1.66 — refined Preview colors: clear but not saturated */
 .import-preview-table tr.import-ok td{background:rgba(34,197,94,.13)!important;color:var(--text)!important;border-color:rgba(34,197,94,.42)!important}
@@ -851,6 +849,8 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 .import-summary .warning-text{color:#facc15!important;border-color:rgba(250,204,21,.55)!important}
 .import-summary .error{color:#ef4444!important;border-color:rgba(239,68,68,.50)!important}
 body.light .import-summary .warning-text{color:#8a6d00!important}
+
+
 /* V1.1.67 — final high-contrast Preview status colors */
 .import-preview-table tr.import-ok td{background:rgba(34,197,94,.30)!important;color:var(--text)!important;border-color:rgba(34,197,94,.78)!important}
 .import-preview-table tr.import-warning td{background:rgba(255,235,59,.38)!important;color:var(--text)!important;border-color:rgba(255,235,59,.92)!important}
@@ -871,11 +871,7 @@ body.light .import-summary .ok-text{background:#d9f8e3!important;color:#147a32!i
 body.light .import-summary .warning-text{background:#fff2a8!important;color:#6f5900!important}
 body.light .import-summary .error{background:#ffd6d6!important;color:#b42318!important}
 
-
-/* Stage 5B seating split form */
-.seating-workspace-v170{margin:1rem 0}.seating-part-v170{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:12px 0;padding:12px;border:1px solid var(--border,#777);border-radius:10px}.seating-part-v170 label{display:flex;flex-direction:column;gap:5px;flex:1;min-width:130px}.seating-part-v170 select,.seating-part-v170 input{width:100%;min-height:40px}.seating-workspace-v170 .table-wrap{margin-top:12px}
-
-/* V1.1.71 — seating confirmation and busy states */
+/* V1.1.73 — seating confirmation and busy states */
 .seating-spinner-v171{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.16em;animation:seating-spin-v171 .7s linear infinite;margin-inline-end:.3em}
 @keyframes seating-spin-v171{to{transform:rotate(360deg)}}
 .seating-confirm-shade-v171{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:rgba(0,0,0,.66);padding:16px;backdrop-filter:blur(4px)}
@@ -883,87 +879,7 @@ body.light .import-summary .error{background:#ffd6d6!important;color:#b42318!imp
 .seating-confirm-v171 h3{margin:0 0 12px}.seating-confirm-v171 p{line-height:1.65}.seating-confirm-v171 .actions{justify-content:flex-end;flex-wrap:wrap}
 .seating-confirm-v171 button{padding:10px 16px;border-radius:9px;cursor:pointer}.seating-confirm-v171 button:focus-visible{outline:3px solid var(--accent)}
 
-/* V1.1.75 seating modal: RTL, flexible columns, clear validation. */
-.seating-modal-v175{direction:rtl;text-align:right;max-width:100%;min-width:0}
-.seating-modal-v175 .seating-part-v170{display:grid;grid-template-columns:minmax(90px,1fr) minmax(160px,2fr) auto;align-items:end;gap:12px}
-.seating-modal-v175 .seating-part-v170 label{min-width:0}
-.seating-modal-v175 .actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-start}
-.seating-modal-v175 .event-save-status.error{color:#ef5350;min-height:1.4em}
-@media(max-width:540px){.seating-modal-v175 .seating-part-v170{grid-template-columns:minmax(0,1fr)}.seating-modal-v175 .actions button{max-width:100%}}
-
-/* V1.1.76: all seating feedback stays inside the modal. */
-.seating-modal-v175 .seating-inline-status-v176{display:block;position:static!important;inset:auto!important;transform:none!important;z-index:auto!important;box-sizing:border-box;max-width:100%;width:100%;margin:10px 0;min-height:0;overflow-wrap:anywhere;white-space:normal;line-height:1.5}
-.seating-modal-v175 .seating-inline-status-v176:empty{display:none}
-.seating-modal-v175 .seating-inline-status-v176.error{color:#ff7474;background:rgba(220,55,55,.11);border:1px solid rgba(220,55,55,.4);border-radius:9px;padding:9px 12px}
-.seating-modal-v175 .seating-inline-status-v176.success{color:#39c980;background:rgba(35,180,100,.11);border:1px solid rgba(35,180,100,.4);border-radius:9px;padding:9px 12px}
-.seating-required-v176{color:#ff6262;font-weight:800;margin-inline:3px}
-.seating-modal-v175 .actions button{display:inline-flex;align-items:center;justify-content:center;gap:5px}
-
-/* V1.1.78 — guest-centric statistics and filtered record status */
-.guest-stat-sections-v178{display:grid;gap:14px;margin:14px 0 18px}
-.guest-stat-section-v178{border:1px solid var(--line);background:var(--card);border-radius:15px;padding:14px}
-.guest-stat-section-v178 h2{font-size:1.02rem;margin:0 0 12px}
-.guest-stat-grid-v178{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.guest-stat-card-v178{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;padding:14px;border:2px solid transparent;border-radius:12px;cursor:pointer;text-align:right;transition:border-color .15s,transform .15s;background:var(--card2);color:var(--text)}
-.guest-stat-card-v178 span{font-size:.9rem}.guest-stat-card-v178 strong{font-size:1.9rem;font-variant-numeric:tabular-nums}
-.guest-stat-card-v178.green{background:rgba(33,166,104,.15);color:#5ed69c}.guest-stat-card-v178.red{background:rgba(224,69,75,.15);color:#ff858c}.guest-stat-card-v178.amber{background:rgba(218,156,37,.16);color:#f4c365}.guest-stat-card-v178.blue{background:rgba(61,143,230,.16);color:#88c4ff}
-.guest-stat-card-v178.active{border-color:currentColor}.guest-stat-card-v178:hover{transform:translateY(-1px);border-color:currentColor}
-.guest-count-status-v178{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:12px 0;padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);font-variant-numeric:tabular-nums}
-.guest-filter-active-v178{border-radius:20px;padding:3px 10px;background:rgba(61,143,230,.17);color:var(--accent)}
-@media(max-width:850px){.guest-stat-grid-v178{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:400px){.guest-stat-card-v178{padding:10px}.guest-stat-card-v178 strong{font-size:1.5rem}}
-
-/* V1.1.79: guest list is the primary work area. Keep existing event bar and heading/actions. */
-#page-guests .guest-stat-sections-v178{grid-template-columns:1fr;gap:5px;margin:7px 0}
-#page-guests .guest-stat-section-v178{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:9px}
-#page-guests .guest-stat-section-v178 h2{font-size:.79rem;white-space:nowrap;margin:0;min-width:82px}
-#page-guests .guest-stat-grid-v178{flex:1;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
-#page-guests .guest-stat-card-v178{flex-direction:row;justify-content:space-between;align-items:center;gap:5px;padding:5px 8px;border-width:1px;border-radius:7px;min-height:35px}
-#page-guests .guest-stat-card-v178 span{font-size:.78rem;line-height:1.1}
-#page-guests .guest-stat-card-v178 strong{font-size:1.15rem;line-height:1;font-weight:800}
-#page-guests .filters{grid-template-columns:minmax(175px,2fr) repeat(5,minmax(100px,1fr));gap:6px;margin:7px 0}
-#page-guests .filters input,#page-guests .filters select{padding:7px 8px;font-size:.86rem}
-#page-guests .guest-count-status-v178{margin:6px 0;padding:6px 10px;font-size:.86rem}
-#page-guests .guests-table th,#page-guests .guests-table td{padding:8px 9px}
-#page-guests .guests-table tbody tr:nth-child(odd){background:var(--card)}
-#page-guests .guests-table tbody tr:nth-child(even){background:var(--card2)}
-#page-guests .guests-table tbody tr:hover{outline:1px solid var(--accent);outline-offset:-1px}
-#page-guests .guests-table td.sorted-col{box-shadow:inset 0 0 0 999px rgba(77,163,255,.055);background:transparent}
-.guest-row-actions-v179{white-space:nowrap;text-align:center}
-.guest-icon-action-v179{border:1px solid currentColor;background:transparent;border-radius:7px;width:33px;height:33px;margin:0 2px;cursor:pointer;font-size:1.2rem;font-weight:700}
-.guest-icon-action-v179.edit{color:#36c987}.guest-icon-action-v179.delete{color:#ef6969}
-.guest-icon-action-v179:disabled{opacity:.28;cursor:not-allowed}
-/* Zebra striping across all list tables, preserving status colors and hover. */
-.table-wrap table:not(.guests-table) tbody tr:nth-child(odd){background:var(--card)}
-.table-wrap table:not(.guests-table) tbody tr:nth-child(even){background:var(--card2)}
-.table-wrap table tbody tr:hover{outline:1px solid var(--accent);outline-offset:-1px}
-@media(max-width:1100px){#page-guests .filters{grid-template-columns:repeat(3,minmax(0,1fr))}#page-guests .filters .search-field{grid-column:span 3}}
-@media(max-width:850px){#page-guests .guest-stat-section-v178{display:block}#page-guests .guest-stat-section-v178 h2{margin:0 0 5px}#page-guests .guest-stat-grid-v178{grid-template-columns:repeat(2,minmax(0,1fr))}#page-guests .guests-table tbody tr:nth-child(even){background:var(--card2)}#page-guests .guests-table tbody td:last-child{grid-column:1/-1}#page-guests .guest-icon-action-v179{min-width:44px;min-height:44px}#page-guests .guests-table thead th:last-child{display:none}}
-@media(max-width:560px){#page-guests .filters{grid-template-columns:repeat(2,minmax(0,1fr))}#page-guests .filters .search-field{grid-column:span 2}#page-guests .guest-stat-card-v178{padding:6px}#page-guests .guest-stat-card-v178 span{font-size:.73rem}}
-
-/* V1.1.80 — compact search and explicit clear-all action */
-#page-guests .filters{grid-template-columns:minmax(125px,1.05fr) repeat(5,minmax(90px,1fr)) auto;align-items:stretch}
-#page-guests .filters .search-field{min-width:0}
-#page-guests .guest-clear-filters-v180{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;padding:6px 10px;border:1px solid var(--accent);border-radius:9px;color:var(--accent);background:rgba(61,143,230,.10);cursor:pointer;font-size:.82rem}
-#page-guests .guest-clear-filters-v180:hover{background:rgba(61,143,230,.22)}
-#page-guests .guest-clear-filters-v180:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@media(max-width:1100px){#page-guests .filters{grid-template-columns:repeat(3,minmax(0,1fr))}#page-guests .filters .search-field{grid-column:span 2}}
-@media(max-width:560px){#page-guests .filters{grid-template-columns:repeat(2,minmax(0,1fr))}#page-guests .filters .search-field{grid-column:span 1}#page-guests .guest-clear-filters-v180 span{display:none}#page-guests .guest-clear-filters-v180{min-height:40px}}
-
-/* V1.1.82: guest filters and inline guest save error. */
-#page-guests .guest-clear-filters-v180.has-active-filters-v182{background:#2466b4;color:#fff;border-color:#60a5fa;box-shadow:0 0 0 1px rgba(96,165,250,.22)}
-#page-guests .guest-clear-filters-v180.has-active-filters-v182:hover{background:#1c559a}
-#guestForm .guest-form-status-v182.error{grid-column:1/-1;display:block;padding:10px 12px;border:1px solid #e35c63;border-radius:9px;background:rgba(190,40,52,.14);color:#ff8e93;font-weight:600;line-height:1.5}
-#guestForm .guest-form-status-v182[hidden]{display:none!important}
-body.light #guestForm .guest-form-status-v182.error{color:#a71925;background:#fff0f1}
-
-/* V1.1.83: guest save result stays in the edit/add modal until automatic close. */
-#guestForm .guest-form-status-v182.success,
-#guestForm .guest-form-status-v182.warning{grid-column:1/-1;display:block;padding:10px 12px;border-radius:9px;font-weight:600;line-height:1.5}
-#guestForm .guest-form-status-v182.success{border:1px solid #3cc984;background:rgba(24,150,91,.17);color:#77efb4}
-#guestForm .guest-form-status-v182.warning{border:1px solid #e9b54e;background:rgba(180,126,23,.19);color:#ffda83}
-body.light #guestForm .guest-form-status-v182.success{background:#e7f9ed;color:#17653c}
-body.light #guestForm .guest-form-status-v182.warning{background:#fff6db;color:#835300}
+ .guest-seating-v174{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:190px}.guest-seating-v174 button{white-space:nowrap}#tableForm [readonly]{opacity:.7;cursor:not-allowed}
 
 /* V1.1.84 — Login modal: isolated from CRUD modals. */
 #loginOverlay{background:rgba(5,12,24,.79);backdrop-filter:blur(15px)}
@@ -995,6 +911,7 @@ body.light #loginOverlay .login-feedback-error{color:#a51d1d}
 body.light #loginOverlay .login-feedback-success{color:#176d3c}
 @media(max-width:520px){#loginOverlay .login-card{padding:24px 19px 21px}}
 @media(prefers-reduced-motion:reduce){#loginOverlay .login-btn-spinner{animation-duration:1.8s}}
+
 
 /* V1.1.85 — login validation and theme control */
 #loginOverlay .login-field.is-invalid,#loginOverlay .login-field.is-invalid:focus-within{border-color:#f06472!important;box-shadow:0 0 0 2px rgba(240,100,114,.22)!important}
@@ -1048,24 +965,6 @@ body.light #loginOverlay .login-field input{color-scheme:light}
 #loginOverlay .login-submit.is-loading .login-submit-arrow{display:none}
 @media(prefers-reduced-motion:reduce){#loginOverlay .login-submit{transition:none}}
 
-/* V1.1.88A: event RSVP configuration */
-.rsvp-admin-settings{grid-column:1/-1;display:grid;gap:12px;padding:18px;border:1px solid var(--border,#445166);border-radius:16px;background:rgba(105,129,174,.08)}
-.rsvp-admin-settings h3{margin:0;font-size:1.05rem}
-.rsvp-admin-settings p{margin:0;opacity:.8;font-size:.9rem}
-.rsvp-admin-settings label{display:grid;gap:6px}
-.rsvp-admin-settings input,.rsvp-admin-settings textarea{width:100%;box-sizing:border-box;min-width:0}
-
-/* RSVP A1 */
-.required-star{color:#ff6379;font-weight:900}
-.rsvp-manager-contact{grid-column:1/-1;color:var(--text,#dbeafe);opacity:.85;font-size:.9rem}
-#eventForm .event-save-status{grid-column:1/-1;position:static!important;max-width:100%;overflow-wrap:anywhere}
-#eventForm .date-picker-control{min-height:44px;color-scheme:dark;cursor:pointer}
-body.light #eventForm .date-picker-control{color-scheme:light}
-
-/* V1.1.88A2 — event read-only RSVP details */
-.event-rsvp-details{margin:12px 0;padding:12px 14px;border:1px solid var(--border,#445166);border-radius:12px;background:rgba(105,129,174,.08);overflow-wrap:anywhere}
-.event-rsvp-details h4{margin:0 0 9px;font-size:1rem}
-.event-rsvp-details p{margin:5px 0;line-height:1.5}
 
 /* V1.1.90A5 — one login loading indicator */
 #loginOverlay #loginBtn.is-loading::before,#loginOverlay #loginBtn.is-loading::after{content:none!important;display:none!important;animation:none!important}
@@ -1170,7 +1069,6 @@ body.light #eventForm .date-picker-control{color-scheme:light}
  body.light .topbar .brand .brand-word-events{background-image:linear-gradient(115deg,#a65d0b,#c2366e)}
 }
 
-
 /* A13: consistent required indicators and clearly actionable import row toggle. */
 .required-star,.seating-required-v176,.login-required{color:#ef4444!important;font-weight:900!important}
 .import-rows-action-a13{display:inline-flex!important;align-items:center;justify-content:center;gap:.5rem;border:2px solid var(--accent)!important;border-radius:12px!important;padding:10px 18px!important;font-weight:800!important;box-shadow:0 2px 10px rgba(0,0,0,.12);cursor:pointer}
@@ -1180,15 +1078,222 @@ body.light #eventForm .date-picker-control{color-scheme:light}
 .seating-confirm-v171 .event-save-status.success{color:#16a34a!important;font-weight:800}
 .seating-confirm-v171 .event-save-status.error{color:#ef4444!important;font-weight:800}
 
-/* V1.1.90A16 — compact WhatsApp confirmation modal */
-.wa-confirm-v1190a16{direction:rtl;text-align:right}
-.wa-confirm-v1190a16 h2{margin:0 0 12px}
-.wa-confirm-details-v1190a16{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px 16px;padding:14px;background:var(--card2);border:1px solid var(--line);border-radius:12px}
-.wa-confirm-details-v1190a16 dt{color:var(--muted)}
-.wa-confirm-details-v1190a16 dd{margin:0;overflow-wrap:anywhere;text-align:start}
-.wa-confirm-status-v1190a16{margin:12px 0;line-height:1.5}
-.wa-confirm-status-v1190a16:empty{display:none}
-.wa-confirm-status-v1190a16.success{color:#39c980;background:rgba(35,180,100,.11);border:1px solid rgba(35,180,100,.4);border-radius:9px;padding:9px 12px}
-.wa-confirm-status-v1190a16.error{color:#ff7474;background:rgba(220,55,55,.11);border:1px solid rgba(220,55,55,.4);border-radius:9px;padding:9px 12px}
-.wa-confirm-v1190a16 .actions{display:flex;flex-wrap:wrap;gap:10px}
-.wa-confirm-v1190a16 .actions button{display:inline-flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <button id="mobileMenuBtn" class="mobile-menu-btn" type="button" aria-label="פתיחת תפריט" aria-expanded="false">☰</button>
+  <button class="brand" type="button" data-page="home" title="דף ראשי" aria-label="ניהול אירועים – דף הבית"><span class="brand-mark" aria-hidden="true">🎉</span><span class="brand-name" lang="he"><span class="brand-word brand-word-manage">ניהול</span> <span class="brand-word brand-word-events">אירועים</span></span></button>
+  <span id="mobilePageName" class="mobile-page-name" aria-current="page">ראשי</span>
+  <nav id="mainNav">
+    <button data-page="home" class="active">ראשי</button>
+    <button data-page="dashboard">לוח בקרה</button>
+    <button data-page="events">אירועים</button>
+    <button data-page="guests">מוזמנים</button>
+    <button data-page="seating">ניהול שולחנות</button>
+    <button data-page="messages">הודעות</button>
+    <button data-page="about">אודות</button>
+    <button data-page="activity" data-role="Admin">יומן פעילות</button>
+    <button data-page="admin" data-role="Admin">ניהול</button>
+  </nav>
+  <div class="header-user" aria-label="המשתמש המחובר">
+    <span id="userBubble" class="user-bubble header-user-avatar">?</span>
+    <span class="header-user-copy"><strong id="userName"></strong></span>
+  </div>
+  <div class="actions">
+    <button id="themeBtn" title="מצב תצוגה" aria-label="החלפת מצב תצוגה">◐</button>
+    <button id="logoutBtn" class="danger header-logout" aria-label="יציאה מהמערכת">יציאה</button>
+  </div>
+</header>
+
+<main id="app">
+  <div id="currentEventContext" class="current-event-bar" aria-label="בחירת אירוע נוכחי">
+    <strong>אירוע נוכחי</strong>
+    <select id="currentEventSelect" aria-label="בחירת אירוע נוכחי"></select>
+    <span id="currentEventStatus" class="muted">יש לבחור אירוע לעבודה</span>
+  </div>
+  <section id="page-home" class="page active">
+    <div class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">ניהול אירועים משפחתיים במקום אחד</span>
+        <h1>ניהול אירועים</h1>
+        <p>מערכת מסודרת לניהול אירועים, מוזמנים, אישורי הגעה, ניהול שולחנות והודעות — עם הפרדה מלאה בין אירוע לאירוע.</p>
+        <div class="hero-actions">
+          <button class="primary" data-page="events">ניהול אירועים</button>
+          <button class="secondary" data-page="guests">רשימת מוזמנים</button>
+        </div>
+      </div>
+      <div class="hero-mark" aria-hidden="true">🎊</div>
+    </div>
+
+    <div class="home-grid">
+      <article class="feature-card"><div class="feature-icon">📅</div><h3>אירועים</h3><p>יצירה וניהול של חתונות, בר/בת מצווה, ימי הולדת ואירועים משפחתיים נוספים.</p></article>
+      <article class="feature-card"><div class="feature-icon">👥</div><h3>מוזמנים</h3><p>רשימה חכמה עם חיפוש, סינון, מיון, סטטוס הגעה וקבוצות שיוך.</p></article>
+      <article id="homeSeatingFeature" class="feature-card"><div class="feature-icon">🪑</div><h3>ניהול שולחנות</h3><p>תשתית לניהול שולחנות, קיבולת ושיוך מוזמנים לכל אירוע.</p></article>
+      <article class="feature-card"><div class="feature-icon">💬</div><h3>הודעות</h3><p>תשתית להודעות WhatsApp, תזכורות ואישורי הגעה באופן מרוכז.</p></article>
+    </div>
+
+    <div class="panel home-status">
+      <div><span class="muted">אירוע נוכחי</span><strong id="homeActiveEvent">—</strong></div>
+      <button class="secondary" data-page="dashboard">מעבר ללוח הבקרה</button>
+    </div>
+  </section>
+
+  <section id="page-dashboard" class="page">
+    <h1>לוח בקרה</h1>
+    <div class="cards">
+      <article class="card"><strong id="statEvents">0</strong><span>אירועים</span></article>
+      <article class="card"><strong id="statGuests">0</strong><span>מוזמנים באירוע הנבחר</span></article>
+      <article class="card"><strong id="statConfirmed">0</strong><span>אישרו הגעה</span></article>
+      <article class="card"><strong id="statPending">0</strong><span>ממתינים לתשובה</span></article>
+    </div>
+    <div class="panel">
+      <h2>אירוע נוכחי</h2>
+      <select id="activeEventSelect"></select>
+    </div>
+  </section>
+
+  <section id="page-events" class="page">
+    <div class="page-head"><h1>אירועים</h1><button class="primary" id="addEventBtn">+ אירוע חדש</button></div>
+    <div id="eventsGrid" class="grid"></div>
+  </section>
+
+  <section id="page-guests" class="page">
+    <div class="page-head"><h1>מוזמנים</h1><div class="guest-page-actions"><button class="secondary" id="guestTemplateBtn">תבנית Excel</button><button class="secondary" id="guestExportBtn">ייצוא Excel</button><button class="secondary" id="guestImportBtn">ייבוא Excel</button><button type="button" class="danger" id="resetEventGuestsV1190A10" hidden>איפוס מוזמנים באירוע</button><button class="primary" id="addGuestBtn">+ הוספת מוזמן</button><input id="guestImportFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></div></div>
+    <div class="guest-stat-sections-v178" id="guestStatsV178" aria-label="סטטיסטיקות מוזמנים">
+      <section class="guest-stat-section-v178"><h2>אישורי הגעה</h2><div class="guest-stat-grid-v178" id="guestRsvpStatsV178"></div></section>
+      <section class="guest-stat-section-v178"><h2>שיוך לשולחנות</h2><div class="guest-stat-grid-v178" id="guestSeatingStatsV178"></div></section>
+    </div>
+    <button type="button" id="guestFiltersToggleA5" class="guest-filters-toggle-a5" aria-controls="guestFiltersA5" aria-expanded="false">⚲ <span>הצג סינון</span> <span aria-hidden="true">▾</span></button>
+    <div class="filters" id="guestFiltersA5">
+      <div class="search-field">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input id="guestSearch" placeholder="חיפוש לפי שם או טלפון">
+      </div>
+      <select id="sideFilter"><option value="">כל הצדדים</option></select>
+      <select id="groupFilter"><option value="">כל הקבוצות</option></select>
+      <select id="statusFilter"><option value="">כל הסטטוסים</option></select>
+      <select id="guestSeatingFilterV174" aria-label="סינון מצב שיוך"><option value="">כל מצבי השיוך</option><option value="UNASSIGNED">לא משויך</option><option value="PARTIAL">משויך חלקית</option><option value="FULL">משויך במלואו</option><option value="NOT_REQUIRED">לא נדרש שיבוץ</option><option value="REMAINING">נותרו אנשים לשיבוץ</option></select>
+      <select id="guestTableFilterV174" aria-label="סינון לפי שולחן"><option value="">כל השולחנות</option></select>
+      <button type="button" id="clearGuestFiltersV180" class="guest-clear-filters-v180" aria-label="נקה סינון" title="נקה את כל הסינונים והחיפוש"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16l-6 7v5l-4 2v-7z"/><path d="m16 17 5 5m0-5-5 5"/></svg><span>נקה סינון</span></button>
+    </div>
+    <div id="guestCountStatusV178" class="guest-count-status-v178" role="status" aria-live="polite"></div>
+    <div class="table-wrap">
+      <table class="guests-table">
+        <thead><tr>
+          <th class="sortable" data-sort="name" tabindex="0">שם <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-sort="phone" tabindex="0">טלפון <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-sort="side" tabindex="0">צד <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-sort="group" tabindex="0">קבוצה <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-sort="invitedCount" tabindex="0">מוזמנים <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-sort="confirmedCount" tabindex="0">אישרו <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-sort="rsvpStatus" tabindex="0">סטטוס <span class="sort-icon">↕</span></th>
+          <th>שיוך לשולחן</th>
+          <th>שליחה</th>
+          <th>פעולות</th>
+        </tr></thead>
+        <tbody id="guestsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="page-seating" class="page">
+    <div class="page-head">
+      <div>
+        <h1>ניהול שולחנות</h1>
+        <p class="muted">ניהול שולחנות לפי האירוע הנבחר</p>
+      </div>
+      <button id="addTableBtn" class="primary">+ הוספת שולחן</button><button type="button" class="danger" id="deleteAllEventTablesV1190A10" hidden>מחיקת כל השולחנות</button>
+    </div>
+
+    <div class="panel">
+      <div class="table-summary" id="tableSummary"></div>
+      <div id="guestSeatingNoticeV174" class="muted" aria-live="polite"></div>
+      <div class="table-wrap">
+        <table class="admin-table seating-table">
+          <thead>
+            <tr>
+              <th>מספר שולחן</th>
+              <th>מספר מקומות</th>
+              <th>מקומות תפוסים</th>
+              <th>מקומות פנויים</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tablesBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  <section id="page-messages" class="page"><h1>הודעות WhatsApp</h1><div class="empty">שלב התשתית מוכן. חיבור Meta WhatsApp Cloud API יתווסף בגרסה מתקדמת לאחר ייצוב מאגר המוזמנים.</div></section>
+
+  <section id="page-about" class="page">
+    <div class="about-hero">
+      <span class="eyebrow">אודות המערכת</span>
+      <h1>ניהול אירועים</h1>
+      <p>מערכת משפחתית לניהול כל המידע סביב אירוע — משלב יצירת האירוע ועד ניהול המוזמנים, אישורי ההגעה, ניהול השולחנות והתקשורת.</p>
+    </div>
+    <div class="about-grid">
+      <article class="about-card"><h3>🎯 מטרת המערכת</h3><p>לרכז את ניהול האירוע בממשק פשוט, ברור ומהיר, תוך שמירה על הפרדה מלאה של הנתונים בין אירועים שונים.</p></article>
+      <article class="about-card"><h3>🔐 פרטיות והרשאות</h3><p>המערכת מיועדת לשימוש משפחתי. הגישה מבוססת התחברות, Session והרשאות לפי תפקיד.</p></article>
+      <article class="about-card"><h3>⚡ ביצועים</h3><p>הארכיטקטורה בנויה לעבודה יעילה מול Google Sheets ו-Google Apps Script, עם המשך אופטימיזציה בשלבים הבאים.</p></article>
+      <article class="about-card"><h3>🧩 מודולים</h3><p>אירועים, מוזמנים, RSVP, ניהול שולחנות, הודעות, יומן פעילות וניהול משתמשים והרשאות.</p></article>
+    </div>
+    <div class="panel version-panel">
+      <span>גרסת מערכת</span>
+      <strong id="aboutVersion"></strong>
+    </div>
+  </section>
+
+  <section id="page-activity" class="page"><h1>יומן פעילות</h1><div id="activityList" class="list"></div></section>
+  <section id="page-admin" class="page">
+    <div class="page-head"><h1>ניהול והגדרות</h1></div>
+    <div class="admin-tabs" id="adminTabs">
+      <button class="active" data-admin-tab="eventTypes">סוגי אירועים</button>
+      <button data-admin-tab="sides">צד</button>
+      <button data-admin-tab="groups">קבוצה</button>
+      <button data-admin-tab="statuses">סטטוס</button>
+      <button data-admin-tab="users">משתמשי מערכת</button>
+      <button data-admin-tab="roles">תפקידים</button>
+      <button data-admin-tab="permissions">ניהול הרשאות</button>
+      <button data-admin-tab="whatsapp">חיבור ל-WhatsApp</button>
+      <button data-admin-tab="versions">גרסאות</button>
+    </div>
+    <div id="adminContent" class="panel admin-content"></div>
+    <div id="adminVersions" hidden>
+      <p>Frontend: <b id="frontVersion"></b></p>
+      <p>Server: <b id="serverVersion"></b></p>
+    </div>
+  </section>
+</main>
+
+<div id="loginOverlay" class="overlay show">
+  <div class="login-card" role="dialog" aria-modal="true" aria-labelledby="loginTitle" dir="rtl">
+    <button id="loginThemeBtn" class="login-theme-btn" type="button" aria-label="החלפת מצב תצוגה"><span id="loginThemeIcon" aria-hidden="true">☀</span><span id="loginThemeLabel">מצב בהיר</span></button>
+    <div class="login-brand" aria-hidden="true">✦</div>
+    <div class="login-heading"><div class="login-kicker">ניהול אירועים משפחתיים</div><h2 id="loginTitle">ברוכים הבאים</h2><p>התחברו כדי להמשיך לניהול האירוע</p></div>
+    <form id="loginForm" novalidate>
+      <label class="login-label" for="loginEmail">כתובת דוא״ל <span class="login-required" aria-hidden="true">*</span></label>
+      <div class="login-field" id="loginEmailField"><span class="login-field-icon" aria-hidden="true">✉</span><input id="loginEmail" type="email" inputmode="email" autocomplete="username" placeholder="name@example.com" aria-describedby="loginEmailError" required></div><div id="loginEmailError" class="login-field-error" role="alert" hidden></div>
+      <label class="login-label" for="loginPassword">סיסמה <span class="login-required" aria-hidden="true">*</span></label>
+      <div class="login-field login-password-field" id="loginPasswordField"><span class="login-field-icon" aria-hidden="true">♙</span><input id="loginPassword" type="password" autocomplete="current-password" placeholder="הקלידו סיסמה" aria-describedby="loginPasswordError" required><button id="togglePassword" type="button" aria-label="הצג סיסמה" aria-pressed="false" title="הצג סיסמה"></button></div><div id="loginPasswordError" class="login-field-error" role="alert" hidden></div>
+      <div id="loginError" class="login-feedback" role="status" aria-live="polite" hidden></div>
+      <button id="loginBtn" class="primary full login-submit" type="submit"><span class="login-btn-spinner" aria-hidden="true"></span><span id="loginBtnLabel">כניסה למערכת</span><span class="login-submit-arrow" aria-hidden="true">←</span></button>
+    </form><div class="login-footnote">כניסה למשתמשים מורשים בלבד</div>
+  </div>
+</div>
+
+<div id="modal" class="modal-backdrop">
+  <div class="modal">
+    <button class="modal-x" id="modalClose">×</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script src="js/config.js?v=1.1.36"></script>
+<script src="js/version.js?v=1.1.90A16"></script>
+<script src="js/session.js?v=1.1.77"></script>
+<script src="js/api.js?v=1.1.36"></script>
+<script src="js/app.js?v=1.1.90A16"></script>
+</body>
+</html>

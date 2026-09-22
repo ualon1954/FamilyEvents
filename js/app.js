@@ -15,6 +15,7 @@ function dateInputValue_(v){
   const m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   return m?`${m[1]}-${m[2]}-${m[3]}`:"";
 }
+function formatEventDateTime_(e){return formatDateHE_(e?.date)+(e?.eventTime?" · "+String(e.eventTime).slice(0,5):"");}
 function formatDateHE_(v){
   const s=dateInputValue_(v);
   if(!s)return "ללא תאריך";
@@ -317,7 +318,7 @@ function renderCurrentEventContext_(){
   });
   const ev=activeEvent();
   const label=$("#currentEventStatus");
-  if(label)label.textContent=ev?`${ev.name||"ללא שם"} · ${eventTypeName(ev)} · ${formatDateHE_(ev.date)} · ${lifecycleText(ev.lifecycleStatus)}`:"יש לבחור אירוע לעבודה";
+  if(label)label.textContent=ev?`${ev.name||"ללא שם"} · ${eventTypeName(ev)} · ${formatEventDateTime_(ev)} · ${lifecycleText(ev.lifecycleStatus)}`:"יש לבחור אירוע לעבודה";
   const seatingNav=$("#mainNav [data-page=seating]");
   if(seatingNav){
     if(canManageTables_())seatingNav.style.removeProperty("display");
@@ -342,7 +343,7 @@ function formatRsvpDeadline_(value){
 function renderEvents(){
   $("#eventsGrid").innerHTML=state.events.map(e=>`<article class="event-card ${e.id===state.activeEventId?"active":""}" data-event="${e.id}">
     <h3>${esc(e.name)}</h3>
-    <p>${esc(eventTypeName(e))} · ${esc(formatDateHE_(e.date))}</p>
+    <p>${esc(eventTypeName(e))} · ${esc(formatEventDateTime_(e))}</p>
     <p>${esc(e.venue||"")}</p>
     <p><b>מצב:</b> ${esc(lifecycleText(e.lifecycleStatus))} · <b>שולחנות:</b> ${isTrue(e.seatingEnabled,true)?"כן":"לא"}</p>
     <section class="event-rsvp-details">
@@ -417,6 +418,65 @@ async function deleteGuestV179_(g){
   catch(err){showToast(err?.message||String(err),"error")}
 }
 function guestSendChecked(g){return isTrue(g.sendWhatsApp,true)}
+async function resetEventGuestsV1190A10_(){
+  const ev=activeEvent();if(!ev||state.session?.role!=="Admin")return;
+  const eid=String(state.activeEventId),name=String(ev.name||'');
+  const count=state.guests.filter(g=>String(g.eventId)===eid).length;
+  const assigned=state.seating?.eventId===eid?state.seating.assignments.length:0;
+  const text=`לאפס את כל המוזמנים באירוע ״${name}״? ${count} מוזמנים יימחקו${isTrue(ev.seatingEnabled,false)?` ו-${assigned} שיוכים לשולחנות יאופסו`:''}. השולחנות עצמם יישמרו. הפעולה אינה ניתנת לביטול.`;
+  if(!await seatingConfirmV171_(text))return;
+  const btn=$('#resetEventGuestsV1190A10');seatingButtonBusyV171_(btn,true,'מאפס...');
+  try{const r=await API.request('resetEventGuestsV1190A10',{eventId:eid,eventName:name});
+    // A13: show the confirmed server result immediately, before slow bootstrap.
+    state.guests=state.guests.filter(g=>String(g.eventId)!==eid);
+    if(isTrue(ev.seatingEnabled,false)){
+      ++seatingTableRefreshSequenceV173_;
+      if(String(state.seating?.eventId)===eid)state.seating={...state.seating,guests:[],assignments:[],tables:(state.seating.tables||[]).map(t=>({...t,occupied:0,available:Number(t.seats||t.capacity||0)}))};
+      state.tables=state.tables.map(t=>String(t.eventId)===eid?{...t,occupied:0}:t);
+    }
+    renderAll();showToast(`אופסו ${r.removedGuests} מוזמנים ו-${r.removedAssignments} שיוכים באירוע ${name}`,'success');
+    // Synchronize other screens without holding back the immediate visual reset.
+    bootstrap().then(()=>{if(String(state.activeEventId)===eid&&isTrue(ev.seatingEnabled,false))return refreshSeatingAfterTableCrudV173_(eid)}).catch(err=>showToast('האיפוס הצליח, אך סנכרון הנתונים נכשל: '+(err.message||String(err)),'error'));
+  }
+  catch(err){showToast(err.message||String(err),'error')}
+  finally{seatingButtonBusyV171_(btn,false)}
+}
+async function deleteAllEventTablesV1190A10_(){
+  const ev=activeEvent();if(!ev||state.session?.role!=="Admin"||!isTrue(ev.seatingEnabled,false))return;
+  const eid=String(state.activeEventId),name=String(ev.name||'');
+  const tables=tablesForActiveEvent();
+  if(tables.some(t=>Number(t.occupied)>0)){showToast('יש לאפס מוזמנים ושיוכים לפני מחיקת כל השולחנות','error');return}
+  await eventTablesDeleteDialogV1190A13_(eid,name,tables.length);
+}
+function eventTablesDeleteDialogV1190A13_(eid,name,count){
+  return new Promise(resolve=>{
+    const shade=document.createElement('div');shade.className='seating-confirm-shade-v171';
+    shade.innerHTML='<section class="seating-confirm-v171" role="alertdialog" aria-modal="true" aria-labelledby="deleteTablesTitleA13"><h3 id="deleteTablesTitleA13">מחיקת כל השולחנות</h3><p></p><div class="event-save-status" aria-live="polite" data-delete-status></div><div class="actions"><button type="button" data-delete-cancel>ביטול</button><button type="button" class="danger" data-delete-confirm>כן, מחק שולחנות</button></div></section>';
+    shade.querySelector('p').textContent=`למחוק את כל ${count} השולחנות באירוע ״${name}״? הפעולה אינה ניתנת לביטול.`;
+    document.body.appendChild(shade);
+    const yes=shade.querySelector('[data-delete-confirm]'),no=shade.querySelector('[data-delete-cancel]'),status=shade.querySelector('[data-delete-status]');
+    let busy=false,closeTimer=null;
+    const done=()=>{if(closeTimer)clearTimeout(closeTimer);document.removeEventListener('keydown',onKey);shade.remove();resolve()};
+    const onKey=e=>{if(e.key==='Escape'&&!busy)done()};document.addEventListener('keydown',onKey);
+    no.onclick=()=>{if(!busy)done()};yes.onclick=async()=>{
+      if(busy)return;busy=true;no.disabled=true;seatingButtonBusyV171_(yes,true,'מוחק...');
+      status.textContent='';status.className='event-save-status';
+      try{
+        const r=await API.request('deleteAllEventTablesV1190A10',{eventId:eid,eventName:name});
+        ++seatingTableRefreshSequenceV173_;
+        state.tables=state.tables.filter(t=>String(t.eventId)!==eid);
+        if(String(state.seating?.eventId)===eid)state.seating={...state.seating,tables:[],assignments:[]};
+        renderAll();
+        status.textContent=`נמחקו ${r.removedTables} שולחנות באירוע ${name}`;status.className='event-save-status success';
+        // Do not delay modal success behind a network refresh.
+        bootstrap().then(()=>{if(String(state.activeEventId)===eid)return refreshSeatingAfterTableCrudV173_(eid)}).catch(err=>showToast('המחיקה הצליחה, אך סנכרון הנתונים נכשל: '+(err.message||String(err)),'error'));
+        closeTimer=setTimeout(done,2200);
+      }catch(err){status.textContent=err?.message||String(err);status.className='event-save-status error';busy=false;no.disabled=false;seatingButtonBusyV171_(yes,false)}
+    };
+    no.focus();
+  });
+}
+
 function renderGuests(){
   const type=eventTypeById(activeEvent()?.eventTypeId),showSides=!!type&&isTrue(type.usesSides,false),showGroups=!!type&&isTrue(type.usesGroups,false);
   renderGuestSeatingFiltersV174_();
@@ -428,7 +488,9 @@ function renderGuests(){
     <td data-col="invitedCount">${g.invitedCount||g.partySize||1}</td><td data-col="confirmedCount">${g.confirmedCount||0}</td><td data-col="rsvpStatus"><span class="badge ${esc(status)}">${esc(statusText(status))}</span></td>
     <td data-col="seating">${guestSeatingCellV174_(g)}</td>
     <td class="send-cell"><input class="guest-send-toggle" data-send-guest="${g.guestId||g.id}" type="checkbox" ${guestSendChecked(g)?"checked":""} aria-label="שליחה ב-WhatsApp"></td>
-    <td class="guest-row-actions-v179"><button type="button" class="guest-icon-action-v179" data-rsvp-link="${esc(g.guestId||g.id)}" title="העתק קישור אישור הגעה" aria-label="העתק קישור אישור הגעה עבור ${esc(g.name)}">🔗</button><button type="button" class="guest-icon-action-v179 edit" data-edit-guest="${esc(g.guestId||g.id)}" title="עריכת מוזמן" aria-label="עריכת ${esc(g.name)}">✎</button><button type="button" class="guest-icon-action-v179 delete" data-delete-guest="${esc(g.guestId||g.id)}" title="מחיקת מוזמן" aria-label="מחיקת ${esc(g.name)}" ${guestCanDeleteV179_(g)?"":"disabled"}>🗑</button></td></tr>`}).join("");
+    <td class="guest-row-actions-v179">${state.session?.role==='Admin'?`<button type="button" class="guest-icon-action-v179" data-wa-test="${esc(g.guestId||g.id)}" title="שליחת הזמנת ניסיון ב-WhatsApp למוזמן יחיד" aria-label="שליחת הזמנת ניסיון אל ${esc(g.name)}">📨</button>`:''}<button type="button" class="guest-icon-action-v179" data-rsvp-link="${esc(g.guestId||g.id)}" title="העתק קישור אישור הגעה" aria-label="העתק קישור אישור הגעה עבור ${esc(g.name)}">🔗</button><button type="button" class="guest-icon-action-v179 edit" data-edit-guest="${esc(g.guestId||g.id)}" title="עריכת מוזמן" aria-label="עריכת ${esc(g.name)}">✎</button><button type="button" class="guest-icon-action-v179 delete" data-delete-guest="${esc(g.guestId||g.id)}" title="מחיקת מוזמן" aria-label="מחיקת ${esc(g.name)}" ${guestCanDeleteV179_(g)?"":"disabled"}>🗑</button></td></tr>`}).join("");
+  const resetBtn=$('#resetEventGuestsV1190A10');
+  if(resetBtn){resetBtn.hidden=state.session?.role!=="Admin"||!state.activeEventId;resetBtn.disabled=!visibleGuestsV178.length&&!state.guests.some(g=>String(g.eventId)===String(state.activeEventId));}
   updateGuestSortUI();
 }
 function updateGuestSortUI(){
@@ -482,7 +544,7 @@ function renderGuestImportPreview_(preview,showAll=false){
   modal(`<h2>תצוגה מקדימה — ייבוא Excel <small class="build-mark">V1.1.68</small></h2>
     <p><b>אירוע:</b> ${esc(preview.event?.name||"")} · <b>קובץ:</b> ${esc(preview.fileName||"")}</p>
     <div class="import-summary"><span>שורות: <b>${s.total||0}</b></span><span class="ok-text">תקינות: <b>${s.clean??Math.max(0,(s.valid||0)-(s.warningRows||0))}</b></span><span class="warning-text">אזהרות: <b>${s.warningRows??s.warnings??0}</b></span><span class="error">שגיאות: <b>${s.errors||0}</b></span><span>הוספה: <b>${s.inserts||0}</b></span><span>עדכון: <b>${s.updates||0}</b></span></div>
-    <div class="actions import-preview-filter-actions"><button type="button" class="secondary" id="toggleGuestImportRowsBtn">${state.guestImportShowAll?"הצג חריגים בלבד":"הצג את כל הרשומות"}</button></div>
+    <div class="actions import-preview-filter-actions"><button type="button" class="secondary import-rows-action-a13" id="toggleGuestImportRowsBtn">${state.guestImportShowAll?"הצג חריגים בלבד":"הצג את כל הרשומות"}</button></div>
     <p class="muted">Preview בלבד — בשלב זה לא נשמרה אף רשומה. ${state.guestImportShowAll?`מוצגות כל ${allRows.length} הרשומות.`:`מוצגות רק שגיאות ואזהרות (${exceptionRows.length}).`}</p>
     ${noExceptions?`<div class="empty-state ok-text">✓ כל ${allRows.length} הרשומות עברו בדיקה בהצלחה. לא נמצאו שגיאות או אזהרות.</div>`:`<div class="table-wrap import-preview-wrap"><table class="admin-table import-preview-table"><thead><tr><th>שורה</th><th>פעולה</th><th>שם</th><th>טלפון</th><th>צד</th><th>קבוצה</th><th>מוזמנים</th><th>אישרו</th><th>סטטוס</th><th>בדיקה</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.valid?(r.warnings?.length?"import-warning":"import-ok"):"import-error"}"><td>${r.sourceRow}</td><td>${r.action==="UPDATE"?"עדכון":"הוספה"}</td><td>${esc(r.guest?.name||"")}</td><td>${esc(r.guest?.phone||"")}</td><td>${esc(labelFor("sides",r.guest?.sideId||"",preview.event?.eventTypeId)||"")}</td><td>${esc(labelFor("groups",r.guest?.groupId||"",preview.event?.eventTypeId)||"")}</td><td>${r.guest?.invitedCount??""}</td><td>${r.guest?.confirmedCount??""}</td><td>${esc(statusText(r.guest?.rsvpStatus||""))}</td><td class="import-check">${esc(importIssueText_(r))}</td></tr>`).join("")}</tbody></table></div>`}
     ${hasBlockingErrors?`<div class="empty-state error">לא ניתן לאשר את הייבוא כל עוד קיימות ${errorRowCount===1?"שורה אחת עם שגיאה":`${errorRowCount} שורות עם שגיאות`}. יש לתקן את השגיאות בקובץ ולהעלות אותו מחדש.${importableCount>0?` ${importableCount} ${importableCount===1?"שורה תקינה/עם אזהרה תהיה ניתנת":"שורות תקינות/עם אזהרות יהיו ניתנות"} לייבוא לאחר התיקון.`:""}</div>`:""}
@@ -550,14 +612,14 @@ async function handleGuestImportFile_(file){
 }
 async function commitGuestImport_(){
   const p=state.guestImportPreview;if(!p||p.summary?.errors)return;
-  const btn=$("#commitGuestImportBtn"),status=$("#guestImportCommitStatus");if(btn)btn.disabled=true;if(status){status.textContent="מייבא ושומר את הנתונים...";status.className="event-save-status working"}
+  const btn=$("#commitGuestImportBtn"),status=$("#guestImportCommitStatus");if(btn)seatingButtonBusyV171_(btn,true,"מייבא ושומר...");if(status){status.textContent="מייבא ושומר את הנתונים...";status.className="event-save-status working"}
   try{
     const validRows=(p.rows||[]).filter(r=>r.valid).map(r=>r.guest);
     const r=await API.request("commitGuestImportV148",{eventId:p.event?.eventId,fileName:p.fileName,rows:validRows});
     const eid=String(p.event?.eventId||"");state.guests=state.guests.filter(g=>String(g.eventId)!==eid).concat(r.guests||[]);
     closeModal();renderAll();showToast(`הייבוא הושלם: ${r.summary?.inserted||0} נוספו, ${r.summary?.updated||0} עודכנו`);
     state.guestImportPreview=null;
-  }catch(err){if(status){status.textContent=err?.message||String(err);status.className="event-save-status error"}if(btn)btn.disabled=false}
+  }catch(err){if(status){status.textContent=err?.message||String(err);status.className="event-save-status error"}if(btn)seatingButtonBusyV171_(btn,false)}
 }
 
 function tablesForActiveEvent(){
@@ -584,6 +646,7 @@ function renderTables(){
     return;
   }
   if(addBtn)addBtn.disabled=!state.activeEventId;
+  const deleteAllBtn=$("#deleteAllEventTablesV1190A10");if(deleteAllBtn){deleteAllBtn.hidden=state.session?.role!=="Admin";deleteAllBtn.disabled=!state.activeEventId||!tablesForActiveEvent().length||tablesForActiveEvent().some(t=>Number(t.occupied)>0);}
   const rows=tablesForActiveEvent();
   
   $("#tableSummary").innerHTML=state.activeEventId?`<span>שולחנות: <b>${rows.length}</b></span><span>מקומות: <b>${rows.reduce((s,t)=>s+t.seats,0)}</b></span><span>תפוסים: <b>${rows.reduce((s,t)=>s+t.occupied,0)}</b></span><span>פנויים: <b>${rows.reduce((s,t)=>s+t.free,0)}</b></span>`:`<span>יש לבחור אירוע פעיל</span>`;
@@ -595,8 +658,8 @@ function tableForm(t={}){
   modal(`<h2>${t.id?"עריכת":"הוספת"} שולחן</h2>
     <form id="tableForm" class="form-grid" onsubmit="return false;">
       <input type="hidden" name="id" value="${esc(t.id||"")}">
-      <label>מספר שולחן *<input name="tableNumber" required inputmode="numeric" ${t.id?"readonly aria-readonly=\"true\"":""} value="${esc(t.tableNumber||"")}"></label>
-      <label>מספר מקומות *<input name="seats" required type="number" min="1" step="1" value="${t.seats||10}"></label>
+      <label>מספר שולחן <span class="required-star">*</span><input name="tableNumber" required inputmode="numeric" ${t.id?"readonly aria-readonly=\"true\"":""} value="${esc(t.tableNumber||"")}"></label>
+      <label>מספר מקומות <span class="required-star">*</span><input name="seats" required type="number" min="1" step="1" value="${t.seats||10}"></label>
       ${t.id?`<div class="table-form-status"><span>תפוסים: <b>${t.occupied||0}</b></span><span>פנויים: <b>${Math.max(0,(+t.seats||0)-(+t.occupied||0))}</b></span></div>`:""}
       <div class="actions"><button type="button" id="saveTableBtn" class="primary">שמירה</button></div>
     </form>`);
@@ -613,6 +676,7 @@ function eventForm(e={}){
     <label>שם אירוע <span class="required-star">*</span><input name="name" required value="${esc(e.name||"")}"></label>
     <label>סוג אירוע <span class="required-star">*</span><select name="eventTypeId" required>${types.map(t=>`<option value="${esc(t.eventTypeId||t.id)}" ${String(t.eventTypeId||t.id)===String(selectedType)?"selected":""}>${esc(t.name)}</option>`).join("")}</select></label>
     <label>תאריך<input name="date" type="date" class="date-picker-control" value="${esc(dateInputValue_(e.date))}"></label>
+    <label>שעת האירוע<input name="eventTime" type="time" class="date-picker-control" value="${esc(String(e.eventTime||"").slice(0,5))}"></label>
     <label>מקום<input name="venue" value="${esc(e.venue||"")}"></label>
     <section class="rsvp-admin-settings">
       <h3>הגדרות אישור הגעה</h3>
@@ -759,9 +823,9 @@ function guestForm(g={},forcedEventId=''){
   const status=g.rsvpStatus||g.status||'Pending',invited=g.invitedCount||g.partySize||1,confirmed=(g.confirmedCount??(status==='Confirmed'?invited:0));
   modal(`<h2>${(g.guestId||g.id)?'עריכת':'הוספת'} מוזמן</h2><p class="guest-event-context"><b>אירוע:</b> ${esc(ev?.name||'—')} · <b>סוג:</b> ${esc(type?.name||'—')} <small>(${showSides?scopedSides.length:0} צדדים · ${showGroups?scopedGroups.length:0} קבוצות)</small></p><form id="guestForm" class="form-grid" onsubmit="return false;">
   <input type="hidden" name="eventId" value="${esc(eventId)}">
-  <label>שם *<input name="name" required value="${esc(g.name||'')}"></label><label>טלפון *<input name="phone" required inputmode="tel" placeholder="0501234567" value="${esc(g.phone||'')}"></label>
+  <label>שם <span class="required-star">*</span><input name="name" required value="${esc(g.name||'')}"></label><label>טלפון <span class="required-star">*</span><input name="phone" required inputmode="tel" placeholder="0501234567" value="${esc(g.phone||'')}"></label>
   ${sideField}${groupField}
-  <label>מספר מוזמנים *<input name="invitedCount" type="number" min="1" step="1" required value="${invited}"></label>
+  <label>מספר מוזמנים <span class="required-star">*</span><input name="invitedCount" type="number" min="1" step="1" required value="${invited}"></label>
   <label>מספר שאישרו<input name="confirmedCount" type="number" min="0" step="1" value="${confirmed}"></label>
   <label>סטטוס RSVP<select name="rsvpStatus">${optionHtml('statuses',status)}</select></label>
   <label class="check-label"><input name="sendWhatsApp" type="checkbox" ${send?'checked':''}> שליחה ב-WhatsApp</label>
@@ -769,7 +833,7 @@ function guestForm(g={},forcedEventId=''){
   <input type="hidden" name="eventId" value="${esc(eventId)}"><input type="hidden" name="id" value="${esc(g.guestId||g.id||'')}"><input type="hidden" name="guestId" value="${esc(g.guestId||g.id||'')}"><div id="guestFormStatusV182" class="guest-form-status-v182" role="alert" aria-live="assertive" hidden></div><div class="actions"><button type="button" id="saveGuestBtn" class="primary">שמירה</button></div></form>`);
   const statusEl=$("#guestForm [name=rsvpStatus]"), invitedEl=$("#guestForm [name=invitedCount]"), confirmedEl=$("#guestForm [name=confirmedCount]");
   if(statusEl)statusEl.onchange=()=>{if(statusEl.value==='Declined'||statusEl.value==='Pending')confirmedEl.value=0;else if(statusEl.value==='Confirmed'&&(+confirmedEl.value||0)===0)confirmedEl.value=+invitedEl.value||1};
-  if(confirmedEl)confirmedEl.oninput=()=>{if((+confirmedEl.value||0)>0)statusEl.value='Confirmed'};
+  if(confirmedEl)confirmedEl.oninput=()=>{statusEl.value=(+confirmedEl.value||0)>0?'Confirmed':'Pending'};
   if(invitedEl)invitedEl.onchange=()=>{if(+confirmedEl.value>(+invitedEl.value||1))confirmedEl.value=+invitedEl.value||1};
   $("#saveGuestBtn").onclick=saveGuestForm;
 }
@@ -820,7 +884,7 @@ function renderEventTypesAdmin(){
 function eventTypeForm(x={}){
   modal(`<h2>${x.eventTypeId||x.id?"עריכת":"הוספת"} סוג אירוע</h2><form id="eventTypeForm" class="form-grid" onsubmit="return false;">
   <input type="hidden" name="eventTypeId" value="${esc(x.eventTypeId||x.id||"")}">
-  <label>שם סוג אירוע *<input name="name" required value="${esc(x.name||"")}"></label>
+  <label>שם סוג אירוע <span class="required-star">*</span><input name="name" required value="${esc(x.name||"")}"></label>
   <label>סדר<input type="number" name="sortOrder" value="${+x.sortOrder||0}"></label>
   <label class="check-label"><input type="checkbox" name="usesSides" ${isTrue(x.usesSides,true)?"checked":""}> משתמש בצדדים</label>
   <label class="check-label"><input type="checkbox" name="usesGroups" ${isTrue(x.usesGroups,true)?"checked":""}> משתמש בקבוצות</label>
@@ -906,7 +970,7 @@ function lookupForm(kind,x={}){
   const scopeFields=scoped?`<input type="hidden" name="eventTypeId" value="${esc(eventTypeId||"")}"><label>סוג אירוע<input value="${esc(type?.name||"")}" disabled></label>`:"";
   modal(`<h2>${x.id?"עריכת":"הוספת"} ${esc(adminTitles[kind])}</h2><form id="lookupForm" class="form-grid" onsubmit="return false;">
   <input type="hidden" name="kind" value="${kind}"><input type="hidden" name="id" value="${esc(x.id||"")}">${scopeFields}
-  <label>${kind==="sides"?"שם":"ערך"} *<input name="value" required value="${esc(x.value||"")}"></label><label>תיאור *<input name="label" required value="${esc(x.label||"")}"></label>
+  <label>${kind==="sides"?"שם":"ערך"} <span class="required-star">*</span><input name="value" required value="${esc(x.value||"")}"></label><label>תיאור <span class="required-star">*</span><input name="label" required value="${esc(x.label||"")}"></label>
   <label>סדר<input name="sortOrder" type="number" value="${+x.sortOrder||0}"></label><label class="check-label"><input type="checkbox" name="active" ${isTrue(x.active,true)?"checked":""}> פעיל</label>
   <div class="actions"><button type="button" id="saveLookupBtn" class="primary">שמירה</button></div></form>`);
   $("#saveLookupBtn").onclick=saveLookupForm;
@@ -916,28 +980,28 @@ function userForm(x={}){
   modal(`<h2>${x.id?"עריכת":"הוספת"} משתמש</h2><form id="userForm" class="form-grid" onsubmit="return false;"><input type="hidden" name="id" value="${esc(x.id||"")}">
   <label>שם <span class="required-star">*</span><input name="name" required value="${esc(x.name||"")}"></label><label>אימייל <span class="required-star">*</span><input type="email" name="email" required value="${esc(x.email||"")}"></label>
   <label>מספר טלפון<input type="tel" name="phone" dir="ltr" maxlength="30" value="${esc(displayUserPhone_(x.phone))}" placeholder="0501234567"></label>
-  <label>סיסמה ${x.id?"(השאר ריק ללא שינוי)":"*"}<input type="password" name="password" ${x.id?"":"required"}></label><label>תפקיד *<select name="role" required>${roleOptions(x.role||"Family")}</select></label>
+  <label>סיסמה ${x.id?"(השאר ריק ללא שינוי)":"<span class='required-star'>*</span>"}<input type="password" name="password" ${x.id?"":"required"}></label><label>תפקיד <span class="required-star">*</span><select name="role" required>${roleOptions(x.role||"Family")}</select></label>
   <label class="check-label"><input type="checkbox" name="active" ${isTrue(x.active,true)?"checked":""}> פעיל</label><div class="actions"><button type="button" id="saveUserBtn" class="primary">שמירה</button></div></form>`);
   $("#saveUserBtn").onclick=saveUserForm;
 }
 function roleForm(x={}){
   modal(`<h2>${x.id?"עריכת":"הוספת"} תפקיד</h2><form id="roleForm" class="form-grid" onsubmit="return false;"><input type="hidden" name="id" value="${esc(x.id||"")}">
-  <label>קוד תפקיד *<input name="value" required value="${esc(x.value||"")}"></label><label>שם תפקיד *<input name="label" required value="${esc(x.label||"")}"></label>
+  <label>קוד תפקיד <span class="required-star">*</span><input name="value" required value="${esc(x.value||"")}"></label><label>שם תפקיד <span class="required-star">*</span><input name="label" required value="${esc(x.label||"")}"></label>
   <label>סדר<input type="number" name="sortOrder" value="${+x.sortOrder||0}"></label><label class="check-label"><input type="checkbox" name="active" ${isTrue(x.active,true)?"checked":""}> פעיל</label>
   <div class="actions"><button type="button" id="saveRoleBtn" class="primary">שמירה</button></div></form>`);
   $("#saveRoleBtn").onclick=saveRoleForm;
 }
 function permissionForm(x={}){
   modal(`<h2>${x.id?"עריכת":"הוספת"} הרשאה</h2><form id="permissionForm" class="form-grid" onsubmit="return false;"><input type="hidden" name="id" value="${esc(x.id||"")}">
-  <label>תפקיד *<select name="role" required>${roleOptions(x.role||"Family")}</select></label><label>מפתח הרשאה *<input name="permissionKey" required placeholder="guests.edit" value="${esc(x.permissionKey||"")}"></label>
+  <label>תפקיד <span class="required-star">*</span><select name="role" required>${roleOptions(x.role||"Family")}</select></label><label>מפתח הרשאה <span class="required-star">*</span><input name="permissionKey" required placeholder="guests.edit" value="${esc(x.permissionKey||"")}"></label>
   <label class="check-label"><input type="checkbox" name="allowed" ${isTrue(x.allowed,true)?"checked":""}> מאושר</label>
   <label style="grid-column:1/-1">הערות<textarea name="notes">${esc(x.notes||"")}</textarea></label><div class="actions"><button type="button" id="savePermissionBtn" class="primary">שמירה</button></div></form>`);
   $("#savePermissionBtn").onclick=savePermissionForm;
 }
 function whatsappForm(x={}){
   modal(`<h2>${x.id?"עריכת":"הוספת"} חיבור WhatsApp</h2><form id="waForm" class="form-grid" onsubmit="return false;"><input type="hidden" name="id" value="${esc(x.id||"")}">
-  <label>שם חיבור *<input name="name" required value="${esc(x.name||"")}"></label><label>Phone Number ID *<input name="phoneNumberId" required value="${esc(x.phoneNumberId||"")}"></label>
-  <label>WhatsApp Business Account ID (WABA) *<input name="wabaId" required value="${esc(x.wabaId||"")}"></label><label>Meta App ID<input name="appId" value="${esc(x.appId||"")}"></label>
+  <label>שם חיבור <span class="required-star">*</span><input name="name" required value="${esc(x.name||"")}"></label><label>Phone Number ID <span class="required-star">*</span><input name="phoneNumberId" required value="${esc(x.phoneNumberId||"")}"></label>
+  <label>WhatsApp Business Account ID (WABA) <span class="required-star">*</span><input name="wabaId" required value="${esc(x.wabaId||"")}"></label><label>Meta App ID<input name="appId" value="${esc(x.appId||"")}"></label>
   <label>Graph API Version<input name="apiVersion" value="${esc(x.apiVersion||"v23.0")}"></label><label>קידומת מדינה<input name="defaultCountryCode" value="${esc(x.defaultCountryCode||"972")}"></label>
   <label>Access Token ${x.id&&isTrue(x.hasAccessToken)?"(מוגדר — השאר ריק ללא שינוי)":""}<input type="password" name="accessToken" autocomplete="off"></label>
   <label>Webhook Verify Token ${x.id&&isTrue(x.hasVerifyToken)?"(מוגדר — השאר ריק ללא שינוי)":""}<input type="password" name="webhookVerifyToken" autocomplete="off"></label>
@@ -966,7 +1030,8 @@ async function saveGuestForm(){
   o.sendWhatsApp=fd.has('sendWhatsApp');
   if(o.confirmedCount>o.invitedCount){guestFormErrorV182_('מספר המאשרים לא יכול להיות גדול ממספר המוזמנים');return}
   if(o.confirmedCount>0)o.rsvpStatus='Confirmed';
-  else if(o.rsvpStatus!=='Confirmed')o.confirmedCount=0;
+  else if(o.rsvpStatus==='Confirmed')o.rsvpStatus='Pending';
+  else o.confirmedCount=0;
   const statusBox=$('#guestFormStatusV182');
   if(statusBox){statusBox.hidden=true;statusBox.textContent='';}
   const isEdit=!!o.id,started=performance.now();
@@ -1105,6 +1170,57 @@ async function repairEventTypeAssignmentsUi_(){
   }catch(err){if(el){el.textContent=err?.message||String(err);el.className="event-save-status error";}else showToast(err?.message||String(err),"error")}
 }
 
+/* V1.1.90A16 — one-recipient confirmation, with phone preview and inline status. */
+function waPhonePreviewV1190A16_(phone){
+  let raw=String(phone||'').trim().replace(/[\s\-().]/g,'');
+  if(raw.startsWith('+'))raw=raw.slice(1);
+  raw=raw.replace(/\D/g,'');
+  if(raw.startsWith('00972'))raw=raw.slice(2);
+  if(raw.startsWith('972'))raw='0'+raw.slice(3);
+  if(!/^0\d{8,9}$/.test(raw))return '';
+  return '972'+raw.slice(1);
+}
+function openWhatsAppTestConfirmV1190A16_(g){
+  const to=waPhonePreviewV1190A16_(g.phone);
+  modal(`<section class="wa-confirm-v1190a16" role="dialog" aria-labelledby="waConfirmTitleV1190A16">
+    <h2 id="waConfirmTitleV1190A16">אישור שליחת WhatsApp</h2>
+    <p>האם לשלוח הזמנה אחת למוזמן הבא?</p>
+    <dl class="wa-confirm-details-v1190a16">
+      <dt>שם המוזמן</dt><dd>${esc(g.name||'—')}</dd>
+      <dt>מספר ברשומה</dt><dd dir="ltr">${esc(g.phone||'—')}</dd>
+      <dt>מספר לשליחה ל־Meta</dt><dd dir="ltr">${to?esc('+'+to):'מספר לא תקין'}</dd>
+      <dt>כמות הודעות</dt><dd>1</dd>
+    </dl>
+    <p class="wa-confirm-status-v1190a16" id="waConfirmStatusV1190A16" role="status" aria-live="polite"></p>
+    <div class="actions"><button type="button" class="primary" id="waConfirmSendV1190A16" ${to?'':'disabled'}>אישור ושליחה</button>
+    <button type="button" id="waConfirmCancelV1190A16">ביטול</button></div>
+  </section>`);
+  const panel=$('.wa-confirm-v1190a16'),send=panel.querySelector('#waConfirmSendV1190A16');
+  const cancel=panel.querySelector('#waConfirmCancelV1190A16');
+  const status=panel.querySelector('#waConfirmStatusV1190A16');
+  const close=$('#modalClose');
+  if(!to){status.textContent='מספר הטלפון אינו תקין. יש לתקן אותו ברשומת המוזמן לפני השליחה.';status.className='wa-confirm-status-v1190a16 error';}
+  cancel.onclick=closeModal;
+  send.onclick=async()=>{
+    if(send.disabled||!to)return;
+    send.disabled=true;cancel.disabled=true;if(close)close.disabled=true;
+    send.innerHTML='<span class="seating-spinner-v171" aria-hidden="true"></span> שולח...';
+    status.textContent='';status.className='wa-confirm-status-v1190a16';
+    try{
+      const r=await API.request('sendOneInvitationV1190A14',{eventId:g.eventId,guestId:g.guestId||g.id});
+      if(r?.accepted!==true)throw new Error('לא התקבל אישור תקין משרת השליחה');
+      status.textContent='Meta קיבלה את ההזמנה לשליחה. בדוק שההודעה הגיעה לטלפון.';
+      status.className='wa-confirm-status-v1190a16 success';
+      send.innerHTML='נשלח ✓';
+      setTimeout(()=>{if($('.wa-confirm-v1190a16')===panel)closeModal()},2300);
+    }catch(err){
+      status.textContent=err?.message||'שליחת ההזמנה נכשלה';
+      status.className='wa-confirm-status-v1190a16 error';
+      send.innerHTML='נסה שוב';send.disabled=false;cancel.disabled=false;if(close)close.disabled=false;
+    }
+  };
+}
+
 /* ---------- Events ---------- */
 document.addEventListener("click",async e=>{
   const sortHead=e.target.closest(".guests-table th.sortable"); if(sortHead){setGuestSort(sortHead.dataset.sort);return}
@@ -1119,6 +1235,14 @@ document.addEventListener("click",async e=>{
   const card=e.target.closest("[data-event]");if(card&&!e.target.closest("button,input,select")){setCurrentEvent_(card.dataset.event)}
   const er=e.target.closest(".edit-event");if(er){e.stopPropagation();eventForm(state.events.find(x=>x.id===er.dataset.id))}
   const dr=e.target.closest(".delete-event");if(dr){e.stopPropagation();if(confirm("למחוק את האירוע ואת שיוכי המוזמנים שלו?")){const id=dr.dataset.id,started=performance.now();const r=await API.request("deleteEvent",{id});removeLocal_(state.events,id);state.guests=state.guests.filter(x=>String(x.eventId)!==String(id));state.tables=state.tables.filter(x=>String(x.eventId)!==String(id));if(String(state.activeEventId)===String(id)){state.activeEventId=null;restoreCurrentEvent_()}renderAll();mutationDone_("האירוע נמחק",r,started)}}
+  const waTest=e.target.closest('[data-wa-test]');if(waTest){
+    e.stopPropagation();
+    const g=state.guests.find(x=>String(x.guestId||x.id)===String(waTest.dataset.waTest));
+    if(!g)return;
+    if(!guestSendChecked(g)){showToast('המוזמן מסומן שליחה: לא','error');return}
+    openWhatsAppTestConfirmV1190A16_(g);
+    return;
+  }
   const rsvpLink=e.target.closest('[data-rsvp-link]');if(rsvpLink){
     e.stopPropagation();
     const g=state.guests.find(x=>String(x.guestId||x.id)===String(rsvpLink.dataset.rsvpLink));
@@ -1138,7 +1262,8 @@ document.addEventListener("click",async e=>{
   const gr=e.target.closest("#guestsBody [data-guest]");if(gr&&!e.target.closest("button,input,label,select")){if(window.matchMedia("(hover: none), (pointer: coarse)").matches){const g=state.guests.find(x=>String(x.guestId||x.id)===String(gr.dataset.guest));if(g)guestDetails(g)}return}
 
   const seatGuest=e.target.closest("[data-seat-guest]");if(seatGuest){e.stopPropagation();openSeatingGuestV170_(seatGuest.dataset.seatGuest);return}
-  if(e.target.closest("#resetAllSeatingV170")){resetAllSeatingV170_();return}
+  if(e.target.closest("#resetEventGuestsV1190A10")){resetEventGuestsV1190A10_();return}
+  if(e.target.closest("#deleteAllEventTablesV1190A10")){deleteAllEventTablesV1190A10_();return}
   const et=e.target.closest(".edit-table");if(et){tableForm(tablesForActiveEvent().find(x=>x.id===et.dataset.id));return}
   const dt=e.target.closest(".delete-table");if(dt){if(confirm("למחוק את השולחן?")){try{const started=performance.now();const r=await API.request("deleteTable",{id:dt.dataset.id});removeLocal_(state.tables,dt.dataset.id);if(state.seating&&String(state.seating.eventId)===String(state.activeEventId))state.seating.tables=state.seating.tables.filter(t=>String(t.id)!==String(dt.dataset.id));renderAll();mutationDone_("השולחן נמחק",r,started);await refreshSeatingAfterTableCrudV173_(state.activeEventId)}catch(err){alert(err.message)}}return}
 
@@ -1278,6 +1403,13 @@ const initialPageName=$("#mobilePageName");if(initialPageName)initialPageName.te
 if(state.session){setUser();$("#loginOverlay").classList.remove("show");bootstrap().catch(e=>{alert(e.message);clearSession()})}
 document.addEventListener("keydown",e=>{const th=e.target.closest?.(".guests-table th.sortable");if(th&&(e.key==="Enter"||e.key===" ")){e.preventDefault();setGuestSort(th.dataset.sort)}});
 
+/* V1.1.90A5 — mobile guest filters default closed */
+const guestFiltersToggleA5_=$("#guestFiltersToggleA5");
+if(guestFiltersToggleA5_)guestFiltersToggleA5_.addEventListener("click",()=>{
+ const panel=$("#guestFiltersA5"),open=panel.classList.toggle("filters-open-a5");
+ guestFiltersToggleA5_.setAttribute("aria-expanded",String(open));
+ guestFiltersToggleA5_.querySelector("span").textContent=open?"הסתר סינון":"הצג סינון";
+});
 /* Mobile navigation — preserved from V1.0.9 */
 const MENU_CLOSED_ICON="☰";
 const MENU_OPEN_ICON='<span class="menu-close-text" aria-hidden="true">×</span>';
@@ -1285,7 +1417,7 @@ function closeMobileMenu(){const nav=$("#mainNav"),btn=$("#mobileMenuBtn");if(!n
 function toggleMobileMenu(){const nav=$("#mainNav"),btn=$("#mobileMenuBtn");if(!nav||!btn)return;const open=nav.classList.toggle("mobile-open");btn.classList.toggle("open",open);btn.setAttribute("aria-expanded",String(open));btn.innerHTML=open?MENU_OPEN_ICON:MENU_CLOSED_ICON}
 $("#mobileMenuBtn").onclick=toggleMobileMenu;
 $("#mainNav").addEventListener("click",e=>{if(e.target.closest("[data-page]"))closeMobileMenu()});
-window.addEventListener("resize",()=>{if(window.innerWidth>850)closeMobileMenu()});
+window.addEventListener("resize",()=>{if(window.innerWidth>1250)closeMobileMenu()});
 
 
 /* V1.1.73: refresh authoritative seating after table CRUD; discard stale responses. */
@@ -1320,7 +1452,6 @@ function renderSeatingWorkspaceV170_(){
   const assigned=rows.filter(g=>g.seatingStatus==='FULL').length;
   const partial=rows.filter(g=>g.seatingStatus==='PARTIAL').length;
   host.innerHTML=`<div class="table-summary"><span>שובצו במלואם: <b>${assigned}</b></span><span>שובצו חלקית: <b>${partial}</b></span><span>לא שובצו: <b>${rows.length-assigned-partial}</b></span></div>
-    <div class="actions"><button type="button" id="resetAllSeatingV170" class="danger" ${st.assignments.length?'':'disabled'}>איפוס כל השיוכים באירוע</button></div>
     <div class="table-wrap"><table class="admin-table"><thead><tr><th>מוזמן</th><th>מאושרים</th><th>שובצו</th><th>נותרו</th><th>שולחנות</th><th>פעולה</th></tr></thead><tbody>${rows.map(g=>{
       const mine=st.assignments.filter(a=>String(a.guestId)===String(g.guestId));
       const labels=mine.map(a=>`${esc(byId[String(a.tableId)]?.tableNumber||'—')} (${Number(a.seats)||0})`).join(', ');
