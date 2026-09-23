@@ -34,9 +34,10 @@ function showPage(name){
   $$(".page").forEach(x=>x.classList.remove("active"));
   $("#page-"+name)?.classList.add("active");
   $$("#mainNav [data-page]").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===name));
-  const labels={home:"ראשי",dashboard:"לוח בקרה",events:"אירועים",guests:"מוזמנים",seating:"ניהול שולחנות",messages:"הודעות",about:"אודות",activity:"יומן פעילות",admin:"ניהול"};
+  const labels={home:"ראשי",dashboard:"לוח בקרה",events:"אירועים",guests:"מוזמנים",seating:"ניהול שולחנות",messages:"תבניות WhatsApp",about:"אודות",activity:"יומן פעילות",admin:"ניהול"};
   const pageName=$("#mobilePageName"); if(pageName) pageName.textContent=labels[name]||"";
   if(name==="admin") renderAdmin();
+  if(name==="messages") tplLoadA19P2();
   if(name==="seating") loadSeatingV170_();
   if(name==="guests"&&canManageTables_())loadSeatingV170_();
   if(name==="guests"&&state.activeEventId){
@@ -367,7 +368,8 @@ function filteredGuests(){
     if(seatingStatus==='UNASSIGNED'&&Number(g.confirmedCount)<=0)return false;
     if(seatingStatus==='NOT_REQUIRED'&&Number(g.confirmedCount)>0)return false;
     if(seatingStatus==='REMAINING'&&!(Number(g.confirmedCount)>Number(sg?.assignedCount||0)))return false;
-    if(seatingStatus&&seatingStatus!=='NOT_REQUIRED'&&seatingStatus!=='REMAINING'&&(!sg||sg.seatingStatus!==seatingStatus))return false;
+    if(seatingStatus==='UNASSIGNED' && sg && sg.seatingStatus!=='UNASSIGNED')return false;
+    if(seatingStatus&&seatingStatus!=='UNASSIGNED'&&seatingStatus!=='NOT_REQUIRED'&&seatingStatus!=='REMAINING'&&(!sg||sg.seatingStatus!==seatingStatus))return false;
     if(tableFilter&&!st?.assignments.some(a=>String(a.guestId)===String(g.guestId||g.id)&&String(a.tableId)===tableFilter))return false;
     return true;
   });
@@ -1464,7 +1466,16 @@ function renderSeatingWorkspaceV170_(){
       return `<tr><td>${esc(g.name)}</td><td>${g.confirmedCount}</td><td>${g.assignedCount}</td><td>${g.remainingCount}</td><td>${labels||'לא שובץ'}</td><td><button type="button" data-seat-guest="${esc(g.guestId)}">${mine.length?'שינוי שיוך':'שיוך'}</button></td></tr>`
     }).join('')||'<tr><td colspan="6">אין מוזמנים שאישרו הגעה</td></tr>'}</tbody></table></div>`;
 }
-function openSeatingGuestV170_(gid){
+async function openSeatingGuestV170_(gid){
+  if(!state.seating||String(state.seating.eventId)!==String(state.activeEventId)){
+    const eid=String(state.activeEventId||'');
+    if(!eid)return showToast('יש לבחור אירוע לפני שיוך שולחנות','error');
+    try{
+      const r=await API.request('seatingStateV169',{eventId:eid});
+      if(eid!==String(state.activeEventId||''))return;
+      state.seating=r;renderTables();renderGuests();
+    }catch(err){showToast('לא ניתן לטעון נתוני שיוך: '+(err.message||String(err)),'error');return}
+  }
   const st=state.seating;
   const g=state.guests.find(x=>String(x.guestId||x.id)===String(gid));
   if(!st||String(st.eventId)!==String(state.activeEventId)||!g){showToast('נתוני המוזמן או השיוך אינם זמינים. נסה לפתוח שוב את רשימת המוזמנים.','error');return}
@@ -1579,7 +1590,7 @@ function guestSeatingCellV174_(g){
     return 'שולחן '+(t?.tableNumber||'—')+' ('+(Number(a.seats)||0)+')';
   }).join(' · ');
   const assigned=Number(sg?.assignedCount)||0;
-  return '<div class="guest-seating-v174"><span>'+assigned+' / '+count+' · '+(names?esc(names):'לא שובץ')+'</span> <button type="button" data-seat-guest="'+esc(gid)+'" '+(!st?'disabled title="טוען שיוכים"':'')+'>'+(mine.length?'שינוי שיוך':'שיוך')+'</button></div>';
+  return '<div class="guest-seating-v174"><span>'+assigned+' / '+count+' · '+(names?esc(names):'לא שובץ')+'</span> <button type="button" data-seat-guest="'+esc(gid)+'" '+'>'+(mine.length?'שינוי שיוך':'שיוך')+'</button></div>';
 }
 function renderGuestSeatingFiltersV174_(){
   const status=$('#guestSeatingFilterV174'),tables=$('#guestTableFilterV174');

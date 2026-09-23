@@ -1196,3 +1196,41 @@ body.light #eventForm .date-picker-control{color-scheme:light}
 /* A17: preserve mixed Hebrew/Latin heading order */
 .wa-confirm-v1190a16 h2{direction:rtl;unicode-bidi:isolate;text-align:right}
 .wa-confirm-v1190a16 h2 bdi{unicode-bidi:isolate}
+
+/* A19 P1 — distinct guest dashboard, filters and list; overrides compact A18 rules. */
+#page-guests #guestStatsV178{display:grid;grid-template-columns:1fr;gap:18px;margin:24px 0 28px}
+#page-guests #guestStatsV178 .guest-stat-section-v178{display:block;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:0 5px 18px rgba(0,0,0,.08)}
+#page-guests #guestStatsV178 .guest-stat-section-v178 h2{font-size:1.04rem;margin:0 0 14px;min-width:0}
+#page-guests #guestStatsV178 .guest-stat-grid-v178{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+#page-guests #guestStatsV178 .guest-stat-card-v178{min-height:70px;padding:12px;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;border-radius:11px}
+#page-guests #guestStatsV178 .guest-stat-card-v178 strong{font-size:1.65rem}
+#page-guests #guestFiltersToggleA5{margin:0 0 12px;padding:15px 18px;border-radius:15px}
+#page-guests #guestFiltersA5.filters-open-a5{margin:0 0 22px;padding:18px;gap:12px;border-radius:15px}
+#page-guests #guestCountStatusV178{margin:22px 0 14px;padding:14px 17px}
+#page-guests .guest-table-area-a19{margin-top:0;border-radius:15px}
+@media(max-width:850px){#page-guests #guestStatsV178 .guest-stat-grid-v178{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){#page-guests #guestStatsV178{gap:14px;margin:18px 0 22px}#page-guests #guestStatsV178 .guest-stat-section-v178{padding:13px}#page-guests #guestStatsV178 .guest-stat-grid-v178{gap:8px}#page-guests #guestStatsV178 .guest-stat-card-v178{padding:10px;min-height:62px}#page-guests #guestStatsV178 .guest-stat-card-v178 strong{font-size:1.35rem}}
+
+/* A19P2 draft templates */
+#page-messages .tpl-note{color:var(--muted);margin:14px 0}#page-messages label{display:block;margin:12px 0}#page-messages input,#page-messages select,#page-messages textarea{display:block;width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:10px;margin-top:6px}#page-messages .tpl-row{padding:12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}#page-messages .tpl-preview{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--card2);border:1px solid var(--line);padding:20px;border-radius:12px;min-height:70px}#page-messages [hidden]{display:none!important}
+
+/* A19P2F3: consistent compact template dialog and zebra rows */
+#page-messages .tpl-row:nth-child(even){background:var(--card2)}
+#page-messages .tpl-row:nth-child(odd){background:var(--card)}
+#page-messages .tpl-row:hover{filter:brightness(1.08)}
+#page-messages .tpl-row{cursor:pointer;border-radius:6px}
+#page-messages .tpl-row-actions{display:flex;gap:7px}
+#page-messages .tpl-row-actions button{min-width:38px;padding:6px 9px}
+#page-messages .tpl-required{color:#ef4444;font-weight:800}
+#page-messages .tpl-shade{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center;padding:16px}
+#page-messages .tpl-dialog{width:min(650px,100%);max-height:90vh;overflow-y:auto;margin:0;padding:18px 22px;border-radius:16px}
+#page-messages .tpl-dialog .grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+#page-messages .tpl-spinner{display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:tpl-spin .7s linear infinite;vertical-align:middle;margin-inline-end:7px}
+@keyframes tpl-spin{to{transform:rotate(360deg)}}
+#page-messages .tpl-row-actions .danger{color:#ef6b72}
+
+/* A19P2F4: match guest action colors and show saved image in both views. */
+#page-messages .tpl-row-actions .guest-icon-action-v179.edit{color:#36c987}
+#page-messages .tpl-row-actions .guest-icon-action-v179.delete{color:#ef6969}
+#page-messages .tpl-image-preview{display:block;max-width:100%;max-height:240px;object-fit:contain;margin:10px auto;border-radius:10px;border:1px solid var(--line)}
+#page-messages .tpl-image-preview[hidden]{display:none!important}

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ניהול אירועים</title>
-  <link rel="stylesheet" href="./css/styles.css?v=1.1.90A16">
+  <link rel="stylesheet" href="./css/styles.css?v=1.1.90A19P1">
   <!-- V1.1.5: embedded CSS fallback. Keeps the UI styled even if hosting/path setup blocks the external CSS file. -->
   <style id="embeddedStylesV1112">
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
@@ -1078,6 +1078,20 @@ body.light #loginOverlay .login-field input{color-scheme:light}
 .seating-confirm-v171 .event-save-status.success{color:#16a34a!important;font-weight:800}
 .seating-confirm-v171 .event-save-status.error{color:#ef4444!important;font-weight:800}
 
+
+/* A19 P1 — distinct guest dashboard, filters and list; overrides compact A18 rules. */
+#page-guests #guestStatsV178{display:grid;grid-template-columns:1fr;gap:18px;margin:24px 0 28px}
+#page-guests #guestStatsV178 .guest-stat-section-v178{display:block;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:0 5px 18px rgba(0,0,0,.08)}
+#page-guests #guestStatsV178 .guest-stat-section-v178 h2{font-size:1.04rem;margin:0 0 14px;min-width:0}
+#page-guests #guestStatsV178 .guest-stat-grid-v178{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+#page-guests #guestStatsV178 .guest-stat-card-v178{min-height:70px;padding:12px;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;border-radius:11px}
+#page-guests #guestStatsV178 .guest-stat-card-v178 strong{font-size:1.65rem}
+#page-guests #guestFiltersToggleA5{margin:0 0 12px;padding:15px 18px;border-radius:15px}
+#page-guests #guestFiltersA5.filters-open-a5{margin:0 0 22px;padding:18px;gap:12px;border-radius:15px}
+#page-guests #guestCountStatusV178{margin:22px 0 14px;padding:14px 17px}
+#page-guests .guest-table-area-a19{margin-top:0;border-radius:15px}
+@media(max-width:850px){#page-guests #guestStatsV178 .guest-stat-grid-v178{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){#page-guests #guestStatsV178{gap:14px;margin:18px 0 22px}#page-guests #guestStatsV178 .guest-stat-section-v178{padding:13px}#page-guests #guestStatsV178 .guest-stat-grid-v178{gap:8px}#page-guests #guestStatsV178 .guest-stat-card-v178{padding:10px;min-height:62px}#page-guests #guestStatsV178 .guest-stat-card-v178 strong{font-size:1.35rem}}
 </style>
 </head>
 <body>
@@ -1091,7 +1105,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
     <button data-page="events">אירועים</button>
     <button data-page="guests">מוזמנים</button>
     <button data-page="seating">ניהול שולחנות</button>
-    <button data-page="messages">הודעות</button>
+    <button data-page="messages" data-role="Admin">תבניות WhatsApp</button>
     <button data-page="about">אודות</button>
     <button data-page="activity" data-role="Admin">יומן פעילות</button>
     <button data-page="admin" data-role="Admin">ניהול</button>
@@ -1160,11 +1174,11 @@ body.light #loginOverlay .login-field input{color-scheme:light}
 
   <section id="page-guests" class="page">
     <div class="page-head"><h1>מוזמנים</h1><div class="guest-page-actions"><button class="secondary" id="guestTemplateBtn">תבנית Excel</button><button class="secondary" id="guestExportBtn">ייצוא Excel</button><button class="secondary" id="guestImportBtn">ייבוא Excel</button><button type="button" class="danger" id="resetEventGuestsV1190A10" hidden>איפוס מוזמנים באירוע</button><button class="primary" id="addGuestBtn">+ הוספת מוזמן</button><input id="guestImportFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></div></div>
-    <div class="guest-stat-sections-v178" id="guestStatsV178" aria-label="סטטיסטיקות מוזמנים">
+    <div class="guest-stat-sections-v178 guest-area-a19" id="guestStatsV178" aria-label="סטטיסטיקות מוזמנים">
       <section class="guest-stat-section-v178"><h2>אישורי הגעה</h2><div class="guest-stat-grid-v178" id="guestRsvpStatsV178"></div></section>
       <section class="guest-stat-section-v178"><h2>שיוך לשולחנות</h2><div class="guest-stat-grid-v178" id="guestSeatingStatsV178"></div></section>
     </div>
-    <button type="button" id="guestFiltersToggleA5" class="guest-filters-toggle-a5" aria-controls="guestFiltersA5" aria-expanded="false">⚲ <span>הצג סינון</span> <span aria-hidden="true">▾</span></button>
+    <button type="button" id="guestFiltersToggleA5" class="guest-filters-toggle-a5 guest-area-a19" aria-controls="guestFiltersA5" aria-expanded="false">⚲ <span>הצג סינון</span> <span aria-hidden="true">▾</span></button>
     <div class="filters" id="guestFiltersA5">
       <div class="search-field">
         <span class="search-icon" aria-hidden="true">⌕</span>
@@ -1178,7 +1192,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       <button type="button" id="clearGuestFiltersV180" class="guest-clear-filters-v180" aria-label="נקה סינון" title="נקה את כל הסינונים והחיפוש"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16l-6 7v5l-4 2v-7z"/><path d="m16 17 5 5m0-5-5 5"/></svg><span>נקה סינון</span></button>
     </div>
     <div id="guestCountStatusV178" class="guest-count-status-v178" role="status" aria-live="polite"></div>
-    <div class="table-wrap">
+    <div class="table-wrap guest-table-area-a19">
       <table class="guests-table">
         <thead><tr>
           <th class="sortable" data-sort="name" tabindex="0">שם <span class="sort-icon">↕</span></th>
@@ -1225,7 +1239,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       </div>
     </div>
   </section>
-  <section id="page-messages" class="page"><h1>הודעות WhatsApp</h1><div class="empty">שלב התשתית מוכן. חיבור Meta WhatsApp Cloud API יתווסף בגרסה מתקדמת לאחר ייצוב מאגר המוזמנים.</div></section>
+  <section id="page-messages" class="page"><div class="page-head"><h1>ניהול תבניות WhatsApp</h1><button class="primary" id="tplNew">תבנית חדשה</button></div><p class="tpl-note">טיוטות בלבד — שמירה כאן אינה מעדכנת תבניות מאושרות ב־Meta ואינה שולחת הודעות.</p><div id="tplNotice" role="status"></div><div class="panel"><div id="tplList">טוען תבניות…</div></div><div class="tpl-shade" id="tplShade" hidden><div class="panel tpl-dialog" id="tplEditor" role="dialog" aria-modal="true"><h2 id="tplEditorTitle">עריכת תבנית</h2><div id="tplEditorNotice" role="status"></div><div class="grid"><label>שם תבנית <span class="tpl-required">*</span><input id="tplName" maxlength="120" required></label><label>סוג אירוע<select id="tplEventType"><option value="">כל סוגי האירועים</option></select></label><label>מטרה<select id="tplPurpose"><option value="invitation">הזמנה</option><option value="reminder">תזכורת</option><option value="confirmation">אישור</option><option value="thanks">תודה</option></select></label><label>שם תבנית מאושרת ב־Meta<input id="tplMetaName" placeholder="אופציונלי — לא נשלח עדיין"></label><label>קטגוריית Meta<select id="tplMetaCategory"><option value="">לא אומתה</option><option value="Marketing">Marketing</option><option value="Utility">Utility</option><option value="Authentication">Authentication</option></select></label></div><label>הוספת משתנה <select id="tplVariable"><option value="">בחר משתנה</option><option value="{{שם_המוזמן}}">שם המוזמן</option><option value="{{שם_האירוע}}">שם האירוע</option><option value="{{תאריך_האירוע}}">תאריך האירוע</option><option value="{{שעת_האירוע}}">שעת האירוע</option><option value="{{מקום_האירוע}}">מקום האירוע</option><option value="{{קישור_RSVP}}">קישור RSVP</option></select></label><label>נוסח ההודעה <span class="tpl-required">*</span><textarea id="tplBody" rows="7" maxlength="3500"></textarea></label><div class="actions"><button class="primary" id="tplSave">שמור טיוטה</button><button class="secondary" id="tplCancel">ביטול</button></div><div id="tplImageArea" hidden><label>תמונת תבנית (PNG/JPG/WEBP, עד 4MB)<input type="file" id="tplImage" accept="image/png,image/jpeg,image/webp"></label><div id="tplImageInfo"></div><img id="tplImagePreview" class="tpl-image-preview" alt="תמונת התבנית" hidden><button type="button" class="secondary" id="tplReplaceImage">החלף תמונה</button><button type="button" class="secondary" id="tplRemoveImage">הסר תמונה</button></div><h3>תצוגה מקדימה — דוגמה בלבד</h3><div class="tpl-preview" id="tplPreview"><div id="tplPreviewText"></div><img id="tplImageView" class="tpl-image-preview" alt="תמונת ההודעה" hidden></div></div></div></section>
 
   <section id="page-about" class="page">
     <div class="about-hero">
@@ -1294,6 +1308,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
 <script src="js/version.js?v=1.1.90A16"></script>
 <script src="js/session.js?v=1.1.77"></script>
 <script src="js/api.js?v=1.1.36"></script>
-<script src="js/app.js?v=1.1.90A16"></script>
+<script src="js/app.js?v=1.1.90A19P2"></script>
+<script src="js/templates.js?v=1.1.90A19P2F2"></script>
 </body>
 </html>
