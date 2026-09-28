@@ -1,3 +1,4 @@
+/* V1.1.90A19P2F13 */
 // A19P2F3 — Admin draft templates only; no Meta changes or sending.
 let tplRowsA19P2=[],tplEditingA19P2=null,tplBusyA19P2=false,tplViewA19P2=false;
 const tplEl=id=>document.getElementById(id);

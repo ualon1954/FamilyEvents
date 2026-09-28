@@ -1,3 +1,4 @@
+/* V1.1.90A19P2F13 */
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Hebrew",sans-serif;background:var(--bg);color:var(--text)}
 body.light{--bg:#f5f7fa;--card:#fff;--card2:#eef2f6;--text:#18212b;--muted:#65727e;--line:#d8dee4}

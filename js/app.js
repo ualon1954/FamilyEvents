@@ -1,3 +1,4 @@
+/* V1.1.90A19P2F13 */
 let state={
   session:null,events:[],eventTypes:[],guests:[],tables:[],activity:[],activeEventId:null,
   guestSort:{key:"name",dir:"asc"},

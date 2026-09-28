@@ -1,21 +1,11 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-
-set "PROJECT_VERSION=V1.1.90A19P2F12"
-
-echo =================================================
-echo Family Events Management - GitHub publish
-echo Version: %PROJECT_VERSION%
-echo =================================================
-echo.
+set "PROJECT_VERSION=V1.1.90A19P2F13"
 
 if not exist ".git\\" (
-  echo ERROR: .git folder was not found in:
-  echo %CD%
-  echo.
-  echo Extract this GITHUB ZIP into the ROOT of the existing local Git repository.
-  echo Do not delete the .git folder.
+  echo ERROR: .git folder was not found.
+  echo Copy this GITHUB package into the ROOT of the existing local Git repository.
   pause
   exit /b 1
 )
@@ -27,42 +17,30 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo [1/4] Repository status...
-git status --short
-if errorlevel 1 goto :error
-
-echo.
-echo [2/4] Staging new, changed and deleted files...
+echo Publishing %PROJECT_VERSION%...
 git add -A
 if errorlevel 1 goto :error
 
-echo.
-echo [3/4] Creating commit...
 git diff --cached --quiet
 if not errorlevel 1 (
-  echo No changes to publish. Repository is already synchronized.
-  goto :done
+  echo No changes to publish.
+  pause
+  exit /b 0
 )
 
-git commit -m "Family Events Management %PROJECT_VERSION%"
+git commit -m "%PROJECT_VERSION%"
+if errorlevel 1 goto :error
+
+git push origin main
 if errorlevel 1 goto :error
 
 echo.
-echo [4/4] Pushing to GitHub...
-git push
-if errorlevel 1 goto :error
-
-echo.
-echo SUCCESS: GitHub repository published with %PROJECT_VERSION%.
-goto :done
+echo SUCCESS: %PROJECT_VERSION% published.
+pause
+exit /b 0
 
 :error
 echo.
 echo ERROR: Publish stopped. Review the message above.
 pause
 exit /b 1
-
-:done
-echo.
-pause
-exit /b 0
