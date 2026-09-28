@@ -34,9 +34,10 @@ function showPage(name){
   $$(".page").forEach(x=>x.classList.remove("active"));
   $("#page-"+name)?.classList.add("active");
   $$("#mainNav [data-page]").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===name));
-  const labels={home:"ראשי",dashboard:"לוח בקרה",events:"אירועים",guests:"מוזמנים",seating:"ניהול שולחנות",messages:"הודעות",about:"אודות",activity:"יומן פעילות",admin:"ניהול"};
+  const labels={home:"ראשי",dashboard:"לוח בקרה",events:"אירועים",guests:"מוזמנים",seating:"ניהול שולחנות",messages:"תבניות WhatsApp",about:"אודות",activity:"יומן פעילות",admin:"ניהול"};
   const pageName=$("#mobilePageName"); if(pageName) pageName.textContent=labels[name]||"";
   if(name==="admin") renderAdmin();
+  if(name==="messages") tplLoadA19P2();
   if(name==="seating") loadSeatingV170_();
   if(name==="guests"&&canManageTables_())loadSeatingV170_();
   if(name==="guests"&&state.activeEventId){
@@ -359,15 +360,17 @@ function filteredGuests(){
   const type=eventTypeById(activeEvent()?.eventTypeId),sideEnabled=!!type&&isTrue(type.usesSides,false),groupEnabled=!!type&&isTrue(type.usesGroups,false);
   const q=$("#guestSearch").value.trim().toLowerCase(),side=sideEnabled?$("#sideFilter").value:"",group=groupEnabled?$("#groupFilter").value:"",status=$("#statusFilter").value;
   const rows=state.guests.filter(g=>String(g.eventId)===String(state.activeEventId)&&(!q||(String(g.name||"")+" "+String(g.phone||"")).toLowerCase().includes(q))&&(!side||String(g.sideId||g.side)===String(side))&&(!group||String(g.groupId||g.group)===String(group))&&(!status||String(g.rsvpStatus||g.status)===String(status)));
-  const seatingStatus=$('#guestSeatingFilterV174')?.value||'',tableFilter=$('#guestTableFilterV174')?.value||'';
+  const seatingStatus=$('#guestSeatingFilterV174')?.value||'',tableFilter=$('#guestTableFilterV174')?.value||'',sendFilter=$('#guestSendFilterA19P2F6')?.value||'';
   const st=state.seating?.eventId===String(state.activeEventId)?state.seating:null;
   const filtered=rows.filter(g=>{
+    if(sendFilter && guestSendChecked(g)!==(sendFilter==='yes'))return false;
     if(!seatingStatus&&!tableFilter)return true;
     const sg=st?.guests.find(x=>String(x.guestId)===String(g.guestId||g.id));
     if(seatingStatus==='UNASSIGNED'&&Number(g.confirmedCount)<=0)return false;
     if(seatingStatus==='NOT_REQUIRED'&&Number(g.confirmedCount)>0)return false;
     if(seatingStatus==='REMAINING'&&!(Number(g.confirmedCount)>Number(sg?.assignedCount||0)))return false;
-    if(seatingStatus&&seatingStatus!=='NOT_REQUIRED'&&seatingStatus!=='REMAINING'&&(!sg||sg.seatingStatus!==seatingStatus))return false;
+    if(seatingStatus==='UNASSIGNED' && sg && sg.seatingStatus!=='UNASSIGNED')return false;
+    if(seatingStatus&&seatingStatus!=='UNASSIGNED'&&seatingStatus!=='NOT_REQUIRED'&&seatingStatus!=='REMAINING'&&(!sg||sg.seatingStatus!==seatingStatus))return false;
     if(tableFilter&&!st?.assignments.some(a=>String(a.guestId)===String(g.guestId||g.id)&&String(a.tableId)===tableFilter))return false;
     return true;
   });
@@ -378,7 +381,7 @@ function renderGuestStatsV178_(visible){
   const all=state.guests.filter(g=>String(g.eventId)===String(state.activeEventId));
   const statusEl=$('#guestCountStatusV178');
   if(statusEl){
-    const filters=['guestSearch','sideFilter','groupFilter','statusFilter','guestSeatingFilterV174','guestTableFilterV174'];
+    const filters=['guestSearch','sideFilter','groupFilter','statusFilter','guestSeatingFilterV174','guestTableFilterV174','guestSendFilterA19P2F6'];
     const active=filters.some(id=>!!$('#'+id)?.value);
     const clearButton=$('#clearGuestFiltersV180');
     if(clearButton){clearButton.classList.toggle('has-active-filters-v182',active);clearButton.setAttribute('aria-pressed',String(active));clearButton.title=active?'נקה את הסינונים הפעילים והחיפוש':'אין סינונים פעילים';}
@@ -491,6 +494,7 @@ function renderGuests(){
     <td class="guest-row-actions-v179">${state.session?.role==='Admin'?`<button type="button" class="guest-icon-action-v179" data-wa-test="${esc(g.guestId||g.id)}" title="שליחת הזמנת ניסיון ב-WhatsApp למוזמן יחיד" aria-label="שליחת הזמנת ניסיון אל ${esc(g.name)}">💬</button>`:''}<button type="button" class="guest-icon-action-v179" data-rsvp-link="${esc(g.guestId||g.id)}" title="העתק קישור אישור הגעה" aria-label="העתק קישור אישור הגעה עבור ${esc(g.name)}">🔗</button><button type="button" class="guest-icon-action-v179 edit" data-edit-guest="${esc(g.guestId||g.id)}" title="עריכה" aria-label="עריכת ${esc(g.name)}">✎</button><button type="button" class="guest-icon-action-v179 delete" data-delete-guest="${esc(g.guestId||g.id)}" title="מחיקת מוזמן" aria-label="מחיקת ${esc(g.name)}" ${guestCanDeleteV179_(g)?"":"disabled"}>🗑</button></td></tr>`}).join("");
   const resetBtn=$('#resetEventGuestsV1190A10');
   if(resetBtn){resetBtn.hidden=state.session?.role!=="Admin"||!state.activeEventId;resetBtn.disabled=!visibleGuestsV178.length&&!state.guests.some(g=>String(g.eventId)===String(state.activeEventId));}
+  const bulkBtn=$('#guestWhatsAppBulkA19P2F6');if(bulkBtn)bulkBtn.hidden=state.session?.role!=='Admin'||!state.activeEventId;
   updateGuestSortUI();
 }
 function updateGuestSortUI(){
@@ -1170,6 +1174,56 @@ async function repairEventTypeAssignmentsUi_(){
   }catch(err){if(el){el.textContent=err?.message||String(err);el.className="event-save-status error";}else showToast(err?.message||String(err),"error")}
 }
 
+/* A19P2F7 — safe test-mode preparation. No batch delivery endpoint is called. */
+function openGuestWhatsAppPreparationA19P2F6_(){
+  if(state.session?.role!=='Admin'||!state.activeEventId)return;
+  const filter=$('#guestSendFilterA19P2F6');filter.value='yes';
+  renderGuests();
+  const rows=filteredGuests();
+  const eligible=rows.filter(g=>!!waPhonePreviewV1190A16_(g.phone));
+  const invalid=rows.filter(g=>!waPhonePreviewV1190A16_(g.phone));
+  modal(`<section role="dialog" aria-labelledby="waBulkTitleA19P2F7"><h2 id="waBulkTitleA19P2F7">הכנת שליחת WhatsApp — מצב בדיקה</h2>
+    <p>סינון ״שליחה״ הוגדר ל״כן״. יתר הסינונים נשמרו.</p>
+    <p><b>רשומות מוצגות:</b> ${rows.length} · <b>מספרים תקינים:</b> ${eligible.length} · <b>מספרים לא תקינים:</b> ${invalid.length}</p>
+    ${invalid.length?`<p>יש לתקן מספרי טלפון עבור: ${invalid.slice(0,10).map(g=>esc(g.name||'ללא שם')).join('، ')}${invalid.length>10?'…':''}</p>`:''}
+    <div class="form-grid"><label>מצב שליחה<select id="waF7Mode"><option value="test">בדיקה — רק למספר הבדיקה</option></select></label>
+    <label>מספר טלפון לבדיקה <span class="required-star">*</span><input id="waF7Phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="05XXXXXXXX" dir="ltr"></label>
+    <label>כמות הודעות לבדיקה<select id="waF7Count">${[1,3,5,10].map(n=>`<option value="${n}" ${n>eligible.length?'disabled':''}>${n}</option>`).join('')}</select></label>
+    <label>מוזמן לבדיקת ההזמנה <span class="required-star">*</span><select id="waF10Guest">${eligible.map((g,i)=>`<option value="${i}">${esc(g.name||'ללא שם')} · ${esc(g.phone||'')}</option>`).join('')}</select></label></div>
+    <p id="waF7Summary" class="wa-confirm-status-v1190a16" role="status"></p>
+    <p class="wa-confirm-status-v1190a16">שליחה אמיתית זמינה כרגע להודעת בדיקה אחת בלבד, למספר הבדיקה. Meta עשויה לקבל את הבקשה בלי שההודעה נמסרה. סטטוס המוזמנים לא ישתנה.</p>
+    <div class="actions"><button type="button" class="secondary" id="waF7Close">סגור</button><button type="button" class="primary" id="waF7Review">בדוק הגדרות</button><button type="button" class="primary" id="waF8Send" disabled>שלח הודעת בדיקה אחת</button></div></section>`);
+  const phone=$('#waF7Phone'),count=$('#waF7Count'),summary=$('#waF7Summary'),guestChoice=$('#waF10Guest');
+  const selectedGuest=()=>eligible[Number(guestChoice?.value||0)];
+  const refresh=()=>{const to=waPhonePreviewV1190A16_(phone.value),n=Number(count.value);summary.textContent=!to?'יש להזין מספר בדיקה תקין.':n>eligible.length?'אין מספיק מוזמנים כשירים לכמות שנבחרה.':`מצב בדיקה: ${n} הודעות מיועדות למספר ${to} בלבד. הזמנה עבור: ${selectedGuest()?.name||'—'}. השליחה תתאפשר רק לאחר אישור מפורש, ובהודעה אחת בלבד.`;};
+  const sendTest=$('#waF8Send');
+  const refreshSend=()=>{const g=selectedGuest(),to=waPhonePreviewV1190A16_(phone.value);sendTest.disabled=!to||Number(count.value)!==1||!g;};
+  phone.addEventListener('input',()=>{refresh();refreshSend()});count.addEventListener('change',()=>{refresh();refreshSend()});guestChoice.addEventListener('change',()=>{refresh();refreshSend()});refresh();refreshSend();
+  $('#waF7Close').onclick=closeModal;
+  $('#waF7Review').onclick=()=>{const to=waPhonePreviewV1190A16_(phone.value),n=Number(count.value);if(!to||!n||n>eligible.length){summary.textContent='יש להזין מספר בדיקה תקין ולבחור כמות אפשרית.';return;}summary.textContent=`ההגדרות תקינות: ${n} הודעות למספר ${to} בלבד. בגרסה זו ניתן לשלוח הודעת ניסיון אחת בלבד.`;};
+  sendTest.onclick=async()=>{
+    const to=waPhonePreviewV1190A16_(phone.value),g=selectedGuest();
+    if(!to||Number(count.value)!==1||!g){summary.textContent='בחר הודעה אחת ומספר בדיקה תקין.';return;}
+    if(!confirm(`מצב בדיקה: לשלוח הודעה אחת בלבד אל +${to} עבור המוזמן ${g.name||''}? השליחה תתבצע רק למספר הבדיקה שהוזן.`))return;
+    sendTest.disabled=true;$('#waF7Review').disabled=true;$('#waF7Close').disabled=true;sendTest.textContent='שולח הודעת בדיקה…';
+    summary.textContent='שולח בקשה ל־Meta…';summary.className='wa-confirm-status-v1190a16';
+    try{const r=await API.request('sendOneInvitationToTestNumberA19P2F8',{eventId:state.activeEventId,guestId:g.guestId||g.id,testPhone:to});
+      if(r?.accepted!==true)throw new Error('לא התקבל אישור תקין משרת השליחה');
+      const msgId=String(r.messageId||'');
+      const metaStatus=String(r.messageStatus||'accepted');
+      const recipient=String(r.recipient||to);
+      summary.replaceChildren();
+      const heading=document.createElement('strong');heading.textContent='Meta קיבלה את הבקשה — המסירה לטלפון טרם אומתה.';summary.append(heading);
+      for(const [label,value] of [['מספר יעד (Meta)',recipient],['מזהה הודעה (wamid)',msgId||'לא הוחזר'],['סטטוס בקבלה',metaStatus]]){
+        const line=document.createElement('div');line.textContent=label+': '+value;summary.append(line);
+      }
+      const note=document.createElement('div');note.textContent='sent / delivered / failed מחייבים דיווח Webhook של Meta; מסך זה עדיין אינו מקבל דיווחי מסירה. אין לשלוח שוב לפני בירור ההודעה הראשונה.';summary.append(note);
+      summary.className='wa-confirm-status-v1190a16';
+      sendTest.textContent='הבקשה התקבלה ✓';$('#waF7Close').disabled=false;
+    }catch(err){summary.textContent=err?.message||'הבקשה נכשלה. אין ללחוץ שוב לפני בדיקת הטלפון מחשש לשליחה כפולה.';summary.className='wa-confirm-status-v1190a16 error';sendTest.textContent='בדוק את התוצאה לפני ניסיון נוסף';$('#waF7Close').disabled=false;}
+  }; 
+}
+
 /* V1.1.90A16 — one-recipient confirmation, with phone preview and inline status. */
 function waPhonePreviewV1190A16_(phone){
   let raw=String(phone||'').trim().replace(/[\s\-().]/g,'');
@@ -1298,7 +1352,7 @@ document.addEventListener("click",async e=>{
   const dw=e.target.closest(".delete-wa");if(dw&&confirm("למחוק את הגדרת החיבור?")){const started=performance.now();const r=await API.request("deleteWhatsAppConfig",{id:dw.dataset.id});removeLocal_(state.adminData.whatsapp,dw.dataset.id);renderAll();mutationDone_("חיבור WhatsApp נמחק",r,started)}
 });
 
-$("#addEventBtn").onclick=()=>eventForm();$("#addGuestBtn").onclick=()=>{const id=selectedGuestEventId_();id?guestForm({},id):alert("יש ליצור או לבחור אירוע קודם")};$("#guestTemplateBtn").onclick=()=>downloadGuestWorkbook_("guestImportTemplateV148");$("#guestExportBtn").onclick=()=>downloadGuestWorkbook_("guestExportCurrentV148");$("#guestImportBtn").onclick=()=>{if(activeEventForGuestTransfer_())$("#guestImportFile").click()};$("#guestImportFile").onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)handleGuestImportFile_(f)};$("#addTableBtn").onclick=()=>{const ev=activeEvent();if(!ev)return alert("יש ליצור או לבחור אירוע קודם");if(!isTrue(ev.seatingEnabled,true))return alert("ניהול שולחנות אינו מופעל באירוע זה");tableForm()};
+$("#guestWhatsAppBulkA19P2F6").onclick=openGuestWhatsAppPreparationA19P2F6_;$("#addEventBtn").onclick=()=>eventForm();$("#addGuestBtn").onclick=()=>{const id=selectedGuestEventId_();id?guestForm({},id):alert("יש ליצור או לבחור אירוע קודם")};$("#guestTemplateBtn").onclick=()=>downloadGuestWorkbook_("guestImportTemplateV148");$("#guestExportBtn").onclick=()=>downloadGuestWorkbook_("guestExportCurrentV148");$("#guestImportBtn").onclick=()=>{if(activeEventForGuestTransfer_())$("#guestImportFile").click()};$("#guestImportFile").onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)handleGuestImportFile_(f)};$("#addTableBtn").onclick=()=>{const ev=activeEvent();if(!ev)return alert("יש ליצור או לבחור אירוע קודם");if(!isTrue(ev.seatingEnabled,true))return alert("ניהול שולחנות אינו מופעל באירוע זה");tableForm()};
 $("#modalClose").onclick=closeModal;
 /* V1.1.6:
    Do not close an edit/add modal by clicking the backdrop.
@@ -1328,9 +1382,9 @@ $('#guestStatsV178')?.addEventListener('click',e=>{
   select.value=select.value===card.dataset.guestStatValue?'':card.dataset.guestStatValue;
   renderGuests();
 });
-["guestSearch","sideFilter","groupFilter","statusFilter","guestSeatingFilterV174","guestTableFilterV174"].forEach(id=>$("#"+id).addEventListener(id==="guestSearch"?"input":"change",renderGuests));
+["guestSearch","sideFilter","groupFilter","statusFilter","guestSeatingFilterV174","guestTableFilterV174","guestSendFilterA19P2F6"].forEach(id=>$("#"+id).addEventListener(id==="guestSearch"?"input":"change",renderGuests));
 $("#clearGuestFiltersV180")?.addEventListener("click",()=>{
-  ["guestSearch","sideFilter","groupFilter","statusFilter","guestSeatingFilterV174","guestTableFilterV174"].forEach(id=>{const el=$("#"+id);if(el)el.value=""});
+  ["guestSearch","sideFilter","groupFilter","statusFilter","guestSeatingFilterV174","guestTableFilterV174","guestSendFilterA19P2F6"].forEach(id=>{const el=$("#"+id);if(el)el.value=""});
   renderGuests();
 });
 $("#themeBtn").onclick=()=>setTheme(document.body.classList.contains("light")?"dark":"light");
@@ -1464,7 +1518,16 @@ function renderSeatingWorkspaceV170_(){
       return `<tr><td>${esc(g.name)}</td><td>${g.confirmedCount}</td><td>${g.assignedCount}</td><td>${g.remainingCount}</td><td>${labels||'לא שובץ'}</td><td><button type="button" data-seat-guest="${esc(g.guestId)}">${mine.length?'שינוי שיוך':'שיוך'}</button></td></tr>`
     }).join('')||'<tr><td colspan="6">אין מוזמנים שאישרו הגעה</td></tr>'}</tbody></table></div>`;
 }
-function openSeatingGuestV170_(gid){
+async function openSeatingGuestV170_(gid){
+  if(!state.seating||String(state.seating.eventId)!==String(state.activeEventId)){
+    const eid=String(state.activeEventId||'');
+    if(!eid)return showToast('יש לבחור אירוע לפני שיוך שולחנות','error');
+    try{
+      const r=await API.request('seatingStateV169',{eventId:eid});
+      if(eid!==String(state.activeEventId||''))return;
+      state.seating=r;renderTables();renderGuests();
+    }catch(err){showToast('לא ניתן לטעון נתוני שיוך: '+(err.message||String(err)),'error');return}
+  }
   const st=state.seating;
   const g=state.guests.find(x=>String(x.guestId||x.id)===String(gid));
   if(!st||String(st.eventId)!==String(state.activeEventId)||!g){showToast('נתוני המוזמן או השיוך אינם זמינים. נסה לפתוח שוב את רשימת המוזמנים.','error');return}
@@ -1579,7 +1642,7 @@ function guestSeatingCellV174_(g){
     return 'שולחן '+(t?.tableNumber||'—')+' ('+(Number(a.seats)||0)+')';
   }).join(' · ');
   const assigned=Number(sg?.assignedCount)||0;
-  return '<div class="guest-seating-v174"><span>'+assigned+' / '+count+' · '+(names?esc(names):'לא שובץ')+'</span> <button type="button" data-seat-guest="'+esc(gid)+'" '+(!st?'disabled title="טוען שיוכים"':'')+'>'+(mine.length?'שינוי שיוך':'שיוך')+'</button></div>';
+  return '<div class="guest-seating-v174"><span>'+assigned+' / '+count+' · '+(names?esc(names):'לא שובץ')+'</span> <button type="button" data-seat-guest="'+esc(gid)+'" '+'>'+(mine.length?'שינוי שיוך':'שיוך')+'</button></div>';
 }
 function renderGuestSeatingFiltersV174_(){
   const status=$('#guestSeatingFilterV174'),tables=$('#guestTableFilterV174');
