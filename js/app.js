@@ -1,11 +1,13 @@
-/* V1.1.90A19P2F13 */
+/* V1.1.90A19P2F14G */
 let state={
   session:null,events:[],eventTypes:[],guests:[],tables:[],activity:[],activeEventId:null,
   guestSort:{key:"name",dir:"asc"},
   lookups:{sides:[],groups:[],statuses:[]},
   adminData:{users:[],roles:[],permissions:[],whatsapp:[],eventTypes:[]},
+  waSendTemplatesCacheF14G:new Map(),waSendTemplateImagesF14G:new Map(),
   lookupIndex:{sidesByType:{},groupsByType:{},statuses:[],labelMap:{}},
-  adminTab:"eventTypes",adminLookupEventTypeId:null,adminLookupBoundEventId:null,adminLookupManualOverride:false,guestImportPreview:null,guestImportShowAll:false,seating:null
+  adminTab:"eventTypes",adminLookupEventTypeId:null,adminLookupBoundEventId:null,adminLookupManualOverride:false,guestImportPreview:null,guestImportShowAll:false,seating:null,
+  waCostBaseF14:null,waCostPromiseF14:null
 };
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -55,7 +57,7 @@ function applyRole(){
   $$("#mainNav [data-page]").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===currentPage));
 }
 function saveSession(){localStorage.setItem(SESSION_CONFIG.SESSION_KEY,JSON.stringify(state.session))}
-function clearSession(){localStorage.removeItem(SESSION_CONFIG.SESSION_KEY);state.session=null;$("#loginOverlay").classList.add("show")}
+function clearSession(){localStorage.removeItem(SESSION_CONFIG.SESSION_KEY);state.session=null;state.waCostBaseF14=null;state.waCostPromiseF14=null;$("#loginOverlay").classList.add("show")}
 function restoreSession(){try{const s=JSON.parse(localStorage.getItem(SESSION_CONFIG.SESSION_KEY));if(s&&s.expiresAt>Date.now())state.session=s;else clearSession()}catch{clearSession()}}
 function setUser(){if(!state.session)return;$("#userName").textContent=state.session.name;$("#userBubble").textContent=(state.session.name||"?")[0].toUpperCase();applyRole()}
 function setTheme(t){document.body.classList.toggle("light",t==="light");localStorage.setItem(APP_CONFIG.THEME_KEY,t);const b=$("#themeBtn");if(b)b.textContent="◐";const icon=$("#loginThemeIcon"),label=$("#loginThemeLabel"),loginBtn=$("#loginThemeBtn");if(icon)icon.textContent=t==="light"?"☾":"☀";if(label)label.textContent=t==="light"?"מצב כהה":"מצב בהיר";if(loginBtn)loginBtn.setAttribute("aria-label",t==="light"?"מעבר למצב כהה":"מעבר למצב בהיר")}
@@ -108,7 +110,26 @@ function mutationDone_(message,r,started){
 }
 
 
+async function getWaCostEstimateCachedF14_(count=1){
+  const n=Math.max(0,Number(count)||0);
+  if(!state.waCostBaseF14){
+    if(!state.waCostPromiseF14){
+      state.waCostPromiseF14=API.request('getWhatsAppCostEstimateF14',{count:1,category:'Marketing'})
+        .then(r=>{state.waCostBaseF14=r?.estimate||null;return state.waCostBaseF14;})
+        .finally(()=>{state.waCostPromiseF14=null;});
+    }
+    await state.waCostPromiseF14;
+  }
+  const b=state.waCostBaseF14;
+  if(!b)return null;
+  const unit=b.unitUsd==null?null:Number(b.unitUsd);
+  const fx=b.usdIls==null?null:Number(b.usdIls);
+  return {...b,count:n,estimatedUsd:unit==null?null:unit*n,estimatedIls:(unit==null||fx==null)?null:unit*n*fx};
+}
+
 async function bootstrap(){
+  // F14: warm the WhatsApp cost cache once per login/session. Repeated bootstrap calls reuse it.
+  getWaCostEstimateCachedF14_(1).catch(()=>{});
   // V1.1.63: start both requests together, but populate the event selector as soon as
   // either request returns an event list. The selector no longer waits for the large
   // bootstrap payload (guests/admin/activity) to finish.
@@ -492,10 +513,10 @@ function renderGuests(){
     <td data-col="invitedCount">${g.invitedCount||g.partySize||1}</td><td data-col="confirmedCount">${g.confirmedCount||0}</td><td data-col="rsvpStatus"><span class="badge ${esc(status)}">${esc(statusText(status))}</span></td>
     <td data-col="seating">${guestSeatingCellV174_(g)}</td>
     <td class="send-cell"><input class="guest-send-toggle" data-send-guest="${g.guestId||g.id}" type="checkbox" ${guestSendChecked(g)?"checked":""} aria-label="שליחה ב-WhatsApp"></td>
-    <td class="guest-row-actions-v179">${state.session?.role==='Admin'?`<button type="button" class="guest-icon-action-v179" data-wa-test="${esc(g.guestId||g.id)}" title="שליחת הזמנת ניסיון ב-WhatsApp למוזמן יחיד" aria-label="שליחת הזמנת ניסיון אל ${esc(g.name)}">💬</button>`:''}<button type="button" class="guest-icon-action-v179" data-rsvp-link="${esc(g.guestId||g.id)}" title="העתק קישור אישור הגעה" aria-label="העתק קישור אישור הגעה עבור ${esc(g.name)}">🔗</button><button type="button" class="guest-icon-action-v179 edit" data-edit-guest="${esc(g.guestId||g.id)}" title="עריכה" aria-label="עריכת ${esc(g.name)}">✎</button><button type="button" class="guest-icon-action-v179 delete" data-delete-guest="${esc(g.guestId||g.id)}" title="מחיקת מוזמן" aria-label="מחיקת ${esc(g.name)}" ${guestCanDeleteV179_(g)?"":"disabled"}>🗑</button></td></tr>`}).join("");
+    <td class="guest-row-actions-v179">${state.session?.role==='Admin'?`<button type="button" class="guest-icon-action-v179" data-wa-test="${esc(g.guestId||g.id)}" title="שליחת הזמנת ניסיון ב-WhatsApp למוזמן יחיד" aria-label="שליחת הזמנת ניסיון אל ${esc(g.name)}"><svg class="wa-guest-icon-f14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#25D366"/><path d="M8.2 6.9c.3-.3.7-.4 1-.2l1.4 2.1c.2.3.2.7 0 1l-.7.8c.7 1.5 1.9 2.7 3.4 3.4l.8-.7c.3-.2.7-.2 1 0l2.1 1.4c.3.2.4.7.2 1-1 1.7-2.6 2.2-4.5 1.6-3.3-1-5.9-3.6-6.9-6.9-.6-1.9-.1-3.5 1.6-4.5.2-.1.4-.1.6 0z" fill="white"/></svg></button>`:''}<button type="button" class="guest-icon-action-v179" data-rsvp-link="${esc(g.guestId||g.id)}" title="העתק קישור אישור הגעה" aria-label="העתק קישור אישור הגעה עבור ${esc(g.name)}">🔗</button><button type="button" class="guest-icon-action-v179 edit" data-edit-guest="${esc(g.guestId||g.id)}" title="עריכה" aria-label="עריכת ${esc(g.name)}">✎</button><button type="button" class="guest-icon-action-v179 delete" data-delete-guest="${esc(g.guestId||g.id)}" title="מחיקת מוזמן" aria-label="מחיקת ${esc(g.name)}" ${guestCanDeleteV179_(g)?"":"disabled"}>🗑</button></td></tr>`}).join("");
   const resetBtn=$('#resetEventGuestsV1190A10');
   if(resetBtn){resetBtn.hidden=state.session?.role!=="Admin"||!state.activeEventId;resetBtn.disabled=!visibleGuestsV178.length&&!state.guests.some(g=>String(g.eventId)===String(state.activeEventId));}
-  const bulkBtn=$('#guestWhatsAppBulkA19P2F6');if(bulkBtn)bulkBtn.hidden=state.session?.role!=='Admin'||!state.activeEventId;
+  const bulkBtn=$('#guestWhatsAppBulkA19P2F6'),testBtn=$('#guestWhatsAppTestBulkF14C');if(bulkBtn)bulkBtn.hidden=state.session?.role!=='Admin'||!state.activeEventId;if(testBtn)testBtn.hidden=state.session?.role!=='Admin'||!state.activeEventId;
   updateGuestSortUI();
 }
 function updateGuestSortUI(){
@@ -823,12 +844,12 @@ function guestForm(g={},forcedEventId=''){
   const isNew=!isEdit,send=isNew?true:guestSendChecked(g);
   const sideSelected=isEdit?(g.sideId||''):'';
   const groupSelected=isEdit?(g.groupId||''):'';
-  const sideField=showSides?`<label>צד<select name="sideId" required><option value="">בחר צד...</option>${scopedOptionHtml('sides',scopedSides,sideSelected)}</select></label>`:'';
-  const groupField=showGroups?`<label>קבוצה<select name="groupId" required><option value="">בחר קבוצה...</option>${scopedOptionHtml('groups',scopedGroups,groupSelected)}</select></label>`:'';
+  const sideField=showSides?`<label>צד <span class="required-star">*</span><select name="sideId" required><option value="">בחר צד...</option>${scopedOptionHtml('sides',scopedSides,sideSelected)}</select></label>`:'';
+  const groupField=showGroups?`<label>קבוצה <span class="required-star">*</span><select name="groupId" required><option value="">בחר קבוצה...</option>${scopedOptionHtml('groups',scopedGroups,groupSelected)}</select></label>`:'';
   const status=g.rsvpStatus||g.status||'Pending',invited=g.invitedCount||g.partySize||1,confirmed=(g.confirmedCount??(status==='Confirmed'?invited:0));
   modal(`<h2>${(g.guestId||g.id)?'עריכת':'הוספת'} מוזמן</h2><p class="guest-event-context"><b>אירוע:</b> ${esc(ev?.name||'—')} · <b>סוג:</b> ${esc(type?.name||'—')} <small>(${showSides?scopedSides.length:0} צדדים · ${showGroups?scopedGroups.length:0} קבוצות)</small></p><form id="guestForm" class="form-grid" onsubmit="return false;">
   <input type="hidden" name="eventId" value="${esc(eventId)}">
-  <label>שם <span class="required-star">*</span><input name="name" required value="${esc(g.name||'')}"></label><label>טלפון <span class="required-star">*</span><input name="phone" required inputmode="tel" placeholder="0501234567" value="${esc(g.phone||'')}"></label>
+  <label>שם <span class="required-star">*</span><input name="name" required value="${esc(g.name||'')}"></label><label>טלפון <span class="required-star">*</span><input name="phone" required inputmode="tel" placeholder="0501234567" value="${esc(g.phone||'')}"></label><label>פנייה אישית <span class="required-star">*</span><input name="invitationGreeting" required maxlength="120" placeholder="לדוגמה: משפחת כהן היקרה" value="${esc(g.invitationGreeting||'')}"></label>
   ${sideField}${groupField}
   <label>מספר מוזמנים <span class="required-star">*</span><input name="invitedCount" type="number" min="1" step="1" required value="${invited}"></label>
   <label>מספר שאישרו<input name="confirmedCount" type="number" min="0" step="1" value="${confirmed}"></label>
@@ -849,7 +870,7 @@ function guestDetails(g){
   if(type&&isTrue(type.usesGroups,false))parts.push(`<b>קבוצה:</b> ${esc(labelFor("groups",g.groupId||g.group,activeEvent()?.eventTypeId))}`);
   modal(`<h2>${esc(g.name)}</h2><p><b>Guest ID:</b> ${esc(g.guestId||g.id)}</p><p><b>טלפון:</b> ${esc(g.phone)}</p>${parts.length?`<p>${parts.join(" | ")}</p>`:""}
   <p><b>מספר מוזמנים:</b> ${g.invitedCount||g.partySize||1} · <b>אישרו:</b> ${g.confirmedCount||0}</p><p><b>סטטוס:</b> ${esc(statusText(status))}</p>
-  <p><b>שליחה:</b> ${guestSendChecked(g)?"מסומן — יקבל הודעת WhatsApp":"לא מסומן"}</p><p><b>הערות:</b> ${esc(g.notes||"—")}</p>
+  <p><b>פנייה אישית:</b> ${esc(g.invitationGreeting||"—")}</p><p><b>שליחה:</b> ${guestSendChecked(g)?"מסומן — יקבל הודעת WhatsApp":"לא מסומן"}</p><p><b>הערות:</b> ${esc(g.notes||"—")}</p>
   <div class="actions"><button class="primary" id="detailEdit">עריכה</button><button class="danger" id="detailDelete">מחיקה</button></div>`);
   $("#detailEdit").onclick=()=>guestForm(g);$("#detailDelete").onclick=async()=>{await deleteGuestV179_(g)}
 }
@@ -1175,54 +1196,91 @@ async function repairEventTypeAssignmentsUi_(){
   }catch(err){if(el){el.textContent=err?.message||String(err);el.className="event-save-status error";}else showToast(err?.message||String(err),"error")}
 }
 
-/* A19P2F7 — safe test-mode preparation. No batch delivery endpoint is called. */
-function openGuestWhatsAppPreparationA19P2F6_(){
+/* F14C — WhatsApp test and real group sending. */
+async function waLoadSendTemplatesF14C_(){
+  const eventId=String(state.activeEventId||'');
+  if(!eventId)return [];
+  if(!(state.waSendTemplatesCacheF14G instanceof Map))state.waSendTemplatesCacheF14G=new Map();
+  const cached=state.waSendTemplatesCacheF14G.get(eventId);
+  if(cached)return cached;
+  const pending=API.request('listWhatsAppSendTemplatesF14C',{eventId}).then(r=>Array.isArray(r?.templates)?r.templates:[]).catch(e=>{state.waSendTemplatesCacheF14G.delete(eventId);throw e;});
+  state.waSendTemplatesCacheF14G.set(eventId,pending);
+  return pending;
+}
+function waTemplateByIdF14G_(templates,id){return (templates||[]).find(t=>String(t.id)===String(id))||null;}
+function waPreviewBodyF14G_(template,guest){
+  const greeting=String(guest?.invitationGreeting||'משפחה יקרה').trim()||'משפחה יקרה';
+  return String(template?.body||'').replace(/\{\{\s*(?:פנייה_אישית|1)\s*\}\}/g,greeting);
+}
+async function waTemplateImageSrcF14G_(template){
+  if(!template?.id||!template?.hasImage)return '';
+  if(!(state.waSendTemplateImagesF14G instanceof Map))state.waSendTemplateImagesF14G=new Map();
+  const key=String(template.id),cached=state.waSendTemplateImagesF14G.get(key);if(cached)return cached;
+  const pending=API.request('getMessageTemplateImageA19P2',{id:template.id}).then(r=>{if(!r?.base64||!r?.mime)return '';return `data:${r.mime};base64,${r.base64}`;}).catch(e=>{state.waSendTemplateImagesF14G.delete(key);throw e;});
+  state.waSendTemplateImagesF14G.set(key,pending);return pending;
+}
+async function waRenderPreviewF14G_(container,template,guest){
+  if(!container)return; if(!template){container.innerHTML='<p class="muted">בחר תבנית להצגת Preview.</p>';return;}
+  const greeting=String(guest?.invitationGreeting||'').trim()||'פנייה אישית לדוגמה';
+  container.innerHTML=`<div class="wa-preview-card-f14g"><div class="wa-preview-image-wrap-f14g"><span>טוען תמונת הזמנה…</span></div><div class="wa-preview-body-f14g">${esc(waPreviewBodyF14G_(template,{...guest,invitationGreeting:greeting}))}</div><div class="wa-preview-button-f14g">אישור הגעה</div></div><small class="muted">Preview בלבד — יוצגו נתוני המוזמן הראשון ברשימה.</small>`;
+  try{const src=await waTemplateImageSrcF14G_(template);const wrap=container.querySelector('.wa-preview-image-wrap-f14g');if(!wrap)return;wrap.innerHTML=src?`<img src="${src}" alt="תמונת ההזמנה שנבחרה בתבנית">`:'<span>אין תמונת הזמנה בתבנית</span>';}catch(e){const wrap=container.querySelector('.wa-preview-image-wrap-f14g');if(wrap)wrap.innerHTML='<span>לא ניתן לטעון את תמונת ההזמנה</span>';}
+}
+function waMetaStatusLabelF14E_(status){const x=String(status||'').trim().toUpperCase();return x==='APPROVED'?'מאושרת':x==='PENDING'?'בבדיקה':x==='REJECTED'?'נדחתה':x==='DRAFT'?'טיוטה':'לא הוגדר';}
+function waTemplateOptionsF14C_(templates){return templates.map(t=>`<option value="${esc(t.id)}" data-approved="${String(t.metaStatus||'').trim().toUpperCase()==='APPROVED'?'1':'0'}">${esc(t.name||t.metaName)} · ${esc(t.metaName)} · ${esc(waMetaStatusLabelF14E_(t.metaStatus))}</option>`).join('')}
+function waSelectedTemplateApprovedF14E_(select){return !!select?.selectedOptions?.[0]&&select.selectedOptions[0].dataset.approved==='1';}
+async function waFillTemplateSelectF14D_(select,status,sendButton){
+  if(!select)return [];
+  select.disabled=true;select.innerHTML='<option value="">טוען תבניות…</option>';if(sendButton)sendButton.disabled=true;
+  try{
+    const templates=await waLoadSendTemplatesF14C_();
+    if(!templates.length){select.innerHTML='<option value="">אין תבנית Meta מקושרת</option>';if(status){status.textContent='לא נמצאה תבנית WhatsApp המקושרת ל־Meta עבור סוג האירוע. יש לעדכן את ״שם התבנית המאושרת ב־Meta״ במסך ניהול התבניות.';status.className='wa-confirm-status-v1190a16 error';}return []}
+    select.innerHTML=waTemplateOptionsF14C_(templates);select.disabled=false;const approved=waSelectedTemplateApprovedF14E_(select);if(status){status.textContent=approved?'':'תבנית V3 מקושרת, אך עדיין אינה מאושרת ב־Meta. ניתן לבדוק את ההכנה בלבד; השליחה תיפתח לאחר APPROVED.';status.className='wa-confirm-status-v1190a16'+(approved?'':' error');}if(sendButton)sendButton.disabled=!approved;return templates;
+  }catch(e){select.innerHTML='<option value="">שגיאה בטעינת תבניות</option>';if(status){status.textContent=e?.message||String(e);status.className='wa-confirm-status-v1190a16 error';}return []}
+}
+async function openGuestWhatsAppPreparationA19P2F6_(){
   if(state.session?.role!=='Admin'||!state.activeEventId)return;
-  const filter=$('#guestSendFilterA19P2F6');filter.value='yes';
-  renderGuests();
-  const rows=filteredGuests();
-  const eligible=rows.filter(g=>!!waPhonePreviewV1190A16_(g.phone));
-  const invalid=rows.filter(g=>!waPhonePreviewV1190A16_(g.phone));
-  modal(`<section role="dialog" aria-labelledby="waBulkTitleA19P2F7"><h2 id="waBulkTitleA19P2F7">הכנת שליחת WhatsApp — מצב בדיקה</h2>
-    <p>סינון ״שליחה״ הוגדר ל״כן״. יתר הסינונים נשמרו.</p>
-    <p><b>רשומות מוצגות:</b> ${rows.length} · <b>מספרים תקינים:</b> ${eligible.length} · <b>מספרים לא תקינים:</b> ${invalid.length}</p>
-    ${invalid.length?`<p>יש לתקן מספרי טלפון עבור: ${invalid.slice(0,10).map(g=>esc(g.name||'ללא שם')).join('، ')}${invalid.length>10?'…':''}</p>`:''}
-    <div class="form-grid"><label>מצב שליחה<select id="waF7Mode"><option value="test">בדיקה — רק למספר הבדיקה</option></select></label>
-    <label>מספר טלפון לבדיקה <span class="required-star">*</span><input id="waF7Phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="05XXXXXXXX" dir="ltr"></label>
-    <label>כמות הודעות לבדיקה<select id="waF7Count">${[1,3,5,10].map(n=>`<option value="${n}" ${n>eligible.length?'disabled':''}>${n}</option>`).join('')}</select></label>
-    <label>מוזמן לבדיקת ההזמנה <span class="required-star">*</span><select id="waF10Guest">${eligible.map((g,i)=>`<option value="${i}">${esc(g.name||'ללא שם')} · ${esc(g.phone||'')}</option>`).join('')}</select></label></div>
-    <p id="waF7Summary" class="wa-confirm-status-v1190a16" role="status"></p>
-    <p class="wa-confirm-status-v1190a16">שליחה אמיתית זמינה כרגע להודעת בדיקה אחת בלבד, למספר הבדיקה. Meta עשויה לקבל את הבקשה בלי שההודעה נמסרה. סטטוס המוזמנים לא ישתנה.</p>
-    <div class="actions"><button type="button" class="secondary" id="waF7Close">סגור</button><button type="button" class="primary" id="waF7Review">בדוק הגדרות</button><button type="button" class="primary" id="waF8Send" disabled>שלח הודעת בדיקה אחת</button></div></section>`);
-  const phone=$('#waF7Phone'),count=$('#waF7Count'),summary=$('#waF7Summary'),guestChoice=$('#waF10Guest');
-  const selectedGuest=()=>eligible[Number(guestChoice?.value||0)];
-  const refresh=()=>{const to=waPhonePreviewV1190A16_(phone.value),n=Number(count.value);summary.textContent=!to?'יש להזין מספר בדיקה תקין.':n>eligible.length?'אין מספיק מוזמנים כשירים לכמות שנבחרה.':`מצב בדיקה: ${n} הודעות מיועדות למספר ${to} בלבד. הזמנה עבור: ${selectedGuest()?.name||'—'}. השליחה תתאפשר רק לאחר אישור מפורש, ובהודעה אחת בלבד.`;};
-  const sendTest=$('#waF8Send');
-  const refreshSend=()=>{const g=selectedGuest(),to=waPhonePreviewV1190A16_(phone.value);sendTest.disabled=!to||Number(count.value)!==1||!g;};
-  phone.addEventListener('input',()=>{refresh();refreshSend()});count.addEventListener('change',()=>{refresh();refreshSend()});guestChoice.addEventListener('change',()=>{refresh();refreshSend()});refresh();refreshSend();
-  $('#waF7Close').onclick=closeModal;
-  $('#waF7Review').onclick=()=>{const to=waPhonePreviewV1190A16_(phone.value),n=Number(count.value);if(!to||!n||n>eligible.length){summary.textContent='יש להזין מספר בדיקה תקין ולבחור כמות אפשרית.';return;}summary.textContent=`ההגדרות תקינות: ${n} הודעות למספר ${to} בלבד. בגרסה זו ניתן לשלוח הודעת ניסיון אחת בלבד.`;};
-  sendTest.onclick=async()=>{
-    const to=waPhonePreviewV1190A16_(phone.value),g=selectedGuest();
-    if(!to||Number(count.value)!==1||!g){summary.textContent='בחר הודעה אחת ומספר בדיקה תקין.';return;}
-    if(!confirm(`מצב בדיקה: לשלוח הודעה אחת בלבד אל +${to} עבור המוזמן ${g.name||''}? השליחה תתבצע רק למספר הבדיקה שהוזן.`))return;
-    sendTest.disabled=true;$('#waF7Review').disabled=true;$('#waF7Close').disabled=true;sendTest.textContent='שולח הודעת בדיקה…';
-    summary.textContent='שולח בקשה ל־Meta…';summary.className='wa-confirm-status-v1190a16';
-    try{const r=await API.request('sendOneInvitationToTestNumberA19P2F8',{eventId:state.activeEventId,guestId:g.guestId||g.id,testPhone:to});
-      if(r?.accepted!==true)throw new Error('לא התקבל אישור תקין משרת השליחה');
-      const msgId=String(r.messageId||'');
-      const metaStatus=String(r.messageStatus||'accepted');
-      const recipient=String(r.recipient||to);
-      summary.replaceChildren();
-      const heading=document.createElement('strong');heading.textContent='Meta קיבלה את הבקשה — המסירה לטלפון טרם אומתה.';summary.append(heading);
-      for(const [label,value] of [['מספר יעד (Meta)',recipient],['מזהה הודעה (wamid)',msgId||'לא הוחזר'],['סטטוס בקבלה',metaStatus]]){
-        const line=document.createElement('div');line.textContent=label+': '+value;summary.append(line);
-      }
-      const note=document.createElement('div');note.textContent='sent / delivered / failed מחייבים דיווח Webhook של Meta; מסך זה עדיין אינו מקבל דיווחי מסירה. אין לשלוח שוב לפני בירור ההודעה הראשונה.';summary.append(note);
-      summary.className='wa-confirm-status-v1190a16';
-      sendTest.textContent='הבקשה התקבלה ✓';$('#waF7Close').disabled=false;
-    }catch(err){summary.textContent=err?.message||'הבקשה נכשלה. אין ללחוץ שוב לפני בדיקת הטלפון מחשש לשליחה כפולה.';summary.className='wa-confirm-status-v1190a16 error';sendTest.textContent='בדוק את התוצאה לפני ניסיון נוסף';$('#waF7Close').disabled=false;}
-  }; 
+  const filter=$('#guestSendFilterA19P2F6');filter.value='no';renderGuests();
+  const rows=filteredGuests(),eligible=rows.filter(g=>!!waPhonePreviewV1190A16_(g.phone));
+  modal(`<section role="dialog" aria-labelledby="waBulkTitleF14C"><h2 id="waBulkTitleF14C">שליחת WhatsApp לבדיקה</h2>
+    <p>סינון ״שליחה״ הוגדר ל״לא״. ההודעות משתמשות בנתוני המוזמנים אך נשלחות רק למספר הבדיקה.</p>
+    <p><b>רשומות מסוננות:</b> ${rows.length} · <b>מספרים תקינים:</b> ${eligible.length}</p>
+    <div class="form-grid"><label>תבנית WhatsApp <span class="required-star">*</span><select id="waF14CTestTemplate" disabled><option value="">טוען תבניות…</option></select></label>
+    <label>מספר טלפון לבדיקה <span class="required-star">*</span><input id="waF7Phone" class="wa-test-phone-f14e" type="tel" inputmode="tel" autocomplete="tel" placeholder="05XXXXXXXX" dir="ltr"></label>
+    <div class="wa-auto-count-f14e"><span>כמות הודעות לבדיקה</span><strong>${eligible.length}</strong><small>נקבעת אוטומטית לפי שליחה = לא</small></div></div>
+    <div class="wa-send-preview-f14g" id="waTestPreviewF14G"><p class="muted">Preview ההזמנה יוצג לאחר טעינת התבנית.</p></div>
+    <p id="waF7Summary" class="wa-confirm-status-v1190a16" role="status" data-template-message="1"></p>
+    <div class="wa-progress-f14c" id="waTestProgressF14C" hidden><progress max="100" value="0"></progress><span></span></div>
+    <div class="actions"><button type="button" class="secondary" id="waF7Close">סגור</button><button type="button" class="primary" id="waF8Send">שלח WhatsApp לבדיקה</button></div></section>`);
+  const phone=$('#waF7Phone'),summary=$('#waF7Summary'),send=$('#waF8Send'),tpl=$('#waF14CTestTemplate');
+  const refresh=()=>{const to=waPhonePreviewV1190A16_(phone.value),n=eligible.length,approved=waSelectedTemplateApprovedF14E_(tpl);summary.textContent=!to?'יש להזין מספר בדיקה תקין.':!approved?'תבנית V3 מוכנה לבדיקה, אך השליחה חסומה עד לאישור Meta (APPROVED).':`כל ${n} הרשומות המסומנות שליחה = לא ישמשו ליצירת הודעות אישיות, וכל ההודעות יישלחו למספר +${to} בלבד.`;summary.className='wa-confirm-status-v1190a16'+((!to||!approved)?' error':'');send.disabled=!to||!n||tpl.disabled||!tpl.value||!approved;};
+  let templatesF14G=[];const renderPreview=()=>waRenderPreviewF14G_($('#waTestPreviewF14G'),waTemplateByIdF14G_(templatesF14G,tpl.value),eligible[0]||rows[0]||null);phone.oninput=refresh;tpl.onchange=()=>{refresh();renderPreview();};refresh();waFillTemplateSelectF14D_(tpl,summary,send).then(t=>{templatesF14G=t;if(t.length){refresh();renderPreview();}});$('#waF7Close').onclick=closeModal;
+  send.onclick=async()=>{const to=waPhonePreviewV1190A16_(phone.value),selected=eligible,templateId=tpl.value;if(!to||!selected.length||!templateId||!waSelectedTemplateApprovedF14E_(tpl))return;
+    if(!confirm(`לשלוח ${selected.length} הודעות בדיקה למספר +${to} בלבד?`))return;
+    send.disabled=true;phone.disabled=true;tpl.disabled=true;const box=$('#waTestProgressF14C');box.hidden=false;let ok=0,fail=0;
+    for(let i=0;i<selected.length;i++){const g=selected[i];box.querySelector('span').textContent=`${i+1} / ${selected.length} — ${g.name||''}`;box.querySelector('progress').value=Math.round(i*100/selected.length);try{await API.request('sendOneInvitationToTestNumberA19P2F8',{eventId:state.activeEventId,guestId:g.guestId||g.id,testPhone:to,templateId});ok++}catch(e){fail++;}}
+    box.querySelector('progress').value=100;box.querySelector('span').textContent=`הסתיים: ${ok} התקבלו ב-Meta, ${fail} נכשלו`;summary.textContent=`בדיקת השליחה הסתיימה. התקבלו ב-Meta: ${ok}; נכשלו: ${fail}.`;summary.className='wa-confirm-status-v1190a16 '+(fail?'error':'success');$('#waF7Close').disabled=false;
+  };
+}
+async function openGuestWhatsAppRealF14C_(){
+  if(state.session?.role!=='Admin'||!state.activeEventId)return;
+  const filter=$('#guestSendFilterA19P2F6');filter.value='yes';renderGuests();
+  const rows=filteredGuests(),eligible=rows.filter(g=>waPhonePreviewV1190A16_(g.phone)&&String(g.invitationGreeting||'').trim());
+  const invalid=rows.filter(g=>!waPhonePreviewV1190A16_(g.phone)||!String(g.invitationGreeting||'').trim());
+  modal(`<section role="dialog"><h2>שליחת WhatsApp</h2><p>סינון ״שליחה״ הוגדר ל״כן״. יתר הסינונים נשמרו.</p>
+  <div class="form-grid"><label>תבנית WhatsApp <span class="required-star">*</span><select id="waRealTemplateF14C" disabled><option value="">טוען תבניות…</option></select></label></div>
+  <p><b>מיועדים לשליחה:</b> ${eligible.length}${invalid.length?` · <b>חסומים בגלל נתון חסר/לא תקין:</b> ${invalid.length}`:''}</p>
+  <div class="wa-send-preview-f14g" id="waRealPreviewF14G"><p class="muted">Preview ההזמנה יוצג לאחר טעינת התבנית.</p></div>
+  <dl class="wa-confirm-details-v1190a16"><dt>כמות הודעות</dt><dd>${eligible.length}</dd><dt>עלות משוערת</dt><dd id="waRealCostF14C">טוען…</dd></dl>
+  <p id="waRealStatusF14C" class="wa-confirm-status-v1190a16"></p><div class="wa-progress-f14c" id="waRealProgressF14C" hidden><progress max="100" value="0"></progress><span></span></div>
+  <div class="actions"><button type="button" class="secondary" id="waRealCloseF14C">סגור</button><button type="button" class="danger" id="waRealStopF14C" hidden>עצור שליחה</button><button type="button" class="primary" id="waRealSendF14C" ${!eligible.length||invalid.length?'disabled':''}>שלח WhatsApp</button></div></section>`);
+  getWaCostEstimateCachedF14_(eligible.length).then(e=>{const x=$('#waRealCostF14C');if(x)x.textContent=e?.estimatedIls!=null?'₪'+Number(e.estimatedIls).toFixed(2):'לא ניתן לחשב';});
+  waFillTemplateSelectF14D_($('#waRealTemplateF14C'),$('#waRealStatusF14C'),$('#waRealSendF14C')).then(t=>{const sel=$('#waRealTemplateF14C');const preview=()=>waRenderPreviewF14G_($('#waRealPreviewF14G'),waTemplateByIdF14G_(t,sel.value),eligible[0]||rows[0]||null);if(t.length&&!invalid.length&&eligible.length&&waSelectedTemplateApprovedF14E_(sel))$('#waRealSendF14C').disabled=false;sel.onchange=()=>{$('#waRealSendF14C').disabled=!!invalid.length||!eligible.length||!waSelectedTemplateApprovedF14E_(sel);preview();};if(t.length)preview();});
+  $('#waRealCloseF14C').onclick=closeModal;let stopped=false;$('#waRealStopF14C').onclick=()=>{stopped=true;$('#waRealStopF14C').disabled=true;$('#waRealStatusF14C').textContent='העצירה התקבלה. לא תתחיל הודעה נוספת לאחר ההודעה המטופלת כעת.';};
+  $('#waRealSendF14C').onclick=async()=>{const templateId=$('#waRealTemplateF14C').value;if(!templateId)return;const cost=$('#waRealCostF14C').textContent;if(!confirm(`אישור נוסף: לשלוח באמת ${eligible.length} הודעות WhatsApp למספרי המוזמנים? עלות משוערת: ${cost}.`))return;
+    const send=$('#waRealSendF14C'),close=$('#waRealCloseF14C'),stop=$('#waRealStopF14C'),box=$('#waRealProgressF14C'),status=$('#waRealStatusF14C');send.disabled=true;close.disabled=true;stop.hidden=false;box.hidden=false;let ok=0,fail=0,done=0;
+    for(const g of eligible){if(stopped)break;box.querySelector('span').textContent=`${done+1} / ${eligible.length} — ${g.name||''}`;try{await API.request('sendOneInvitationV1190A14',{eventId:state.activeEventId,guestId:g.guestId||g.id,templateId});ok++}catch(e){fail++;}done++;box.querySelector('progress').value=Math.round(done*100/eligible.length);}
+    const left=eligible.length-done;status.textContent=`השליחה ${stopped?'נעצרה':'הסתיימה'}. התקבלו ב-Meta: ${ok}; נכשלו: ${fail}; לא נשלחו: ${left}.`;status.className='wa-confirm-status-v1190a16 '+(fail?'error':'success');box.querySelector('span').textContent=`טופלו ${done} מתוך ${eligible.length}`;stop.hidden=true;close.disabled=false;
+  };
 }
 
 /* V1.1.90A16 — one-recipient confirmation, with phone preview and inline status. */
@@ -1235,17 +1293,18 @@ function waPhonePreviewV1190A16_(phone){
   if(!/^0\d{8,9}$/.test(raw))return '';
   return '972'+raw.slice(1);
 }
-function openWhatsAppTestConfirmV1190A16_(g){
+async function openWhatsAppTestConfirmV1190A16_(g){
   const to=waPhonePreviewV1190A16_(g.phone);
   modal(`<section class="wa-confirm-v1190a16" role="dialog" aria-labelledby="waConfirmTitleV1190A16">
     <h2 id="waConfirmTitleV1190A16">אישור שליחת <bdi dir="ltr">WhatsApp</bdi></h2>
-    <p>האם לשלוח הזמנה אחת למוזמן הבא?</p>
+    <p>האם לשלוח הודעה אחת למוזמן הבא?</p><label>תבנית WhatsApp <span class="required-star">*</span><select id="waSingleTemplateF14C" disabled><option value="">טוען תבניות…</option></select></label>
     <dl class="wa-confirm-details-v1190a16">
       <dt>שם המוזמן</dt><dd>${esc(g.name||'—')}</dd>
       <dt>מספר ברשומה</dt><dd dir="ltr">${esc(g.phone||'—')}</dd>
       <dt>מספר לשליחה ל־Meta</dt><dd dir="ltr">${to?esc('+'+to):'מספר לא תקין'}</dd>
-      <dt>כמות הודעות</dt><dd>1</dd>
+      <dt>כמות הודעות</dt><dd>1</dd><dt>מחיר משוער להודעה</dt><dd id="waConfirmUnitUsdF14">טוען…</dd><dt>עלות משוערת בדולר</dt><dd id="waConfirmUsdF14">טוען…</dd><dt>שער יציג USD/ILS</dt><dd id="waConfirmFxF14">טוען…</dd><dt><b>סך עלות משוערת</b></dt><dd id="waConfirmCostF14"><b>טוען…</b></dd>
     </dl>
+    <div class="wa-send-preview-f14g" id="waSinglePreviewF14G"><p class="muted">Preview ההזמנה יוצג לאחר טעינת התבנית.</p></div>
     <p class="wa-confirm-status-v1190a16" id="waConfirmStatusV1190A16" role="status" aria-live="polite"></p>
     <div class="actions"><button type="button" class="primary" id="waConfirmSendV1190A16" ${to?'':'disabled'}>אישור ושליחה</button>
     <button type="button" id="waConfirmCancelV1190A16">ביטול</button></div>
@@ -1255,6 +1314,8 @@ function openWhatsAppTestConfirmV1190A16_(g){
   const status=panel.querySelector('#waConfirmStatusV1190A16');
   const close=$('#modalClose');
   if(!to){status.textContent='מספר הטלפון אינו תקין. יש לתקן אותו ברשומת המוזמן לפני השליחה.';status.className='wa-confirm-status-v1190a16 error';}
+  else{status.dataset.templateMessage='1';const sel=panel.querySelector('#waSingleTemplateF14C');waFillTemplateSelectF14D_(sel,status,send).then(t=>{const preview=()=>waRenderPreviewF14G_(panel.querySelector('#waSinglePreviewF14G'),waTemplateByIdF14G_(t,sel.value),g);send.disabled=!t.length||!waSelectedTemplateApprovedF14E_(sel);sel.onchange=()=>{send.disabled=!waSelectedTemplateApprovedF14E_(sel);preview();};if(t.length)preview();});}
+  getWaCostEstimateCachedF14_(1).then(e=>{const unit=panel.querySelector('#waConfirmUnitUsdF14'),usd=panel.querySelector('#waConfirmUsdF14'),fx=panel.querySelector('#waConfirmFxF14'),ils=panel.querySelector('#waConfirmCostF14');if(e?.estimatedIls!=null){if(unit)unit.textContent='$'+Number(e.unitUsd).toFixed(4);if(usd)usd.textContent='$'+Number(e.estimatedUsd).toFixed(2);if(fx)fx.textContent=Number(e.usdIls).toFixed(4);if(ils)ils.innerHTML='<b>₪'+Number(e.estimatedIls).toFixed(2)+'</b>';}else{[unit,usd,fx,ils].forEach(el=>{if(el)el.textContent=e?.notice||'לא ניתן לחשב';});}}).catch(()=>{['#waConfirmUnitUsdF14','#waConfirmUsdF14','#waConfirmFxF14','#waConfirmCostF14'].forEach(sel=>{const el=panel.querySelector(sel);if(el)el.textContent='לא ניתן לחשב כרגע';});});
   cancel.onclick=closeModal;
   send.onclick=async()=>{
     if(send.disabled||!to)return;
@@ -1262,9 +1323,9 @@ function openWhatsAppTestConfirmV1190A16_(g){
     send.innerHTML='<span class="seating-spinner-v171" aria-hidden="true"></span> שולח...';
     status.textContent='';status.className='wa-confirm-status-v1190a16';
     try{
-      const r=await API.request('sendOneInvitationV1190A14',{eventId:g.eventId,guestId:g.guestId||g.id});
+      const r=await API.request('sendOneInvitationV1190A14',{eventId:g.eventId,guestId:g.guestId||g.id,templateId:panel.querySelector('#waSingleTemplateF14C').value});
       if(r?.accepted!==true)throw new Error('לא התקבל אישור תקין משרת השליחה');
-      status.textContent='Meta קיבלה את ההזמנה לשליחה. בדוק שההודעה הגיעה לטלפון.';
+      status.textContent='Meta קיבלה את ההזמנה לשליחה. בדוק שההודעה הגיעה לטלפון.'+(r?.costEstimate?.estimatedIls!=null?' עלות משוערת: ₪'+Number(r.costEstimate.estimatedIls).toFixed(2):'');
       status.className='wa-confirm-status-v1190a16 success';
       send.innerHTML='הבקשה התקבלה ✓';
       // A18: retain the response for manual inspection; API acceptance is not delivery.
@@ -1353,7 +1414,7 @@ document.addEventListener("click",async e=>{
   const dw=e.target.closest(".delete-wa");if(dw&&confirm("למחוק את הגדרת החיבור?")){const started=performance.now();const r=await API.request("deleteWhatsAppConfig",{id:dw.dataset.id});removeLocal_(state.adminData.whatsapp,dw.dataset.id);renderAll();mutationDone_("חיבור WhatsApp נמחק",r,started)}
 });
 
-$("#guestWhatsAppBulkA19P2F6").onclick=openGuestWhatsAppPreparationA19P2F6_;$("#addEventBtn").onclick=()=>eventForm();$("#addGuestBtn").onclick=()=>{const id=selectedGuestEventId_();id?guestForm({},id):alert("יש ליצור או לבחור אירוע קודם")};$("#guestTemplateBtn").onclick=()=>downloadGuestWorkbook_("guestImportTemplateV148");$("#guestExportBtn").onclick=()=>downloadGuestWorkbook_("guestExportCurrentV148");$("#guestImportBtn").onclick=()=>{if(activeEventForGuestTransfer_())$("#guestImportFile").click()};$("#guestImportFile").onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)handleGuestImportFile_(f)};$("#addTableBtn").onclick=()=>{const ev=activeEvent();if(!ev)return alert("יש ליצור או לבחור אירוע קודם");if(!isTrue(ev.seatingEnabled,true))return alert("ניהול שולחנות אינו מופעל באירוע זה");tableForm()};
+$("#guestWhatsAppTestBulkF14C").onclick=openGuestWhatsAppPreparationA19P2F6_;$("#guestWhatsAppBulkA19P2F6").onclick=openGuestWhatsAppRealF14C_;$("#addEventBtn").onclick=()=>eventForm();$("#addGuestBtn").onclick=()=>{const id=selectedGuestEventId_();id?guestForm({},id):alert("יש ליצור או לבחור אירוע קודם")};$("#guestTemplateBtn").onclick=()=>downloadGuestWorkbook_("guestImportTemplateV148");$("#guestExportBtn").onclick=()=>downloadGuestWorkbook_("guestExportCurrentV148");$("#guestImportBtn").onclick=()=>{if(activeEventForGuestTransfer_())$("#guestImportFile").click()};$("#guestImportFile").onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)handleGuestImportFile_(f)};$("#addTableBtn").onclick=()=>{const ev=activeEvent();if(!ev)return alert("יש ליצור או לבחור אירוע קודם");if(!isTrue(ev.seatingEnabled,true))return alert("ניהול שולחנות אינו מופעל באירוע זה");tableForm()};
 $("#modalClose").onclick=closeModal;
 /* V1.1.6:
    Do not close an edit/add modal by clicking the backdrop.
@@ -1439,6 +1500,7 @@ $("#loginForm").addEventListener("submit",async event=>{
   try{
     const r=await API.request("login",{email,password});
     state.session=r.session;
+    state.waCostBaseF14=null;state.waCostPromiseF14=null;
     saveSession();
     setUser();
     loginFeedbackV184("התחברת בהצלחה!","success");

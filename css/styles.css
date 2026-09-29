@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F13 */
+/* V1.1.90A19P2F14G */
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Hebrew",sans-serif;background:var(--bg);color:var(--text)}
 body.light{--bg:#f5f7fa;--card:#fff;--card2:#eef2f6;--text:#18212b;--muted:#65727e;--line:#d8dee4}
@@ -931,7 +931,7 @@ body.light .import-summary .error{background:#ffd6d6!important;color:#b42318!imp
 #page-guests .guests-table tbody tr:hover{outline:1px solid var(--accent);outline-offset:-1px}
 #page-guests .guests-table td.sorted-col{box-shadow:inset 0 0 0 999px rgba(77,163,255,.055);background:transparent}
 .guest-row-actions-v179{white-space:nowrap;text-align:center}
-.guest-icon-action-v179{border:1px solid currentColor;background:transparent;border-radius:7px;width:33px;height:33px;margin:0 2px;cursor:pointer;font-size:1.2rem;font-weight:700}
+.guest-icon-action-v179{border:1px solid currentColor;background:transparent;border-radius:7px;width:33px;height:33px;margin:0 2px;cursor:pointer;font-size:1.2rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;padding:0;line-height:1}
 .guest-icon-action-v179.edit{color:#36c987}.guest-icon-action-v179.delete{color:#ef6969}
 .guest-icon-action-v179:disabled{opacity:.28;cursor:not-allowed}
 /* Zebra striping across all list tables, preserving status colors and hover. */
@@ -1235,3 +1235,28 @@ body.light #eventForm .date-picker-control{color-scheme:light}
 #page-messages .tpl-row-actions .guest-icon-action-v179.delete{color:#ef6969}
 #page-messages .tpl-image-preview{display:block;max-width:100%;max-height:240px;object-fit:contain;margin:10px auto;border-radius:10px;border:1px solid var(--line)}
 #page-messages .tpl-image-preview[hidden]{display:none!important}
+
+/* F14 WhatsApp guest action icon */
+.wa-guest-icon-f14{width:20px;height:20px;display:block;pointer-events:none;flex:0 0 20px;margin:0}
+
+/* F14C WhatsApp group progress */
+.wa-progress-f14c{display:grid;gap:.45rem;margin:1rem 0}.wa-progress-f14c progress{width:100%;height:1rem}.wa-progress-f14c span{font-weight:600}
+
+/* F14E — V3 preparation, automatic test count and dark-mode test phone. */
+.wa-test-phone-f14e{background:var(--card)!important;color:var(--text)!important;border:1px solid var(--line)!important}
+.wa-auto-count-f14e{display:grid;gap:4px;padding:10px 12px;background:var(--card2);border:1px solid var(--line);border-radius:9px;margin-top:12px}.wa-auto-count-f14e strong{font-size:1.35rem}.wa-auto-count-f14e small,.tpl-v3-note-f14e{color:var(--muted)}
+
+/* F14F — keep the WhatsApp test phone dark, including browser autofill. */
+.modal input.wa-test-phone-f14e,
+.modal input.wa-test-phone-f14e:focus{background-color:var(--bg)!important;color:var(--text)!important;border-color:var(--line)!important;color-scheme:dark!important;-webkit-text-fill-color:var(--text)!important;caret-color:var(--text)!important;}
+.modal input.wa-test-phone-f14e:-webkit-autofill,
+.modal input.wa-test-phone-f14e:-webkit-autofill:hover,
+.modal input.wa-test-phone-f14e:-webkit-autofill:focus{box-shadow:0 0 0 1000px var(--bg) inset!important;-webkit-box-shadow:0 0 0 1000px var(--bg) inset!important;-webkit-text-fill-color:var(--text)!important;caret-color:var(--text)!important;transition:background-color 9999s ease-out 0s;}
+
+/* F14G — WhatsApp invitation preview */
+.wa-send-preview-f14g{margin:14px 0;padding:12px;background:var(--card2);border:1px solid var(--line);border-radius:12px}
+.wa-preview-card-f14g{max-width:390px;margin:auto;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.wa-preview-image-wrap-f14g{min-height:150px;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--muted)}
+.wa-preview-image-wrap-f14g img{display:block;width:100%;max-height:320px;object-fit:contain;background:var(--bg)}
+.wa-preview-body-f14g{padding:14px;white-space:pre-wrap;line-height:1.65;text-align:right}
+.wa-preview-button-f14g{margin:0 14px 14px;padding:9px 12px;text-align:center;border:1px solid var(--line);border-radius:9px;color:var(--accent);font-weight:700}

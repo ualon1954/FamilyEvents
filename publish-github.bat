@@ -1,46 +1,35 @@
 @echo off
-setlocal EnableExtensions
-cd /d "%~dp0"
-set "PROJECT_VERSION=V1.1.90A19P2F13"
+setlocal
+set "PROJECT_VERSION=V1.1.90A19P2F14G"
 
-if not exist ".git\\" (
+echo Publishing %PROJECT_VERSION% to GitHub...
+
+if not exist ".git" (
   echo ERROR: .git folder was not found.
-  echo Copy this GITHUB package into the ROOT of the existing local Git repository.
-  pause
+  echo Run this file from the root of the existing GitHub repository.
   exit /b 1
 )
 
-where git >nul 2>nul
+git --version >nul 2>&1
 if errorlevel 1 (
-  echo ERROR: Git was not found in PATH.
-  pause
+  echo ERROR: Git is not installed or not available in PATH.
   exit /b 1
 )
 
-echo Publishing %PROJECT_VERSION%...
+git status --short
 git add -A
-if errorlevel 1 goto :error
 
 git diff --cached --quiet
 if not errorlevel 1 (
   echo No changes to publish.
-  pause
   exit /b 0
 )
 
 git commit -m "%PROJECT_VERSION%"
-if errorlevel 1 goto :error
+if errorlevel 1 exit /b 1
 
 git push origin main
-if errorlevel 1 goto :error
+if errorlevel 1 exit /b 1
 
-echo.
-echo SUCCESS: %PROJECT_VERSION% published.
-pause
-exit /b 0
-
-:error
-echo.
-echo ERROR: Publish stopped. Review the message above.
-pause
-exit /b 1
+echo Published %PROJECT_VERSION% successfully.
+endlocal

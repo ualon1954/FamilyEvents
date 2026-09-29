@@ -1,4 +1,6 @@
+V1.1.90A19P2F14G
 css/styles.css
+github-files.txt
 index.html
 js/api.js
 js/app.js
@@ -7,6 +9,5 @@ js/rsvp.js
 js/session.js
 js/templates.js
 js/version.js
-rsvp.html
-github-files.txt
 publish-github.bat
+rsvp.html
