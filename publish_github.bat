@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set "PROJECT_VERSION=V1.1.90A19P2F14G"
+set "PROJECT_VERSION=V1.1.90A19P2F14J"
 
 echo Publishing %PROJECT_VERSION% to GitHub...
 
@@ -17,7 +17,7 @@ if errorlevel 1 (
 )
 
 git status --short
-git add -A
+git add .
 
 git diff --cached --quiet
 if not errorlevel 1 (

@@ -1,5 +1,7 @@
-V1.1.90A19P2F14G
+V1.1.90A19P2F14J
+CNAME
 css/styles.css
+favicon.ico
 github-files.txt
 index.html
 js/api.js
@@ -9,5 +11,5 @@ js/rsvp.js
 js/session.js
 js/templates.js
 js/version.js
-publish-github.bat
+publish_github.bat
 rsvp.html

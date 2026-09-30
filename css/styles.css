@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14G */
+/* V1.1.90A19P2F14J */
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Hebrew",sans-serif;background:var(--bg);color:var(--text)}
 body.light{--bg:#f5f7fa;--card:#fff;--card2:#eef2f6;--text:#18212b;--muted:#65727e;--line:#d8dee4}
@@ -1260,3 +1260,11 @@ body.light #eventForm .date-picker-control{color-scheme:light}
 .wa-preview-image-wrap-f14g img{display:block;width:100%;max-height:320px;object-fit:contain;background:var(--bg)}
 .wa-preview-body-f14g{padding:14px;white-space:pre-wrap;line-height:1.65;text-align:right}
 .wa-preview-button-f14g{margin:0 14px 14px;padding:9px 12px;text-align:center;border:1px solid var(--line);border-radius:9px;color:var(--accent);font-weight:700}
+
+/* F14J — compact WhatsApp send-result modal. */
+.wa-result-modal-f14j{max-width:760px}
+.wa-result-modal-f14j h2{margin-top:0}
+.wa-result-modal-f14j.is-success h2,.wa-result-modal-f14j.is-success .wa-result-summary-f14j{color:var(--success,#22a06b)}
+.wa-result-modal-f14j.has-error h2,.wa-result-modal-f14j.has-error .wa-result-summary-f14j{color:var(--danger,#d64545)}
+.wa-result-table-f14j{min-width:620px}
+.wa-result-table-f14j td,.wa-result-table-f14j th{vertical-align:top}

@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14G */
+/* V1.1.90A19P2F14J */
 let state={
   session:null,events:[],eventTypes:[],guests:[],tables:[],activity:[],activeEventId:null,
   guestSort:{key:"name",dir:"asc"},
@@ -1221,8 +1221,9 @@ async function waTemplateImageSrcF14G_(template){
 }
 async function waRenderPreviewF14G_(container,template,guest){
   if(!container)return; if(!template){container.innerHTML='<p class="muted">בחר תבנית להצגת Preview.</p>';return;}
-  const greeting=String(guest?.invitationGreeting||'').trim()||'פנייה אישית לדוגמה';
-  container.innerHTML=`<div class="wa-preview-card-f14g"><div class="wa-preview-image-wrap-f14g"><span>טוען תמונת הזמנה…</span></div><div class="wa-preview-body-f14g">${esc(waPreviewBodyF14G_(template,{...guest,invitationGreeting:greeting}))}</div><div class="wa-preview-button-f14g">אישור הגעה</div></div><small class="muted">Preview בלבד — יוצגו נתוני המוזמן הראשון ברשימה.</small>`;
+  const greeting=String(guest?.invitationGreeting||'').trim();
+  if(!guest||!greeting){container.innerHTML='<p class="wa-confirm-status-v1190a16 error">לא ניתן להציג Preview: למוזמן הראשון אין פנייה אישית. יש לעדכן את הרשומה לפני השליחה.</p>';return;}
+  container.innerHTML=`<div class="wa-preview-card-f14g"><div class="wa-preview-image-wrap-f14g"><span>טוען תמונת הזמנה…</span></div><div class="wa-preview-body-f14g">${esc(waPreviewBodyF14G_(template,guest))}</div><div class="wa-preview-button-f14g">אישור הגעה</div></div><small class="muted">Preview בלבד — נתוני ${esc(guest.name||'המוזמן הראשון')}.</small>`;
   try{const src=await waTemplateImageSrcF14G_(template);const wrap=container.querySelector('.wa-preview-image-wrap-f14g');if(!wrap)return;wrap.innerHTML=src?`<img src="${src}" alt="תמונת ההזמנה שנבחרה בתבנית">`:'<span>אין תמונת הזמנה בתבנית</span>';}catch(e){const wrap=container.querySelector('.wa-preview-image-wrap-f14g');if(wrap)wrap.innerHTML='<span>לא ניתן לטעון את תמונת ההזמנה</span>';}
 }
 function waMetaStatusLabelF14E_(status){const x=String(status||'').trim().toUpperCase();return x==='APPROVED'?'מאושרת':x==='PENDING'?'בבדיקה':x==='REJECTED'?'נדחתה':x==='DRAFT'?'טיוטה':'לא הוגדר';}
@@ -1240,10 +1241,10 @@ async function waFillTemplateSelectF14D_(select,status,sendButton){
 async function openGuestWhatsAppPreparationA19P2F6_(){
   if(state.session?.role!=='Admin'||!state.activeEventId)return;
   const filter=$('#guestSendFilterA19P2F6');filter.value='no';renderGuests();
-  const rows=filteredGuests(),eligible=rows.filter(g=>!!waPhonePreviewV1190A16_(g.phone));
+  const rows=filteredGuests(),eligible=rows.filter(g=>!!waPhonePreviewV1190A16_(g.phone)&&!!String(g.invitationGreeting||'').trim());
   modal(`<section role="dialog" aria-labelledby="waBulkTitleF14C"><h2 id="waBulkTitleF14C">שליחת WhatsApp לבדיקה</h2>
     <p>סינון ״שליחה״ הוגדר ל״לא״. ההודעות משתמשות בנתוני המוזמנים אך נשלחות רק למספר הבדיקה.</p>
-    <p><b>רשומות מסוננות:</b> ${rows.length} · <b>מספרים תקינים:</b> ${eligible.length}</p>
+    <p><b>רשומות מסוננות:</b> ${rows.length} · <b>רשומות תקינות לשליחה:</b> ${eligible.length}</p>
     <div class="form-grid"><label>תבנית WhatsApp <span class="required-star">*</span><select id="waF14CTestTemplate" disabled><option value="">טוען תבניות…</option></select></label>
     <label>מספר טלפון לבדיקה <span class="required-star">*</span><input id="waF7Phone" class="wa-test-phone-f14e" type="tel" inputmode="tel" autocomplete="tel" placeholder="05XXXXXXXX" dir="ltr"></label>
     <div class="wa-auto-count-f14e"><span>כמות הודעות לבדיקה</span><strong>${eligible.length}</strong><small>נקבעת אוטומטית לפי שליחה = לא</small></div></div>
@@ -1256,9 +1257,21 @@ async function openGuestWhatsAppPreparationA19P2F6_(){
   let templatesF14G=[];const renderPreview=()=>waRenderPreviewF14G_($('#waTestPreviewF14G'),waTemplateByIdF14G_(templatesF14G,tpl.value),eligible[0]||rows[0]||null);phone.oninput=refresh;tpl.onchange=()=>{refresh();renderPreview();};refresh();waFillTemplateSelectF14D_(tpl,summary,send).then(t=>{templatesF14G=t;if(t.length){refresh();renderPreview();}});$('#waF7Close').onclick=closeModal;
   send.onclick=async()=>{const to=waPhonePreviewV1190A16_(phone.value),selected=eligible,templateId=tpl.value;if(!to||!selected.length||!templateId||!waSelectedTemplateApprovedF14E_(tpl))return;
     if(!confirm(`לשלוח ${selected.length} הודעות בדיקה למספר +${to} בלבד?`))return;
-    send.disabled=true;phone.disabled=true;tpl.disabled=true;const box=$('#waTestProgressF14C');box.hidden=false;let ok=0,fail=0;
-    for(let i=0;i<selected.length;i++){const g=selected[i];box.querySelector('span').textContent=`${i+1} / ${selected.length} — ${g.name||''}`;box.querySelector('progress').value=Math.round(i*100/selected.length);try{await API.request('sendOneInvitationToTestNumberA19P2F8',{eventId:state.activeEventId,guestId:g.guestId||g.id,testPhone:to,templateId});ok++}catch(e){fail++;}}
-    box.querySelector('progress').value=100;box.querySelector('span').textContent=`הסתיים: ${ok} התקבלו ב-Meta, ${fail} נכשלו`;summary.textContent=`בדיקת השליחה הסתיימה. התקבלו ב-Meta: ${ok}; נכשלו: ${fail}.`;summary.className='wa-confirm-status-v1190a16 '+(fail?'error':'success');$('#waF7Close').disabled=false;
+    const originalSendHtml=send.innerHTML;
+    send.disabled=true;phone.disabled=true;tpl.disabled=true;$('#waF7Close').disabled=true;
+    send.innerHTML='<span class="seating-spinner-v171" aria-hidden="true"></span> שולח...';
+    const box=$('#waTestProgressF14C');box.hidden=false;let ok=0,fail=0;const results=[];
+    for(let i=0;i<selected.length;i++){
+      const g=selected[i],guestName=String(g.name||'מוזמן ללא שם').trim(),greeting=String(g.invitationGreeting||'').trim();
+      box.querySelector('span').textContent=`${i+1} / ${selected.length} — ${guestName}`;box.querySelector('progress').value=Math.round(i*100/selected.length);
+      try{const r=await API.request('sendOneInvitationToTestNumberA19P2F8',{eventId:state.activeEventId,guestId:g.guestId||g.id,testPhone:to,templateId});ok++;results.push({guestName,greeting,ok:true,messageId:String(r?.messageId||'')});}
+      catch(e){fail++;results.push({guestName,greeting,ok:false,error:e?.message||String(e)});}
+    }
+    box.querySelector('progress').value=100;box.querySelector('span').textContent=`הסתיים: ${ok} התקבלו ב-Meta, ${fail} נכשלו`;
+    send.innerHTML=originalSendHtml;
+    const resultRows=results.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.guestName)}</td><td>${esc(r.greeting||'—')}</td><td class="${r.ok?'ok-text':'error'}">${r.ok?'נשלחה':'נכשלה'}</td><td dir="ltr">${esc(r.ok?(r.messageId||'accepted'):(r.error||'—'))}</td></tr>`).join('');
+    modal(`<section class="wa-result-modal-f14j ${fail?'has-error':'is-success'}" role="dialog" aria-labelledby="waResultTitleF14J"><h2 id="waResultTitleF14J">${fail?'תוצאת בדיקת WhatsApp — נמצאו שגיאות':'בדיקת WhatsApp הסתיימה בהצלחה'}</h2><p class="wa-result-summary-f14j"><b>מספר בדיקה:</b> <bdi dir="ltr">+${esc(to)}</bdi> · <b>נשלחו:</b> ${ok} · <b>נכשלו:</b> ${fail}</p><div class="table-wrap"><table class="admin-table wa-result-table-f14j"><thead><tr><th>#</th><th>שם המוזמן</th><th>פנייה אישית</th><th>תוצאה</th><th>פרטי Meta / שגיאה</th></tr></thead><tbody>${resultRows}</tbody></table></div><div class="actions"><button type="button" class="primary" id="waResultCloseF14J">סגור</button></div></section>`);
+    $('#waResultCloseF14J').onclick=closeModal;
   };
 }
 async function openGuestWhatsAppRealF14C_(){
