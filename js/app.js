@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14M */
+/* V1.1.90A19P2F14N */
 let state={
   session:null,events:[],eventTypes:[],guests:[],tables:[],activity:[],activeEventId:null,
   guestSort:{key:"name",dir:"asc"},
@@ -1277,15 +1277,14 @@ async function openGuestWhatsAppPreparationA19P2F6_(){
     for(let i=0;i<selected.length;i++){
       const g=selected[i],guestName=String(g.name||'מוזמן ללא שם').trim(),greeting=String(g.invitationGreeting||'').trim();
       box.querySelector('span').textContent=`${i+1} / ${selected.length} — ${guestName}`;box.querySelector('progress').value=Math.round(i*100/selected.length);
-      try{const r=await API.request('sendOneInvitationToTestNumberA19P2F8',{eventId:state.activeEventId,guestId:g.guestId||g.id,testPhone:to,templateId});ok++;results.push({guestName,greeting,ok:true,messageId:String(r?.messageId||'')});}
+      try{await API.request('sendOneInvitationToTestNumberA19P2F8',{eventId:state.activeEventId,guestId:g.guestId||g.id,testPhone:to,templateId});ok++;results.push({guestName,greeting,ok:true});}
       catch(e){fail++;results.push({guestName,greeting,ok:false,error:e?.message||String(e)});}
-      if(i<selected.length-1)await new Promise(resolve=>setTimeout(resolve,2500));
     }
     box.querySelector('progress').value=100;box.querySelector('span').textContent=`הסתיים: ${ok} התקבלו ב-Meta, ${fail} נכשלו`;
-    send.innerHTML=originalSendHtml;
-    const resultCards=results.map((r,i)=>`<article class="wa-result-item-f14k ${r.ok?'accepted':'failed'}"><div class="wa-result-item-head-f14k"><b>${i+1}. ${esc(r.guestName)}</b><span>${r.ok?'התקבל ב-Meta':'נכשל'}</span></div><div class="wa-result-greeting-f14k">${esc(r.greeting||'—')}</div><small>${r.ok?'מזהה הודעה: '+esc(r.messageId||'לא הוחזר מזהה'):'שגיאה: '+esc(r.error||'—')}</small></article>`).join('');
-    modal(`<section class="wa-result-modal-f14k ${fail?'has-error':'is-success'}" role="dialog" aria-labelledby="waResultTitleF14L"><h2 id="waResultTitleF14L">${fail?'בדיקת WhatsApp הסתיימה עם שגיאות':'בקשות הבדיקה התקבלו ב-Meta'}</h2><p class="wa-result-summary-f14k"><bdi dir="ltr">+${esc(to)}</bdi><br><b>התקבלו ב-Meta:</b> ${ok} · <b>נכשלו:</b> ${fail}</p><p class="wa-delivery-note-f14k">קבלת הבקשה ב-Meta אינה אישור שההודעה כבר נמסרה לטלפון.</p><div class="wa-result-list-f14k">${resultCards}</div><div class="actions"><button type="button" class="primary" id="waResultCloseF14L">סגור</button></div></section>`);
-    $('#waResultCloseF14L').onclick=closeModal;
+    const recipientLines=results.map((r,i)=>`${i+1}. ${r.guestName}${r.greeting?' — '+r.greeting:''} — ${r.ok?'התקבל ב-Meta':'נכשל'+(r.error?' — '+r.error:'')}`);
+    summary.textContent=`בדיקת השליחה הסתיימה. התקבלו ב-Meta: ${ok}; נכשלו: ${fail}.\nמספר הבדיקה: +${to}\nרשומות שנבדקו:\n${recipientLines.join('\n')}`;
+    summary.style.whiteSpace='pre-line';summary.className='wa-confirm-status-v1190a16 '+(fail?'error':'success');
+    send.innerHTML=originalSendHtml;send.disabled=false;phone.disabled=false;tpl.disabled=false;$('#waF7Close').disabled=false;
   };
 }
 async function openGuestWhatsAppRealF14C_(){
