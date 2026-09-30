@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14N */
+/* V1.1.90A19P2F14O */
 const APP_CONFIG = {
   APP_NAME: "ניהול אירועים",
   API_URL: "https://script.google.com/macros/s/AKfycbwgEe50WRt362N8QSc893iP21pkd_EBxIIlL3qRcCpT9lPyKX-jvKIDHkzcvEWCb6cf/exec",

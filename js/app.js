@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14N */
+/* V1.1.90A19P2F14O */
 let state={
   session:null,events:[],eventTypes:[],guests:[],tables:[],activity:[],activeEventId:null,
   guestSort:{key:"name",dir:"asc"},
@@ -1273,16 +1273,16 @@ async function openGuestWhatsAppPreparationA19P2F6_(){
     const originalSendHtml=send.innerHTML;
     send.disabled=true;phone.disabled=true;tpl.disabled=true;$('#waF7Close').disabled=true;
     send.innerHTML='<span class="seating-spinner-v171" aria-hidden="true"></span> שולח...';
-    const box=$('#waTestProgressF14C');box.hidden=false;let ok=0,fail=0;const results=[];
+    const box=$('#waTestProgressF14C');box.hidden=false;let ok=0,fail=0;const failed=[];
+    // F14O: keep the proven F14I send loop/API request unchanged. UI additions wrap the loop only.
     for(let i=0;i<selected.length;i++){
       const g=selected[i],guestName=String(g.name||'מוזמן ללא שם').trim(),greeting=String(g.invitationGreeting||'').trim();
       box.querySelector('span').textContent=`${i+1} / ${selected.length} — ${guestName}`;box.querySelector('progress').value=Math.round(i*100/selected.length);
-      try{await API.request('sendOneInvitationToTestNumberA19P2F8',{eventId:state.activeEventId,guestId:g.guestId||g.id,testPhone:to,templateId});ok++;results.push({guestName,greeting,ok:true});}
-      catch(e){fail++;results.push({guestName,greeting,ok:false,error:e?.message||String(e)});}
+      try{await API.request('sendOneInvitationToTestNumberA19P2F8',{eventId:state.activeEventId,guestId:g.guestId||g.id,testPhone:to,templateId});ok++;}
+      catch(e){fail++;failed.push(`${guestName}${greeting?' — '+greeting:''}${e?.message?' — '+e.message:''}`);}
     }
-    box.querySelector('progress').value=100;box.querySelector('span').textContent=`הסתיים: ${ok} התקבלו ב-Meta, ${fail} נכשלו`;
-    const recipientLines=results.map((r,i)=>`${i+1}. ${r.guestName}${r.greeting?' — '+r.greeting:''} — ${r.ok?'התקבל ב-Meta':'נכשל'+(r.error?' — '+r.error:'')}`);
-    summary.textContent=`בדיקת השליחה הסתיימה. התקבלו ב-Meta: ${ok}; נכשלו: ${fail}.\nמספר הבדיקה: +${to}\nרשומות שנבדקו:\n${recipientLines.join('\n')}`;
+    box.querySelector('progress').value=100;box.querySelector('span').textContent='הבדיקה הסתיימה';
+    summary.textContent=fail?`הבדיקה הסתיימה עם ${fail} שגיאות.\n${failed.join('\n')}`:'הבדיקה הסתיימה.';
     summary.style.whiteSpace='pre-line';summary.className='wa-confirm-status-v1190a16 '+(fail?'error':'success');
     send.innerHTML=originalSendHtml;send.disabled=false;phone.disabled=false;tpl.disabled=false;$('#waF7Close').disabled=false;
   };
