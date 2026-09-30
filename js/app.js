@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14J */
+/* V1.1.90A19P2F14M */
 let state={
   session:null,events:[],eventTypes:[],guests:[],tables:[],activity:[],activeEventId:null,
   guestSort:{key:"name",dir:"asc"},
@@ -63,6 +63,19 @@ function setUser(){if(!state.session)return;$("#userName").textContent=state.ses
 function setTheme(t){document.body.classList.toggle("light",t==="light");localStorage.setItem(APP_CONFIG.THEME_KEY,t);const b=$("#themeBtn");if(b)b.textContent="◐";const icon=$("#loginThemeIcon"),label=$("#loginThemeLabel"),loginBtn=$("#loginThemeBtn");if(icon)icon.textContent=t==="light"?"☾":"☀";if(label)label.textContent=t==="light"?"מצב כהה":"מצב בהיר";if(loginBtn)loginBtn.setAttribute("aria-label",t==="light"?"מעבר למצב כהה":"מעבר למצב בהיר")}
 function modal(html){$("#modalContent").innerHTML=html;$("#modal").classList.add("show")}
 function closeModal(){$("#modal").classList.remove("show")}
+function confirmSmallF14L_(message,title="אישור שליחה"){
+  return new Promise(resolve=>{
+    const shade=document.createElement("div");shade.className="confirm-shade-f14l";
+    shade.innerHTML=`<section class="confirm-dialog-f14l" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitleF14L"><h3 id="confirmTitleF14L">${esc(title)}</h3><p>${esc(message)}</p><div class="actions"><button type="button" class="secondary" data-confirm-no>ביטול</button><button type="button" class="primary" data-confirm-yes>שלח</button></div></section>`;
+    const finish=value=>{document.removeEventListener("keydown",onKey);shade.remove();resolve(value)};
+    const onKey=e=>{if(e.key==="Escape")finish(false)};
+    shade.querySelector("[data-confirm-no]").onclick=()=>finish(false);
+    shade.querySelector("[data-confirm-yes]").onclick=()=>finish(true);
+    shade.addEventListener("click",e=>{if(e.target===shade)finish(false)});
+    document.addEventListener("keydown",onKey);document.body.appendChild(shade);
+    shade.querySelector("[data-confirm-yes]").focus();
+  });
+}
 function showToast(message,type="success"){
   let box=$("#appToast");
   if(!box){
@@ -1256,7 +1269,7 @@ async function openGuestWhatsAppPreparationA19P2F6_(){
   const refresh=()=>{const to=waPhonePreviewV1190A16_(phone.value),n=eligible.length,approved=waSelectedTemplateApprovedF14E_(tpl);summary.textContent=!to?'יש להזין מספר בדיקה תקין.':!approved?'תבנית V3 מוכנה לבדיקה, אך השליחה חסומה עד לאישור Meta (APPROVED).':`כל ${n} הרשומות המסומנות שליחה = לא ישמשו ליצירת הודעות אישיות, וכל ההודעות יישלחו למספר +${to} בלבד.`;summary.className='wa-confirm-status-v1190a16'+((!to||!approved)?' error':'');send.disabled=!to||!n||tpl.disabled||!tpl.value||!approved;};
   let templatesF14G=[];const renderPreview=()=>waRenderPreviewF14G_($('#waTestPreviewF14G'),waTemplateByIdF14G_(templatesF14G,tpl.value),eligible[0]||rows[0]||null);phone.oninput=refresh;tpl.onchange=()=>{refresh();renderPreview();};refresh();waFillTemplateSelectF14D_(tpl,summary,send).then(t=>{templatesF14G=t;if(t.length){refresh();renderPreview();}});$('#waF7Close').onclick=closeModal;
   send.onclick=async()=>{const to=waPhonePreviewV1190A16_(phone.value),selected=eligible,templateId=tpl.value;if(!to||!selected.length||!templateId||!waSelectedTemplateApprovedF14E_(tpl))return;
-    if(!confirm(`לשלוח ${selected.length} הודעות בדיקה למספר +${to} בלבד?`))return;
+    if(!await confirmSmallF14L_(`לשלוח ${selected.length} הודעות בדיקה למספר +${to} בלבד?`))return;
     const originalSendHtml=send.innerHTML;
     send.disabled=true;phone.disabled=true;tpl.disabled=true;$('#waF7Close').disabled=true;
     send.innerHTML='<span class="seating-spinner-v171" aria-hidden="true"></span> שולח...';
@@ -1271,8 +1284,8 @@ async function openGuestWhatsAppPreparationA19P2F6_(){
     box.querySelector('progress').value=100;box.querySelector('span').textContent=`הסתיים: ${ok} התקבלו ב-Meta, ${fail} נכשלו`;
     send.innerHTML=originalSendHtml;
     const resultCards=results.map((r,i)=>`<article class="wa-result-item-f14k ${r.ok?'accepted':'failed'}"><div class="wa-result-item-head-f14k"><b>${i+1}. ${esc(r.guestName)}</b><span>${r.ok?'התקבל ב-Meta':'נכשל'}</span></div><div class="wa-result-greeting-f14k">${esc(r.greeting||'—')}</div><small>${r.ok?'מזהה הודעה: '+esc(r.messageId||'לא הוחזר מזהה'):'שגיאה: '+esc(r.error||'—')}</small></article>`).join('');
-    modal(`<section class="wa-result-modal-f14k ${fail?'has-error':'is-success'}" role="dialog" aria-labelledby="waResultTitleF14K"><h2 id="waResultTitleF14K">${fail?'בדיקת WhatsApp הסתיימה עם שגיאות':'בקשות הבדיקה התקבלו ב-Meta'}</h2><p class="wa-result-summary-f14k"><bdi dir="ltr">+${esc(to)}</bdi><br><b>התקבלו ב-Meta:</b> ${ok} · <b>נכשלו:</b> ${fail}</p><p class="wa-delivery-note-f14k">קבלת הבקשה ב-Meta אינה אישור שההודעה כבר נמסרה לטלפון.</p><div class="wa-result-list-f14k">${resultCards}</div><div class="actions"><button type="button" class="primary" id="waResultCloseF14K">סגור</button></div></section>`);
-    $('#waResultCloseF14K').onclick=closeModal;
+    modal(`<section class="wa-result-modal-f14k ${fail?'has-error':'is-success'}" role="dialog" aria-labelledby="waResultTitleF14L"><h2 id="waResultTitleF14L">${fail?'בדיקת WhatsApp הסתיימה עם שגיאות':'בקשות הבדיקה התקבלו ב-Meta'}</h2><p class="wa-result-summary-f14k"><bdi dir="ltr">+${esc(to)}</bdi><br><b>התקבלו ב-Meta:</b> ${ok} · <b>נכשלו:</b> ${fail}</p><p class="wa-delivery-note-f14k">קבלת הבקשה ב-Meta אינה אישור שההודעה כבר נמסרה לטלפון.</p><div class="wa-result-list-f14k">${resultCards}</div><div class="actions"><button type="button" class="primary" id="waResultCloseF14L">סגור</button></div></section>`);
+    $('#waResultCloseF14L').onclick=closeModal;
   };
 }
 async function openGuestWhatsAppRealF14C_(){

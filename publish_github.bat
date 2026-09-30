@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set "PROJECT_VERSION=V1.1.90A19P2F14K"
+set "PROJECT_VERSION=V1.1.90A19P2F14M"
 
 echo Publishing %PROJECT_VERSION% to GitHub...
 
