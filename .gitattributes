@@ -1,9 +1,0 @@
-/.gitattributes -text
-# F14M: explicit line-ending policy prevents Git LF/CRLF conversion warnings.
-*.html text eol=lf
-*.css  text eol=lf
-*.js   text eol=lf
-*.txt  text eol=lf
-*.bat  text eol=crlf
-CNAME  text eol=lf
-*.ico  binary

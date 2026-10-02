@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14O */
+/* V1.1.90A19P2F14Z14 */
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Hebrew",sans-serif;background:var(--bg);color:var(--text)}
 body.light{--bg:#f5f7fa;--card:#fff;--card2:#eef2f6;--text:#18212b;--muted:#65727e;--line:#d8dee4}
@@ -1261,32 +1261,15 @@ body.light #eventForm .date-picker-control{color-scheme:light}
 .wa-preview-body-f14g{padding:14px;white-space:pre-wrap;line-height:1.65;text-align:right}
 .wa-preview-button-f14g{margin:0 14px 14px;padding:9px 12px;text-align:center;border:1px solid var(--line);border-radius:9px;color:var(--accent);font-weight:700}
 
-/* F14J — compact WhatsApp send-result modal. */
-.wa-result-modal-f14j{max-width:760px}
-.wa-result-modal-f14j h2{margin-top:0}
-.wa-result-modal-f14j.is-success h2,.wa-result-modal-f14j.is-success .wa-result-summary-f14j{color:var(--success,#22a06b)}
-.wa-result-modal-f14j.has-error h2,.wa-result-modal-f14j.has-error .wa-result-summary-f14j{color:var(--danger,#d64545)}
-.wa-result-table-f14j{min-width:620px}
-.wa-result-table-f14j td,.wa-result-table-f14j th{vertical-align:top}
+/* F14V — WhatsApp confirmation/results UX */
+.wa-confirm-shade-f14v{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:#0009;backdrop-filter:blur(5px);padding:16px}
+.wa-confirm-dialog-f14v{width:min(390px,94vw);background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 22px 70px #0009;text-align:right}
+.wa-confirm-dialog-f14v h3{margin:0 0 10px}.wa-confirm-dialog-f14v p{margin:0 0 10px}.wa-confirm-extra-f14v{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px}
+.wa-result-f14v{margin-top:8px;padding:12px;border:1px solid currentColor;border-radius:12px;text-align:right}.wa-result-f14v dl{display:grid;grid-template-columns:1fr auto;gap:5px 14px;margin:10px 0}.wa-result-f14v dt,.wa-result-f14v dd{margin:0}.wa-result-f14v small{display:block;color:var(--muted)}
+/* F14V1 — keep WhatsApp send/result dialogs inside the viewport and scroll vertically when needed. */
+#modal .modal:has(.wa-result-f14v),#modal .modal:has(#waTestProgressF14C),#modal .modal:has(#waRealProgressF14C){max-height:calc(100dvh - 32px)!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;scrollbar-gutter:stable;}
+@media(max-height:700px){#modal .modal:has(.wa-result-f14v),#modal .modal:has(#waTestProgressF14C),#modal .modal:has(#waRealProgressF14C){max-height:calc(100dvh - 16px)!important;padding-top:20px!important;padding-bottom:20px!important;}}
 
-/* F14L: compact WhatsApp test result modal */
-.wa-result-modal-f14k{width:min(92vw,520px);max-width:520px}
-.wa-result-modal-f14k h2{margin:0 0 10px;font-size:1.25rem}
-.wa-result-modal-f14k.is-success h2,.wa-result-modal-f14k.is-success .wa-result-summary-f14k{color:var(--success,#22a06b)}
-.wa-result-modal-f14k.has-error h2,.wa-result-modal-f14k.has-error .wa-result-summary-f14k{color:var(--danger,#d64545)}
-.wa-result-summary-f14k{line-height:1.7;margin:0 0 8px}
-.wa-delivery-note-f14k{font-size:.9rem;color:var(--muted,#9aa7b6);margin:0 0 12px}
-.wa-result-list-f14k{display:grid;gap:8px;max-height:46vh;overflow:auto;padding-inline-end:2px}
-.wa-result-item-f14k{border:1px solid var(--border,#3a4654);border-radius:10px;padding:10px;background:var(--panel,#171d24)}
-.wa-result-item-head-f14k{display:flex;justify-content:space-between;gap:10px;align-items:center}
-.wa-result-item-f14k.accepted .wa-result-item-head-f14k span{color:var(--success,#22a06b)}
-.wa-result-item-f14k.failed .wa-result-item-head-f14k span{color:var(--danger,#d64545)}
-.wa-result-greeting-f14k{margin:6px 0;overflow-wrap:anywhere}
-.wa-result-item-f14k small{display:block;direction:ltr;text-align:left;overflow-wrap:anywhere;color:var(--muted,#9aa7b6)}
-
-/* F14L - compact confirmation modal replacing browser confirm for WhatsApp test send */
-.confirm-shade-f14l{position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:18px}
-.confirm-dialog-f14l{width:min(92vw,390px);background:var(--panel,#1f2937);color:var(--text,#f3f4f6);border:1px solid var(--border,#4b5563);border-radius:16px;box-shadow:0 18px 55px rgba(0,0,0,.35);padding:20px;direction:rtl;text-align:right}
-.confirm-dialog-f14l h3{margin:0 0 10px;font-size:1.2rem}
-.confirm-dialog-f14l p{margin:0 0 18px;line-height:1.6}
-.confirm-dialog-f14l .actions{display:flex;gap:10px;justify-content:flex-start}
+/* F14Z4 guest loading indicator */
+.guest-loading-row-f14z4 td{text-align:center;padding:28px 12px!important}
+.guest-loading-f14z4{display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px}
