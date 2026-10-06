@@ -1,9 +1,8 @@
 @echo off
 setlocal
-cd /d "%~dp0"
-echo Publishing Events Management V1.1.90A19P2F14Z14 to GitHub...
+echo Publishing Events Management V1.1.90A19P2F14Z56A
 git add .
-git commit -m "Events Management V1.1.90A19P2F14Z14"
-git push origin main
-echo Published V1.1.90A19P2F14Z14.
+git commit -m "Events Management V1.1.90A19P2F14Z56A"
+git push
+echo Published V1.1.90A19P2F14Z56A
 pause

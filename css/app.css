@@ -1,0 +1,21 @@
+/* F14Z53B — Meta pricing watch */
+.pricing-watch-status-z53b{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);line-height:1.6}
+.pricing-watch-actions-z53b{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-start;align-items:center}.pricing-watch-actions-z53b button{white-space:nowrap}
+@media(max-width:700px){.pricing-watch-actions-z53b{width:100%}.pricing-watch-actions-z53b button{flex:1 1 100%}}
+/* F14Z53B3 — separate WhatsApp costs screen, read-only Meta rows */
+.wa-pricing-table-z53b2 table{width:100%;table-layout:auto}
+.wa-pricing-table-z53b2 th,.wa-pricing-table-z53b2 td{white-space:nowrap}
+.wa-pricing-row-z53b2{cursor:pointer}.wa-pricing-row-z53b2:hover{background:var(--surface-2,var(--bg))}
+.wa-pricing-details-z53b2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px}.wa-pricing-details-z53b2 p{margin:4px 0}
+@media(max-width:700px){.wa-pricing-details-z53b2{grid-template-columns:1fr}.wa-pricing-table-z53b2 th,.wa-pricing-table-z53b2 td{white-space:normal}}
+
+/* F14Z53B3 — Meta volume tiers are technical LTR ranges inside RTL UI. */
+.wa-tier-z53b3{direction:ltr;unicode-bidi:isolate;display:inline-block;text-align:left}
+
+/* F14Z53B6 — loading and async button feedback for System Values / WhatsApp Costs */
+.admin-loading-z53b6{min-height:96px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--text);font-weight:700}
+.admin-spinner-z53b6{display:inline-block;width:20px;height:20px;border:3px solid currentColor;border-inline-start-color:transparent;border-radius:50%;animation:admin-spin-z53b6 .75s linear infinite;box-sizing:border-box;flex:0 0 auto}
+.admin-spinner-button-z53b6{width:16px;height:16px;border-width:2px;vertical-align:middle;margin-inline-end:7px}
+button[aria-busy="true"]{cursor:wait;opacity:.82}
+@keyframes admin-spin-z53b6{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.admin-spinner-z53b6{animation-duration:1.5s}}

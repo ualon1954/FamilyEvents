@@ -1,0 +1,66 @@
+<!-- V1.1.90A19P2F14Z55 -->
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>ניווט לאירוע</title><link rel="icon" href="./favicon.ico" sizes="any"><style>
+:root{color-scheme:dark;font-family:Arial,sans-serif;--page:#101827;--card:#1b2940;--text:#f5f7fb;--muted:#c6d2e4;--border:#354760;--accent:#8fc6ff;--secondary:#263d5a;--waze1:#22a56f;--waze2:#14724f;--google1:#278be8;--google2:#1769c5}
+*{box-sizing:border-box}
+html,body{margin:0;min-width:280px}
+body{min-height:100dvh;padding:clamp(8px,2.5vw,20px);background:var(--page);color:var(--text);display:grid;place-items:center}
+main{width:min(100%,760px);background:var(--card);border:1px solid var(--border);border-radius:clamp(14px,3vw,22px);padding:clamp(14px,4vw,30px);overflow:hidden}
+h1{margin:0;color:var(--accent);font-size:clamp(1.45rem,5vw,2.2rem);line-height:1.15}
+h2{margin:clamp(12px,3vw,18px) 0 10px;font-size:clamp(1.15rem,4.3vw,1.65rem);line-height:1.25}
+p{line-height:1.55;margin:7px 0;overflow-wrap:anywhere}.muted{color:var(--muted)}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.theme{min-height:42px;border:1px solid var(--border);border-radius:999px;background:var(--secondary);color:var(--text);padding:7px 12px;font:inherit;cursor:pointer;white-space:nowrap}
+.details{margin:clamp(12px,3vw,18px) 0;padding:clamp(10px,3vw,18px);border:1px solid var(--border);border-radius:14px}
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(8px,2vw,14px);margin-top:clamp(14px,3vw,20px);direction:ltr}
+.navcard{min-width:0;min-height:clamp(118px,20vw,158px);border-radius:clamp(14px,3vw,22px);text-decoration:none;color:#fff;display:grid;grid-template-columns:clamp(30px,6vw,46px) minmax(0,1fr) clamp(42px,10vw,68px);align-items:center;gap:clamp(4px,1.2vw,10px);padding:clamp(10px,2.5vw,18px) clamp(7px,2vw,16px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.13);overflow:hidden;direction:ltr}
+.navcard.waze{background:linear-gradient(145deg,var(--waze1),var(--waze2))}
+.navcard.google{background:linear-gradient(145deg,var(--google1),var(--google2))}
+.navcard:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.nav-arrow{width:clamp(30px,6vw,46px);height:clamp(30px,6vw,46px);border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;color:#153d65;font-size:clamp(1.35rem,4vw,2rem);font-weight:700;line-height:1}
+.nav-copy{text-align:center;direction:rtl;min-width:0;overflow:hidden}
+.nav-title{display:block;font-size:clamp(.92rem,3.1vw,1.5rem);font-weight:800;line-height:1.15;direction:ltr;white-space:normal;overflow-wrap:normal}
+.nav-sub{display:block;margin-top:5px;font-size:clamp(.72rem,2.2vw,.96rem);font-weight:500;line-height:1.25;white-space:normal}
+.nav-logo{width:clamp(42px,10vw,68px);height:clamp(42px,10vw,68px);display:grid;place-items:center}
+.nav-logo svg{display:block;width:100%;height:100%}
+.loading{display:flex;align-items:center;justify-content:center;gap:10px;min-height:80px}.spinner{width:22px;height:22px;border:3px solid rgba(255,255,255,.22);border-top-color:#55a7ff;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.error{color:#ffb7b7;padding:12px;border:1px solid #8b343c;border-radius:10px}
+:root[data-theme="light"]{color-scheme:light;--page:#f0f5fc;--card:#fff;--text:#19304a;--muted:#455b72;--border:#c8d7e9;--accent:#1767b4;--secondary:#e8f1fb}
+:root[data-theme="light"] .spinner{border-color:rgba(25,48,74,.2);border-top-color:#1767b4}:root[data-theme="light"] .error{color:#a91f35}
+
+/* Tablet / narrow desktop: keep two choices, reduce density smoothly */
+@media (max-width:700px){
+ .navcard{grid-template-columns:36px minmax(0,1fr) 54px}
+ .nav-logo{width:54px;height:54px}
+ .nav-arrow{width:36px;height:36px}
+}
+/* Phone: still side by side, compact but readable */
+@media (max-width:480px){
+ body{padding:8px}
+ main{padding:14px}
+ .top{gap:8px}
+ .theme{min-height:38px;font-size:.86rem;padding:6px 9px}
+ .details{padding:11px}
+ .actions{gap:7px}
+ .navcard{min-height:108px;grid-template-columns:28px minmax(0,1fr) 40px;padding:9px 6px;gap:3px}
+ .nav-arrow{width:28px;height:28px;font-size:1.25rem}
+ .nav-logo{width:40px;height:40px}
+ .nav-title{font-size:.9rem}
+ .nav-sub{font-size:.68rem;margin-top:3px}
+}
+/* Very small phones: preserve usable logos and labels; remove only secondary line */
+@media (max-width:360px){
+ body{padding:6px}
+ main{padding:12px}
+ .actions{gap:6px}
+ .navcard{min-height:94px;grid-template-columns:26px minmax(0,1fr) 36px;padding:8px 5px}
+ .nav-arrow{width:26px;height:26px;font-size:1.15rem}
+ .nav-logo{width:36px;height:36px}
+ .nav-title{font-size:.82rem}
+ .nav-sub{display:none}
+}
+/* Extreme narrow viewport: stack rather than break layout */
+@media (max-width:300px){
+ .actions{grid-template-columns:1fr}
+ .navcard{min-height:86px;grid-template-columns:30px minmax(0,1fr) 42px}
+ .nav-logo{width:42px;height:42px}
+}
+</style></head><body><main><div class="top"><h1>ניווט לאירוע</h1><button id="themeToggle" class="theme" type="button"></button></div><div id="content"><div class="loading"><span class="spinner"></span><span>טוען פרטי אירוע...</span></div></div></main><script src="js/config.js?v=1.1.90A19P2F14Z52"></script><script src="js/navigation.js?v=V1.1.90A19P2F14Z55"></script></body></html>

@@ -1,4 +1,4 @@
-<!-- V1.1.90A19P2F14Z14 -->
+<!-- V1.1.90A19P2F14Z52 -->
 <!doctype html>
 <html lang="he" dir="rtl">
 <head>
@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ניהול אירועים</title>
   <link rel="icon" href="./favicon.ico" sizes="any">
-  <link rel="stylesheet" href="./css/styles.css?v=1.1.90A19P1">
+  <link rel="stylesheet" href="./css/styles.css?v=1.1.90A19P2F14Z56">
   <!-- V1.1.5: embedded CSS fallback. Keeps the UI styled even if hosting/path setup blocks the external CSS file. -->
   <style id="embeddedStylesV1112">
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
@@ -1107,7 +1107,8 @@ body.light #loginOverlay .login-field input{color-scheme:light}
     <button data-page="events">אירועים</button>
     <button data-page="guests">מוזמנים</button>
     <button data-page="seating">ניהול שולחנות</button>
-    <button data-page="messages" data-role="Admin">תבניות WhatsApp</button>
+    <button data-page="messages" data-roles="Admin,EventManager">תבניות WhatsApp</button>
+    <button data-page="whatsappLog" data-roles="Admin,EventManager">יומן WhatsApp</button>
     <button data-page="about">אודות</button>
     <button data-page="activity" data-role="Admin">יומן פעילות</button>
     <button data-page="admin" data-role="Admin">ניהול</button>
@@ -1175,7 +1176,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
   </section>
 
   <section id="page-guests" class="page">
-    <div class="page-head"><h1>מוזמנים</h1><div class="guest-page-actions"><button type="button" class="secondary" id="guestWhatsAppTestBulkF14C" data-role="Admin">שליחת WhatsApp לבדיקה</button><button type="button" class="primary" id="guestWhatsAppBulkA19P2F6" data-role="Admin">שליחת WhatsApp</button><button class="secondary" id="guestTemplateBtn">תבנית Excel</button><button class="secondary" id="guestExportBtn">ייצוא Excel</button><button class="secondary" id="guestImportBtn">ייבוא Excel</button><button type="button" class="danger" id="resetEventGuestsV1190A10" hidden>איפוס מוזמנים באירוע</button><button class="primary" id="addGuestBtn">+ הוספת מוזמן</button><input id="guestImportFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></div></div>
+    <div class="page-head"><h1>מוזמנים</h1><div class="guest-page-actions"><button type="button" class="secondary" id="guestWhatsAppTestBulkF14C" data-roles="Admin,EventManager">שליחת WhatsApp לבדיקה</button><button type="button" class="primary" id="guestWhatsAppBulkA19P2F6" data-roles="Admin,EventManager">שליחת WhatsApp</button><button class="secondary" id="guestTemplateBtn">תבנית Excel</button><button class="secondary" id="guestExportBtn">ייצוא Excel</button><button class="secondary" id="guestImportBtn">ייבוא Excel</button><button type="button" class="danger" id="resetEventGuestsV1190A10" hidden>איפוס מוזמנים באירוע</button><button class="primary" id="addGuestBtn">+ הוספת מוזמן</button><input id="guestImportFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></div></div>
     <div class="guest-stat-sections-v178 guest-area-a19" id="guestStatsV178" aria-label="סטטיסטיקות מוזמנים">
       <section class="guest-stat-section-v178"><h2>אישורי הגעה</h2><div class="guest-stat-grid-v178" id="guestRsvpStatsV178"></div></section>
       <section class="guest-stat-section-v178"><h2>שיוך לשולחנות</h2><div class="guest-stat-grid-v178" id="guestSeatingStatsV178"></div></section>
@@ -1223,7 +1224,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       <button id="addTableBtn" class="primary">+ הוספת שולחן</button><button type="button" class="danger" id="deleteAllEventTablesV1190A10" hidden>מחיקת כל השולחנות</button>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="tableManagementPanelV15">
       <div class="table-summary" id="tableSummary"></div>
       <div id="guestSeatingNoticeV174" class="muted" aria-live="polite"></div>
       <div class="table-wrap">
@@ -1241,8 +1242,18 @@ body.light #loginOverlay .login-field input{color-scheme:light}
         </table>
       </div>
     </div>
+
+    <div class="panel" id="tableManagerLookupV15">
+      <h2>איתור שיוך שולחן</h2>
+      <div class="filters table-manager-filters-v15">
+        <label>חיפוש מוזמן<input id="tableLookupSearchV15" placeholder="שם, טלפון או מספר שולחן"></label>
+        <label>צד<select id="tableLookupSideV15"><option value="">כל הצדדים</option></select></label>
+        <label>קבוצה<select id="tableLookupGroupV15"><option value="">כל הקבוצות</option></select></label>
+      </div>
+      <div id="seatingWorkspaceV170"></div>
+    </div>
   </section>
-  <section id="page-messages" class="page"><div class="page-head"><h1>ניהול תבניות WhatsApp</h1><button class="primary" id="tplNew">תבנית חדשה</button></div><p class="tpl-note">ניהול תבניות המערכת והקישור לתבניות Meta. אישור/שינוי התבנית עצמה מתבצע ב־Meta; שליחה מתבצעת ממסך המוזמנים.</p><div id="tplNotice" role="status"></div><div class="panel"><div id="tplList">טוען תבניות…</div></div><div class="tpl-shade" id="tplShade" hidden><div class="panel tpl-dialog" id="tplEditor" role="dialog" aria-modal="true"><h2 id="tplEditorTitle">עריכת תבנית</h2><div id="tplEditorNotice" role="status"></div><div class="grid"><label>שם תבנית <span class="tpl-required">*</span><input id="tplName" maxlength="120" required></label><label>סוג אירוע<select id="tplEventType"><option value="">כל סוגי האירועים</option></select></label><label>מטרה<select id="tplPurpose"><option value="invitation">הזמנה</option><option value="reminder">תזכורת</option><option value="confirmation">אישור</option><option value="thanks">תודה</option></select></label><label>שם תבנית ב־Meta<input id="tplMetaName" placeholder="family_event_invitation_v3"></label><label>סטטוס Meta<select id="tplMetaStatus"><option value="">לא הוגדר</option><option value="APPROVED">מאושרת</option><option value="PENDING">בבדיקה</option><option value="REJECTED">נדחתה</option><option value="Draft">טיוטה</option></select></label><label>קטגוריית Meta<select id="tplMetaCategory"><option value="">לא אומתה</option><option value="Marketing">Marketing</option><option value="Utility">Utility</option><option value="Authentication">Authentication</option></select></label></div><label>הוספת משתנה <select id="tplVariable"><option value="">בחר משתנה</option><option value="{{פנייה_אישית}}">פנייה אישית</option><option value="{{שם_המוזמן}}">שם המוזמן</option><option value="{{שם_האירוע}}">שם האירוע</option><option value="{{תאריך_האירוע}}">תאריך האירוע</option><option value="{{שעת_האירוע}}">שעת האירוע</option><option value="{{מקום_האירוע}}">מקום האירוע</option><option value="{{קישור_RSVP}}">קישור RSVP</option></select></label><p class="tpl-v3-note-f14e">V3: גוף ההודעה נקרא אוטומטית מתבנית Meta ואינו נערך במערכת. תמונת Header נשארת בשליטת מנהל האירוע; Body {{1}} הוא הפנייה האישית וכפתור ״אישור הגעה״ משתמש במפתח RSVP.</p><label>נוסח ההודעה <span class="tpl-required">*</span><textarea id="tplBody" rows="7" maxlength="3500"></textarea></label><div class="actions"><button class="primary" id="tplSave">שמור טיוטה</button><button class="secondary" id="tplCancel">ביטול</button></div><div id="tplImageArea" hidden><label>תמונת תבנית (PNG/JPG/WEBP, עד 4MB)<input type="file" id="tplImage" accept="image/png,image/jpeg,image/webp"></label><div id="tplImageInfo"></div><img id="tplImagePreview" class="tpl-image-preview" alt="תמונת התבנית" hidden><button type="button" class="secondary" id="tplReplaceImage">החלף תמונה</button><button type="button" class="secondary" id="tplRemoveImage">הסר תמונה</button></div><h3>תצוגה מקדימה — דוגמה בלבד</h3><div class="tpl-preview" id="tplPreview"><div id="tplPreviewText"></div><img id="tplImageView" class="tpl-image-preview" alt="תמונת ההודעה" hidden></div></div></div></section>
+  <section id="page-messages" class="page"><div class="page-head"><h1 id="tplPageTitle">ניהול תבניות WhatsApp</h1><div class="tpl-page-actions"><select id="tplSyncEnvironment" aria-label="סביבת Meta"><option value="PRODUCTION">PRODUCTION</option><option value="TEST">TEST</option></select><button class="primary" id="tplSyncMeta">🔄 סנכרון תבניות מ־Meta</button></div></div><p class="tpl-note" id="tplAdminNote">Meta היא מקור האמת לתוכן ולסטטוס התבניות. כאן מנהלים את שם התצוגה, מטרת השימוש והאם התבנית פעילה במערכת.</p><p class="tpl-note" id="tplManagerNote" hidden>התבניות מוצגות לקריאה בלבד. ניתן להחליף את תמונת ההזמנה בתבנית הכוללת תמונה.</p><div id="tplNotice" role="status"></div><div class="panel"><div id="tplList">טוען תבניות…</div></div><div class="tpl-shade" id="tplShade" hidden><div class="panel tpl-dialog" id="tplEditor" role="dialog" aria-modal="true"><h2 id="tplEditorTitle">עריכת תבנית</h2><div id="tplEditorNotice" role="status"></div><div class="grid"><label>שם תבנית <span class="tpl-required">*</span><input id="tplName" maxlength="120" required></label><label>סוג אירוע<select id="tplEventType"><option value="">כל סוגי האירועים</option></select></label><label>מטרה<select id="tplPurpose"><option value="invitation">הזמנה לאירוע</option><option value="rsvp_update">תזכורת לאישור הגעה</option><option value="table_update">שיוך שולחנות וניווט</option><option value="table_payment_update">שיוך שולחנות, ניווט ותשלום</option><option value="thank_you">תודה למשתתפים</option></select></label><label>פעילה במערכת<select id="tplActive"><option value="true">כן</option><option value="false">לא</option></select></label><label>שם תבנית ב־Meta<input id="tplMetaName" readonly></label><label>סטטוס Meta<input id="tplMetaStatus" readonly></label><label>קטגוריית Meta<input id="tplMetaCategory" readonly></label></div><p class="tpl-v3-note-f14e">V3: גוף ההודעה נקרא אוטומטית מתבנית Meta ואינו נערך במערכת. תמונת Header נשארת בשליטת מנהל האירוע; Body {{1}} הוא הפנייה האישית וכפתור ״אישור הגעה״ משתמש במפתח RSVP.</p><label>נוסח ההודעה מ־Meta<textarea id="tplBody" rows="7" maxlength="3500" readonly></textarea></label><div class="actions"><button class="primary" id="tplSave">שמור הגדרות</button><button class="secondary" id="tplCancel">ביטול</button></div><div id="tplImageArea" hidden><label>תמונת תבנית (PNG/JPG/WEBP, עד 4MB)<input type="file" id="tplImage" accept="image/png,image/jpeg,image/webp"></label><div id="tplImageInfo"></div><img id="tplImagePreview" class="tpl-image-preview" alt="תמונת התבנית" hidden><button type="button" class="secondary" id="tplReplaceImage">החלף תמונה</button><button type="button" class="secondary" id="tplRemoveImage">הסר תמונה</button></div><h3>תצוגה מקדימה — דוגמה בלבד</h3><div class="tpl-preview" id="tplPreview"><div id="tplPreviewText"></div><img id="tplImageView" class="tpl-image-preview" alt="תמונת ההודעה" hidden></div></div></div></section>
 
   <section id="page-about" class="page">
     <div class="about-hero">
@@ -1262,6 +1273,40 @@ body.light #loginOverlay .login-field input{color-scheme:light}
     </div>
   </section>
 
+
+  <section id="page-whatsappLog" class="page">
+    <div class="page-head"><h1>יומן WhatsApp</h1><div class="guest-page-actions wa-log-actions-z55c">
+      <button class="wa-log-action-btn-z55c refresh" id="waLogRefreshZ55B" type="button" title="רענון היומן"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/></svg><span>רענון</span></button>
+      <button class="wa-log-action-btn-z55c purge" id="waLogPurgeZ55B" data-role="Admin" type="button" title="ניקוי רשומות לוג ישנות"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg><span>ניקוי לוג ישן</span></button>
+    </div></div>
+    <p class="muted wa-log-intro-z55">הסטטוס „התקבל ב-Meta” מאשר קבלת בקשת השליחה בלבד. סטטוסי מסירה לטלפון יתווספו בשלב המעקב הבא.</p>
+    <div class="guest-stat-sections-v178 guest-area-a19" id="waLogStatsZ55B" aria-label="סטטיסטיקות WhatsApp">
+      <section class="guest-stat-section-v178"><h2>סטטוס הודעות WhatsApp</h2><div id="waLogSummaryZ55B" class="guest-stat-grid-v178"></div></section>
+    </div>
+    <button type="button" id="waLogFiltersToggleZ55B" class="guest-filters-toggle-a5 guest-area-a19" aria-controls="waLogFiltersZ55B" aria-expanded="false">⚲ <span>הצג סינון</span> <span aria-hidden="true">▾</span></button>
+    <div class="filters" id="waLogFiltersZ55B">
+      <div class="search-field"><span class="search-icon" aria-hidden="true">⌕</span><input id="waLogSearchZ55B" placeholder="חיפוש לפי שם, טלפון או wamid"></div>
+      <select id="waLogEventZ55B" aria-label="סינון לפי אירוע"><option value="">כל האירועים</option></select>
+      <select id="waLogEnvironmentZ55B" aria-label="סינון לפי סביבה"><option value="">כל הסביבות</option><option value="PRODUCTION">PRODUCTION</option><option value="TEST">TEST</option></select>
+      <select id="waLogStatusZ55B" aria-label="סינון לפי סטטוס"><option value="">כל הסטטוסים</option><option value="META_ACCEPTED">התקבל ב-Meta</option><option value="API_FAILED">נכשל ב-API</option><option value="SENT">נשלח</option><option value="DELIVERED">נמסר</option><option value="READ">נקרא</option><option value="FAILED">נכשל במסירה</option></select>
+      <input type="date" id="waLogFromZ55B" aria-label="מתאריך" title="מתאריך">
+      <input type="date" id="waLogToZ55B" aria-label="עד תאריך" title="עד תאריך">
+      <button type="button" id="waLogClearFiltersZ55B" class="guest-clear-filters-v180" aria-label="נקה סינון" title="נקה את כל הסינונים והחיפוש"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16l-6 7v5l-4 2v-7z"/><path d="m16 17 5 5m0-5-5 5"/></svg><span>נקה סינון</span></button>
+    </div>
+    <div id="waLogNoticeZ55B" class="guest-count-status-v178" role="status" aria-live="polite"></div>
+    <div class="table-wrap guest-table-area-a19"><table class="guests-table wa-log-table-z55"><thead><tr>
+      <th class="sortable" data-wa-sort="createdAt" tabindex="0">זמן <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-wa-sort="eventName" tabindex="0">אירוע <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-wa-sort="guestName" tabindex="0">מוזמן <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-wa-sort="phone" tabindex="0">טלפון <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-wa-sort="templateName" tabindex="0">תבנית <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-wa-sort="environment" tabindex="0">סביבה <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-wa-sort="status" tabindex="0">סטטוס <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-wa-sort="wamid" tabindex="0">wamid <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-wa-sort="errorMessage" tabindex="0">שגיאה <span class="sort-icon">↕</span></th>
+    </tr></thead><tbody id="waLogBodyZ55B"><tr><td colspan="9">טוען…</td></tr></tbody></table></div>
+  </section>
+
   <section id="page-activity" class="page"><h1>יומן פעילות</h1><div id="activityList" class="list"></div></section>
   <section id="page-admin" class="page">
     <div class="page-head"><h1>ניהול והגדרות</h1></div>
@@ -1274,6 +1319,8 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       <button data-admin-tab="roles">תפקידים</button>
       <button data-admin-tab="permissions">ניהול הרשאות</button>
       <button data-admin-tab="whatsapp">חיבור ל-WhatsApp</button>
+      <button data-admin-tab="systemValues">ערכי מערכת</button>
+      <button data-admin-tab="whatsappCosts">עלויות WhatsApp</button>
       <button data-admin-tab="versions">גרסאות</button>
     </div>
     <div id="adminContent" class="panel admin-content"></div>
@@ -1284,6 +1331,16 @@ body.light #loginOverlay .login-field input{color-scheme:light}
   </section>
 </main>
 
+
+<div id="startupOverlayF14Z32" class="startup-overlay-f14z26" hidden aria-live="polite" aria-busy="true">
+  <div class="startup-card-f14z26" role="status">
+    <div class="startup-spinner-f14z26" aria-hidden="true"></div>
+    <h2>טוען את המערכת…</h2>
+    <div id="startupTextF14Z32" class="startup-text-f14z26">מכין נתונים</div>
+    <div class="startup-track-f14z26"><div id="startupBarF14Z32" class="startup-bar-f14z26"></div></div>
+    <div id="startupPercentF14Z32" class="startup-percent-f14z26">0%</div>
+  </div>
+</div>
 <div id="loginOverlay" class="overlay show">
   <div class="login-card" role="dialog" aria-modal="true" aria-labelledby="loginTitle" dir="rtl">
     <button id="loginThemeBtn" class="login-theme-btn" type="button" aria-label="החלפת מצב תצוגה"><span id="loginThemeIcon" aria-hidden="true">☀</span><span id="loginThemeLabel">מצב בהיר</span></button>
@@ -1307,11 +1364,11 @@ body.light #loginOverlay .login-field input{color-scheme:light}
   </div>
 </div>
 
-<script src="js/config.js?v=1.1.36"></script>
-<script src="js/version.js?v=1.1.90A19P2F14A"></script>
-<script src="js/session.js?v=1.1.77"></script>
-<script src="js/api.js?v=1.1.36"></script>
-<script src="js/app.js?v=1.1.90A19P2F14A"></script>
-<script src="js/templates.js?v=1.1.90A19P2F14Z14"></script>
+<script src="js/config.js?v=1.1.90A19P2F14Z52"></script>
+<script src="js/version.js?v=V1.1.90A19P2F14Z56"></script>
+<script src="js/session.js?v=1.1.90A19P2F14Z52"></script>
+<script src="js/api.js?v=1.1.90A19P2F14Z52"></script>
+<script src="js/app.js?v=V1.1.90A19P2F14Z56"></script>
+<script src="js/templates.js?v=1.1.90A19P2F14Z52"></script>
 </body>
 </html>

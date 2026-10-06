@@ -1,13 +1,14 @@
-/* V1.1.90A19P2F14Z14 */
+/* V1.1.90A19P2F14Z55B */
 let state={
   session:null,events:[],eventTypes:[],guests:[],tables:[],activity:[],activeEventId:null,
   guestSort:{key:"name",dir:"asc"},
+  waLogSort:{key:"createdAt",dir:"desc"},
   lookups:{sides:[],groups:[],statuses:[]},
   adminData:{users:[],roles:[],permissions:[],whatsapp:[],eventTypes:[]},
   waSendTemplatesCacheF14G:new Map(),waSendTemplateImagesF14G:new Map(),
   lookupIndex:{sidesByType:{},groupsByType:{},statuses:[],labelMap:{}},
   adminTab:"eventTypes",adminLookupEventTypeId:null,adminLookupBoundEventId:null,adminLookupManualOverride:false,guestImportPreview:null,guestImportShowAll:false,seating:null,
-  waCostBaseF14:null,waCostPromiseF14:null
+  waCostBaseF14:null,waCostPromiseF14:null,waCostBaseByCategoryF14:new Map()
 };
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -29,6 +30,11 @@ const CURRENT_EVENT_KEY="events_management_current_event_id";
 let currentPage="home";
 
 function showPage(name){
+  const role=state.session?.role||"";
+  if(role==="TableManager"&&name!=="seating")name="seating";
+  if(role!=="Admin"&&["admin","activity"].includes(name))name="dashboard";
+  if(name==="messages"&&!['Admin','EventManager'].includes(role))name="dashboard";
+  if(name==="whatsappLog"&&!['Admin','EventManager'].includes(role))name="dashboard";
   if(name==="seating"&&!canManageTables_()){
     showToast(state.activeEventId?"ניהול שולחנות אינו מופעל באירוע הנבחר":"יש לבחור אירוע קודם","error");
     name="dashboard";
@@ -37,10 +43,11 @@ function showPage(name){
   $$(".page").forEach(x=>x.classList.remove("active"));
   $("#page-"+name)?.classList.add("active");
   $$("#mainNav [data-page]").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===name));
-  const labels={home:"ראשי",dashboard:"לוח בקרה",events:"אירועים",guests:"מוזמנים",seating:"ניהול שולחנות",messages:"תבניות WhatsApp",about:"אודות",activity:"יומן פעילות",admin:"ניהול"};
+  const labels={home:"ראשי",dashboard:"לוח בקרה",events:"אירועים",guests:"מוזמנים",seating:"ניהול שולחנות",messages:"תבניות WhatsApp",whatsappLog:"יומן WhatsApp",about:"אודות",activity:"יומן פעילות",admin:"ניהול"};
   const pageName=$("#mobilePageName"); if(pageName) pageName.textContent=labels[name]||"";
   if(name==="admin") renderAdmin();
   if(name==="messages") tplLoadA19P2();
+  if(name==="whatsappLog") loadWhatsAppLogZ55_();
   if(name==="seating") loadSeatingV170_();
   if(name==="guests"&&canManageTables_())loadSeatingV170_();
   if(name==="guests"&&state.activeEventId){
@@ -53,13 +60,33 @@ function showPage(name){
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function applyRole(){
-  $$('[data-role]').forEach(el=>el.style.display=(state.session?.role===el.dataset.role?"":"none"));
+  const role=state.session?.role||'';
+  $$('[data-role]').forEach(el=>el.style.display=(role===el.dataset.role?"":"none"));
+  $$('[data-roles]').forEach(el=>el.style.display=String(el.dataset.roles||'').split(',').includes(role)?"":"none");
+  const tablePanel=$('#tableManagementPanelV15');if(tablePanel)tablePanel.hidden=role==='TableManager';
+  const seatingTitle=$('#page-seating h1');if(seatingTitle)seatingTitle.textContent=role==='TableManager'?'שיוך שולחנות':'ניהול שולחנות';
+  if(role==='TableManager'){
+    $$('#mainNav [data-page]').forEach(btn=>btn.style.display=btn.dataset.page==='seating'?"":"none");
+  }else{
+    $$('#mainNav [data-page]').forEach(btn=>{if(!btn.dataset.role)btn.style.removeProperty('display')});
+  }
   $$("#mainNav [data-page]").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===currentPage));
 }
 function saveSession(){localStorage.setItem(SESSION_CONFIG.SESSION_KEY,JSON.stringify(state.session))}
 function clearSession(){localStorage.removeItem(SESSION_CONFIG.SESSION_KEY);state.session=null;state.waCostBaseF14=null;state.waCostPromiseF14=null;$("#loginOverlay").classList.add("show")}
 function restoreSession(){try{const s=JSON.parse(localStorage.getItem(SESSION_CONFIG.SESSION_KEY));if(s&&s.expiresAt>Date.now())state.session=s;else clearSession()}catch{clearSession()}}
-function setUser(){if(!state.session)return;$("#userName").textContent=state.session.name;$("#userBubble").textContent=(state.session.name||"?")[0].toUpperCase();applyRole()}
+function headerUserName_(){
+  if(!state.session)return "";
+  return state.session.role==="TableManager"&&window.matchMedia("(max-width: 850px)").matches?"מ.ש":(state.session.name||"");
+}
+function setUser(){
+  if(!state.session)return;
+  const nameEl=$("#userName");
+  if(nameEl){nameEl.textContent=headerUserName_();nameEl.title=state.session.role==="TableManager"?`מנהל שולחנות · ${state.session.name||""}`:(state.session.name||"");}
+  $("#userBubble").textContent=(state.session.name||"?")[0].toUpperCase();
+  applyRole();
+}
+window.addEventListener("resize",()=>{if(state.session)setUser()});
 function setTheme(t){document.body.classList.toggle("light",t==="light");localStorage.setItem(APP_CONFIG.THEME_KEY,t);const b=$("#themeBtn");if(b)b.textContent="◐";const icon=$("#loginThemeIcon"),label=$("#loginThemeLabel"),loginBtn=$("#loginThemeBtn");if(icon)icon.textContent=t==="light"?"☾":"☀";if(label)label.textContent=t==="light"?"מצב כהה":"מצב בהיר";if(loginBtn)loginBtn.setAttribute("aria-label",t==="light"?"מעבר למצב כהה":"מעבר למצב בהיר")}
 function modal(html){$("#modalContent").innerHTML=html;$("#modal").classList.add("show")}
 function closeModal(){$("#modal").classList.remove("show")}
@@ -110,80 +137,45 @@ function mutationDone_(message,r,started){
 }
 
 
-async function getWaCostEstimateCachedF14_(count=1){
-  const n=Math.max(0,Number(count)||0);
-  if(!state.waCostBaseF14){
-    if(!state.waCostPromiseF14){
-      state.waCostPromiseF14=API.request('getWhatsAppCostEstimateF14',{count:1,category:'Marketing'})
-        .then(r=>{state.waCostBaseF14=r?.estimate||null;return state.waCostBaseF14;})
-        .finally(()=>{state.waCostPromiseF14=null;});
-    }
-    await state.waCostPromiseF14;
-  }
-  const b=state.waCostBaseF14;
-  if(!b)return null;
-  const unit=b.unitUsd==null?null:Number(b.unitUsd);
-  const fx=b.usdIls==null?null:Number(b.usdIls);
-  return {...b,count:n,estimatedUsd:unit==null?null:unit*n,estimatedIls:(unit==null||fx==null)?null:unit*n*fx};
+function waCostTextF14Z34_(e,category){
+  if(e?.estimatedIls!=null)return '₪'+Number(e.estimatedIls).toFixed(2);
+  return String(category||'').toUpperCase()==='UTILITY'?'לא הוגדר תעריף Utility':'לא ניתן לחשב';
+}
+async function getWaCostEstimateCachedF14_(count=1,category='Marketing'){
+  const n=Math.max(0,Number(count)||0),cat=String(category||'Marketing').trim()||'Marketing';
+  if(!(state.waCostBaseByCategoryF14 instanceof Map))state.waCostBaseByCategoryF14=new Map();
+  const key=cat.toUpperCase();let b=state.waCostBaseByCategoryF14.get(key)||null;
+  if(!b){const r=await API.request('getWhatsAppCostEstimateF14',{count:1,category:cat});b=r?.estimate||null;if(b)state.waCostBaseByCategoryF14.set(key,b);}
+  if(!b)return null;const unit=b.unitUsd==null?null:Number(b.unitUsd),fx=b.usdIls==null?null:Number(b.usdIls);
+  return {...b,count:n,category:cat,estimatedUsd:unit==null?null:unit*n,estimatedIls:(unit==null||fx==null)?null:unit*n*fx};
 }
 
+function startupProgressF14Z32_(done,total,label){
+  const overlay=$("#startupOverlayF14Z32"),bar=$("#startupBarF14Z32"),pct=$("#startupPercentF14Z32"),txt=$("#startupTextF14Z32");
+  const percent=Math.max(0,Math.min(100,Math.round((done/Math.max(1,total))*100)));
+  if(overlay)overlay.hidden=false;if(bar)bar.style.width=percent+"%";if(pct)pct.textContent=percent+"%";if(txt&&label)txt.textContent=label;
+}
+function startupPaintF14Z32_(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));}
+function startupHideF14Z32_(){const overlay=$("#startupOverlayF14Z32");if(overlay)overlay.hidden=true;}
 async function bootstrap(){
   setGuestsLoadingF14Z4_(true);
-  // F14: warm the WhatsApp cost cache once per login/session. Repeated bootstrap calls reuse it.
   getWaCostEstimateCachedF14_(1).catch(()=>{});
-  // V1.1.63: start both requests together, but populate the event selector as soon as
-  // either request returns an event list. The selector no longer waits for the large
-  // bootstrap payload (guests/admin/activity) to finish.
-  const applyEarlyEvents_=events=>{
-    if(!Array.isArray(events)||!events.length)return;
-    state.events=events;
-    restoreCurrentEvent_();
-    renderCurrentEventContext_();
-  };
-
-  const bootstrapPromise=API.request("bootstrap",{token:state.session?.token}).then(base=>{
-    if(base.serverVersion!==APP_VERSION.REQUIRED_SERVER_VERSION) throw new Error(`גרסת השרת אינה הגרסה הנדרשת. שרת: ${base.serverVersion||"לא ידועה"} | נדרש: ${APP_VERSION.REQUIRED_SERVER_VERSION}`);
-    if(!state.events.length)applyEarlyEvents_(base.events);
-    return base;
-  });
-  const eventPromise=API.request("getEventsContextV158",{token:state.session?.token}).then(er=>{
-    if(er.serverVersion!==APP_VERSION.REQUIRED_SERVER_VERSION) throw new Error(`גרסת שרת לא תואמת בקריאת האירועים: ${er.serverVersion||"לא ידועה"}`);
-    applyEarlyEvents_(er.events);
-    return er;
-  });
-
-  const [r,eventResult]=await Promise.allSettled([bootstrapPromise,eventPromise]);
-  if(r.status!=="fulfilled") throw r.reason;
-  const base=r.value;
-
-  let events=Array.isArray(base.events)?base.events:[];
-  if(eventResult.status==="fulfilled"){
-    const er=eventResult.value;
-    const authoritative=Array.isArray(er.events)?er.events:[];
-    if(authoritative.length)events=authoritative;
-    console.info("[Events V1.1.63] authoritative event context",{eventCount:er.eventCount,database:er.database,diagnostics:er.diagnostics});
-    if(!events.length){
-      const dbName=er?.database?.name?` (${er.database.name})`:"";
-      const rows=Number(er?.diagnostics?.lastRow||0);
-      const hdr=(er?.diagnostics?.headers||[]).join(", ");
-      showToast(`לא נמצאו אירועים במסד הנתונים${dbName}. Events rows=${rows}${hdr?` · headers: ${hdr}`:""}`,"error");
-    }
-  }else{
-    console.error("[Events V1.1.63] authoritative event context failed",eventResult.reason);
-    if(!events.length) showToast(`טעינת רשימת האירועים נכשלה: ${eventResult.reason?.message||eventResult.reason}`,"error");
-    else showToast("רשימת האירועים נטענה ממנגנון הגיבוי; קריאת ההקשר הייעודית נכשלה","error");
-  }
-
-  state.events=events; state.eventTypes=Array.isArray(base.eventTypes)?base.eventTypes:[]; state.guests=Array.isArray(base.guests)?base.guests:[]; state.tables=Array.isArray(base.tables)?base.tables:[]; state.activity=Array.isArray(base.activity)?base.activity:[];
-  state.lookups=base.lookups||{sides:[],groups:[],statuses:[]};
-  rebuildLookupIndex_();
-  state.adminData=base.adminData||{users:[],roles:[],permissions:[],whatsapp:[],eventTypes:[]};
-  if(!state.eventTypes.length) state.eventTypes=state.adminData.eventTypes||[];
-  restoreCurrentEvent_();
-  renderAll();
-  setGuestsLoadingF14Z4_(false);
+  const jobs=[
+    ["bootstrapCoreParallel","טוען אירועים והגדרות…"],
+    ["bootstrapGuestsParallel","טוען מוזמנים…"],
+    ["bootstrapTablesParallel","טוען שולחנות…"],
+    ["bootstrapAdminParallel","טוען הרשאות וניהול…"],
+    ["getEventsContextV158","מאמת רשימת אירועים…"]
+  ];
+  let done=0;startupProgressF14Z32_(0,jobs.length,"טוען נתוני מערכת במקביל…");
+  const results=await Promise.all(jobs.map(([action,label])=>API.request(action,{token:state.session?.token}).then(r=>{done++;startupProgressF14Z32_(done,jobs.length,label);return r;})));
+  const [core,guestPart,tablePart,adminPart,eventResult]=results;
+  for(const r of results)if(r.serverVersion!==APP_VERSION.REQUIRED_SERVER_VERSION)throw new Error(`גרסת השרת אינה הגרסה הנדרשת. שרת: ${r.serverVersion||"לא ידועה"} | נדרש: ${APP_VERSION.REQUIRED_SERVER_VERSION}`);
+  let events=Array.isArray(eventResult.events)&&eventResult.events.length?eventResult.events:(Array.isArray(core.events)?core.events:[]);
+  state.events=events;state.eventTypes=Array.isArray(core.eventTypes)?core.eventTypes:[];state.guests=Array.isArray(guestPart.guests)?guestPart.guests:[];state.tables=Array.isArray(tablePart.tables)?tablePart.tables:[];state.activity=Array.isArray(core.activity)?core.activity:[];
+  state.lookups=core.lookups||{sides:[],groups:[],statuses:[]};rebuildLookupIndex_();state.adminData=adminPart.adminData||{users:[],roles:[],permissions:[],whatsapp:[],eventTypes:[]};if(!state.eventTypes.length)state.eventTypes=state.adminData.eventTypes||[];
+  restoreCurrentEvent_();renderAll();setGuestsLoadingF14Z4_(false);startupProgressF14Z32_(jobs.length,jobs.length,"הטעינה הושלמה");
 }
-
 function setGuestsLoadingF14Z4_(loading){
   const body=document.querySelector('#guestsBody');
   if(!body)return;
@@ -367,25 +359,43 @@ function renderDashboard(){
   $("#statConfirmed").textContent=gs.reduce((a,g)=>a+(+g.confirmedCount||0),0);
   $("#statPending").textContent=gs.filter(g=>(g.rsvpStatus||g.status)==="Pending").length;
 }
-function displayUserPhone_(value){const p=String(value??'').trim();return /^5\d{8}$/.test(p)?'0'+p:p;}
+function displayUserPhone_(value){const raw=String(value??'').trim(),d=raw.replace(/\D/g,'');if(/^5\d{8}$/.test(d))return '0'+d;if(/^9725\d{8}$/.test(d))return '0'+d.slice(3);return raw;}
 function formatRsvpDeadline_(value){
   const match=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(value||""));
   return match?`${match[3]}/${match[2]}/${match[1]} בשעה ${match[4]}:${match[5]}`:String(value||"");
 }
 function renderEvents(){
-  $("#eventsGrid").innerHTML=state.events.map(e=>`<article class="event-card ${e.id===state.activeEventId?"active":""}" data-event="${e.id}">
-    <h3>${esc(e.name)}</h3>
-    <p>${esc(eventTypeName(e))} · ${esc(formatEventDateTime_(e))}</p>
-    <p>${esc(e.venue||"")}</p>
-    <p><b>מצב:</b> ${esc(lifecycleText(e.lifecycleStatus))} · <b>שולחנות:</b> ${isTrue(e.seatingEnabled,true)?"כן":"לא"}</p>
-    <section class="event-rsvp-details">
-      <h4>הגדרות אישור הגעה</h4>
-      <p><b>מועד סגירת אישור/שינוי הגעה:</b> ${e.rsvpDeadline?esc(formatRsvpDeadline_(e.rsvpDeadline)):"לא הוגדר"}</p>
-      <p><b>מנהל אחראי:</b> ${esc((state.adminData.users||[]).find(u=>String(u.id)===String(e.rsvpManagerId))?.name||e.rsvpContactName||"לא הוגדר")}</p>
-      <p><b>טלפון איש קשר:</b> ${esc((state.adminData.users||[]).find(u=>String(u.id)===String(e.rsvpManagerId))?.phone||e.rsvpContactPhone||"לא הוגדר")}</p>
-      <p><b>הודעה לאחר תפוגה:</b> ${esc(e.rsvpClosedMessage||"לא הוגדרה")}</p>
-    </section>
-    <div class="actions"><button class="primary edit-event" data-id="${e.id}">עריכה</button><button class="danger delete-event" data-id="${e.id}">מחיקה</button></div></article>`).join("")||'<div class="empty">אין אירועים. צור אירוע ראשון.</div>';
+  const users=state.adminData.users||[];
+  const userNameById=id=>users.find(u=>String(u.id)===String(id))?.name||"לא הוגדר";
+  const userPhoneById=id=>displayUserPhone_(users.find(u=>String(u.id)===String(id))?.phone||"");
+  const valueOrUnset=v=>String(v??"").trim()?esc(v):"לא הוגדר";
+  $("#eventsGrid").innerHTML=state.events.map(e=>{
+    const rsvpManagerName=userNameById(e.rsvpManagerId)||e.rsvpContactName||"לא הוגדר";
+    const rsvpPhone=userPhoneById(e.rsvpManagerId)||displayUserPhone_(e.rsvpContactPhone||"")||"לא הוגדר";
+    const tableManagerName=e.tableManagerId?userNameById(e.tableManagerId):"לא הוגדר";
+    return `<article class="event-card ${e.id===state.activeEventId?"active":""}" data-event="${e.id}">
+      <h3>${esc(e.name)}</h3>
+      <section class="event-rsvp-details event-general-details">
+        <h4>פרטי האירוע</h4>
+        <p><b>סוג אירוע:</b> ${esc(eventTypeName(e))}</p>
+        <p><b>תאריך ושעה:</b> ${esc(formatEventDateTime_(e))}</p>
+        <p><b>מקום:</b> ${valueOrUnset(e.venue)}</p>
+        <p><b>כתובת לניווט:</b> ${valueOrUnset(e.navigationAddress)}</p>
+        <p><b>חתימת ההודעה:</b> ${valueOrUnset(e.messageSignature)}</p>
+        <p><b>אירוע פעיל:</b> ${isTrue(e.enabled,true)?"כן":"לא"} · <b>מצב:</b> ${esc(lifecycleText(e.lifecycleStatus))}</p>
+        <p><b>ניהול שולחנות:</b> ${isTrue(e.seatingEnabled,true)?"כן":"לא"}</p>
+        <p><b>מנהל שולחנות:</b> ${esc(tableManagerName)}</p>
+      </section>
+      <section class="event-rsvp-details">
+        <h4>הגדרות אישור הגעה</h4>
+        <p><b>מועד סגירת אישור/שינוי הגעה:</b> ${e.rsvpDeadline?esc(formatRsvpDeadline_(e.rsvpDeadline)):"לא הוגדר"}</p>
+        <p><b>מנהל אחראי:</b> ${esc(rsvpManagerName)}</p>
+        <p><b>טלפון איש קשר:</b> ${esc(rsvpPhone)}</p>
+        <p><b>הודעה לאחר תפוגה:</b> ${esc(e.rsvpClosedMessage||"לא הוגדרה")}</p>
+      </section>
+      <div class="actions"><button class="primary edit-event" data-id="${e.id}">עריכה</button><button class="danger delete-event" data-id="${e.id}">מחיקה</button></div>
+    </article>`;
+  }).join("")||'<div class="empty">אין אירועים. צור אירוע ראשון.</div>';
 }
 function filteredGuests(){
   const type=eventTypeById(activeEvent()?.eventTypeId),sideEnabled=!!type&&isTrue(type.usesSides,false),groupEnabled=!!type&&isTrue(type.usesGroups,false);
@@ -522,10 +532,10 @@ function renderGuests(){
     <td data-col="invitedCount">${g.invitedCount||g.partySize||1}</td><td data-col="confirmedCount">${g.confirmedCount||0}</td><td data-col="rsvpStatus"><span class="badge ${esc(status)}">${esc(statusText(status))}</span></td>
     <td data-col="seating">${guestSeatingCellV174_(g)}</td>
     <td class="send-cell"><input class="guest-send-toggle" data-send-guest="${g.guestId||g.id}" type="checkbox" ${guestSendChecked(g)?"checked":""} aria-label="שליחה ב-WhatsApp"></td>
-    <td class="guest-row-actions-v179">${state.session?.role==='Admin'?`<button type="button" class="guest-icon-action-v179" data-wa-test="${esc(g.guestId||g.id)}" title="שליחת הזמנת ניסיון ב-WhatsApp למוזמן יחיד" aria-label="שליחת הזמנת ניסיון אל ${esc(g.name)}"><svg class="wa-guest-icon-f14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#25D366"/><path d="M8.2 6.9c.3-.3.7-.4 1-.2l1.4 2.1c.2.3.2.7 0 1l-.7.8c.7 1.5 1.9 2.7 3.4 3.4l.8-.7c.3-.2.7-.2 1 0l2.1 1.4c.3.2.4.7.2 1-1 1.7-2.6 2.2-4.5 1.6-3.3-1-5.9-3.6-6.9-6.9-.6-1.9-.1-3.5 1.6-4.5.2-.1.4-.1.6 0z" fill="white"/></svg></button>`:''}<button type="button" class="guest-icon-action-v179" data-rsvp-link="${esc(g.guestId||g.id)}" title="העתק קישור אישור הגעה" aria-label="העתק קישור אישור הגעה עבור ${esc(g.name)}">🔗</button><button type="button" class="guest-icon-action-v179 edit" data-edit-guest="${esc(g.guestId||g.id)}" title="עריכה" aria-label="עריכת ${esc(g.name)}">✎</button><button type="button" class="guest-icon-action-v179 delete" data-delete-guest="${esc(g.guestId||g.id)}" title="מחיקת מוזמן" aria-label="מחיקת ${esc(g.name)}" ${guestCanDeleteV179_(g)?"":"disabled"}>🗑</button></td></tr>`}).join("");
+    <td class="guest-row-actions-v179">${['Admin','EventManager'].includes(state.session?.role)?`<button type="button" class="guest-icon-action-v179" data-wa-send-row="${esc(g.guestId||g.id)}" title="שליחת WhatsApp למוזמן" aria-label="שליחת WhatsApp אל ${esc(g.name)}"><svg class="wa-guest-icon-f14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#25D366"/><path d="M8.2 6.9c.3-.3.7-.4 1-.2l1.4 2.1c.2.3.2.7 0 1l-.7.8c.7 1.5 1.9 2.7 3.4 3.4l.8-.7c.3-.2.7-.2 1 0l2.1 1.4c.3.2.4.7.2 1-1 1.7-2.6 2.2-4.5 1.6-3.3-1-5.9-3.6-6.9-6.9-.6-1.9-.1-3.5 1.6-4.5.2-.1.4-.1.6 0z" fill="white"/></svg></button>`:''}<button type="button" class="guest-icon-action-v179" data-rsvp-link="${esc(g.guestId||g.id)}" title="העתק קישור אישור הגעה" aria-label="העתק קישור אישור הגעה עבור ${esc(g.name)}">🔗</button><button type="button" class="guest-icon-action-v179 edit" data-edit-guest="${esc(g.guestId||g.id)}" title="עריכה" aria-label="עריכת ${esc(g.name)}">✎</button><button type="button" class="guest-icon-action-v179 delete" data-delete-guest="${esc(g.guestId||g.id)}" title="מחיקת מוזמן" aria-label="מחיקת ${esc(g.name)}" ${guestCanDeleteV179_(g)?"":"disabled"}>🗑</button></td></tr>`}).join("");
   const resetBtn=$('#resetEventGuestsV1190A10');
   if(resetBtn){resetBtn.hidden=state.session?.role!=="Admin"||!state.activeEventId;resetBtn.disabled=!visibleGuestsV178.length&&!state.guests.some(g=>String(g.eventId)===String(state.activeEventId));}
-  const bulkBtn=$('#guestWhatsAppBulkA19P2F6'),testBtn=$('#guestWhatsAppTestBulkF14C');if(bulkBtn)bulkBtn.hidden=state.session?.role!=='Admin'||!state.activeEventId;if(testBtn)testBtn.hidden=state.session?.role!=='Admin'||!state.activeEventId;
+  const bulkBtn=$('#guestWhatsAppBulkA19P2F6'),testBtn=$('#guestWhatsAppTestBulkF14C');const canWa=['Admin','EventManager'].includes(state.session?.role);if(bulkBtn)bulkBtn.hidden=!canWa||!state.activeEventId;if(testBtn)testBtn.hidden=!canWa||!state.activeEventId;
   updateGuestSortUI();
 }
 function updateGuestSortUI(){
@@ -673,6 +683,7 @@ function tablesForActiveEvent(){
 }
 function renderTables(){
   const ev=activeEvent();
+  const tableReadOnly=state.session?.role==="TableManager";
   const addBtn=$("#addTableBtn");
   if(ev && !isTrue(ev.seatingEnabled,true)){
     if(addBtn)addBtn.disabled=true;
@@ -680,12 +691,13 @@ function renderTables(){
     $("#tablesBody").innerHTML='<tr><td colspan="5" class="empty-cell">ניתן להפעיל ניהול שולחנות בעריכת האירוע</td></tr>';
     return;
   }
-  if(addBtn)addBtn.disabled=!state.activeEventId;
+  if(addBtn){addBtn.disabled=!state.activeEventId||tableReadOnly;addBtn.hidden=tableReadOnly;}
   const deleteAllBtn=$("#deleteAllEventTablesV1190A10");if(deleteAllBtn){deleteAllBtn.hidden=state.session?.role!=="Admin";deleteAllBtn.disabled=!state.activeEventId||!tablesForActiveEvent().length||tablesForActiveEvent().some(t=>Number(t.occupied)>0);}
   const rows=tablesForActiveEvent();
   
   $("#tableSummary").innerHTML=state.activeEventId?`<span>שולחנות: <b>${rows.length}</b></span><span>מקומות: <b>${rows.reduce((s,t)=>s+t.seats,0)}</b></span><span>תפוסים: <b>${rows.reduce((s,t)=>s+t.occupied,0)}</b></span><span>פנויים: <b>${rows.reduce((s,t)=>s+t.free,0)}</b></span>`:`<span>יש לבחור אירוע פעיל</span>`;
-  $("#tablesBody").innerHTML=rows.map(t=>`<tr><td>${esc(t.tableNumber)}</td><td>${t.seats}</td><td>${t.occupied}</td><td>${t.free}</td><td><button class="edit-table" data-id="${t.id}">עריכה</button> <button class="danger delete-table" data-id="${t.id}">מחיקה</button></td></tr>`).join("") || `<tr><td colspan="5" class="empty-cell">${state.activeEventId?"אין שולחנות באירוע זה":"יש לבחור אירוע"}</td></tr>`;
+  renderSeatingWorkspaceV170_();
+  $("#tablesBody").innerHTML=rows.map(t=>`<tr><td>${esc(t.tableNumber)}</td><td>${t.seats}</td><td>${t.occupied}</td><td>${t.free}</td><td>${tableReadOnly?"צפייה בלבד":`<button class="edit-table" data-id="${t.id}">עריכה</button> <button class="danger delete-table" data-id="${t.id}">מחיקה</button>`}</td></tr>`).join("") || `<tr><td colspan="5" class="empty-cell">${state.activeEventId?"אין שולחנות באירוע זה":"יש לבחור אירוע"}</td></tr>`;
 }
 
 function tableForm(t={}){
@@ -713,23 +725,31 @@ function eventForm(e={}){
     <label>תאריך<input name="date" type="date" class="date-picker-control" value="${esc(dateInputValue_(e.date))}"></label>
     <label>שעת האירוע<input name="eventTime" type="time" class="date-picker-control" value="${esc(String(e.eventTime||"").slice(0,5))}"></label>
     <label>מקום<input name="venue" value="${esc(e.venue||"")}"></label>
+    <label>כתובת לניווט<input name="navigationAddress" maxlength="300" placeholder="לדוגמה: המרכבה 40, חולון" value="${esc(e.navigationAddress||"")}"><small class="muted">תשמש בהמשך לכפתורי Waze ו-Google Maps. אינה נשלחת כמשתנה נפרד בתבנית WhatsApp.</small></label>
+    <label>חתימת ההודעה<input name="messageSignature" maxlength="120" placeholder="לדוגמה: משפחת אלון" value="${esc(e.messageSignature||"")}"><small class="muted">יש להזין את שם המשפחה/בעלי האירוע בלבד, ללא “בברכה” או “באהבה”.</small></label>
     <section class="rsvp-admin-settings">
       <h3>הגדרות אישור הגעה</h3>
       <p>המועד ופרטי איש הקשר יופיעו בהמשך בקישור האישי למוזמנים.</p>
       <label>מועד סגירת אישור/שינוי הגעה
         <input name="rsvpDeadline" type="datetime-local" class="date-picker-control" value="${esc(String(e.rsvpDeadline||"").slice(0,16))}">
       </label>
-      <label>מנהל אחראי לאישורי הגעה <span class="required-star">*</span>
+      ${state.session?.role==="Admin"?`<label>מנהל אירוע <span class="required-star">*</span>
         <select name="rsvpManagerId">
-          <option value="">בחר מנהל פעיל</option>
-          ${(state.adminData.users||[]).filter(u=>u.role==="Admin"&&isTrue(u.active,true)).map(u=>`<option value="${esc(u.id)}" ${String(e.rsvpManagerId||"")===String(u.id)?"selected":""}>${esc(u.name)}${u.phone?" · "+esc(displayUserPhone_(u.phone)):" · חסר טלפון"}</option>`).join("")}
+          <option value="">בחר מנהל אירוע פעיל</option>
+          ${(state.adminData.users||[]).filter(u=>u.role==="EventManager"&&isTrue(u.active,true)).map(u=>`<option value="${esc(u.id)}" ${String(e.rsvpManagerId||"")===String(u.id)?"selected":""}>${esc(u.name)}${u.phone?" · "+esc(displayUserPhone_(u.phone)):" · חסר טלפון"}</option>`).join("")}
         </select>
       </label>
-      <div id="rsvpManagerContact" class="rsvp-manager-contact"></div>
+      <div id="rsvpManagerContact" class="rsvp-manager-contact"></div>`:''}
       <label>הודעה לאחר תפוגה (לא חובה)
         <textarea name="rsvpClosedMessage" maxlength="500" rows="3">${esc(e.rsvpClosedMessage||"")}</textarea>
       </label>
     </section>
+    ${["Admin","EventManager"].includes(state.session?.role)?`<section class="event-access-v15"><h3>מנהל שולחנות</h3><label>מנהל שולחנות לאירוע
+      <select name="tableManagerId">
+        <option value="">ללא מנהל שולחנות</option>
+        ${(state.adminData.users||[]).filter(u=>u.role==="TableManager"&&isTrue(u.active,true)).map(u=>`<option value="${esc(u.id)}" ${String(e.tableManagerId||"")===String(u.id)?"selected":""}>${esc(u.name)}</option>`).join("")}
+      </select>
+    </label><p class="muted">מנהל השולחנות יקבל גישה לאירוע זה בלבד, למסך שיוך השולחנות בצפייה וחיפוש בלבד.</p></section>`:''}
     <label class="check-label"><input name="seatingEnabled" type="checkbox" ${isTrue(e.seatingEnabled,eventTypeById(selectedType)?.defaultSeatingEnabled??false)?"checked":""}> ניהול שולחנות</label>
     <label class="check-label"><input name="enabled" type="checkbox" ${isTrue(e.enabled,true)?"checked":""}> אירוע פעיל</label>
     <input type="hidden" name="id" value="${esc(e.id||"")}">
@@ -744,8 +764,9 @@ function eventForm(e={}){
   const managerSelect=$("#eventForm [name=rsvpManagerId]");
   const managerInfo=$("#rsvpManagerContact");
   const updateManager=()=>{
-    const u=(state.adminData.users||[]).find(x=>String(x.id)===String(managerSelect.value));
-    managerInfo.textContent=u?(u.phone?"איש קשר: "+u.name+" · "+u.phone:"למנהל זה חסר מספר טלפון — יש להשלימו בניהול משתמשים"):"";
+    if(!managerInfo)return;
+    const u=(state.adminData.users||[]).find(x=>String(x.id)===String(managerSelect?.value||''));
+    managerInfo.textContent=u?(u.phone?"איש קשר: "+u.name+" · "+displayUserPhone_(u.phone):"למנהל זה חסר מספר טלפון — יש להשלימו בניהול משתמשים"):"";
   };
   managerSelect?.addEventListener("change",updateManager);
   updateManager();
@@ -764,6 +785,12 @@ async function saveEventForm(ev){
   const o=Object.fromEntries(fd);
   o.seatingEnabled=fd.has("seatingEnabled");
   o.enabled=fd.has("enabled");
+  if(state.session?.role==="Admin"){
+    const assigned=[];
+    if(o.rsvpManagerId) assigned.push(String(o.rsvpManagerId));
+    if(o.tableManagerId && !assigned.includes(String(o.tableManagerId))) assigned.push(String(o.tableManagerId));
+    o.assignedUserIds=assigned.join(",");
+  }
 
   if(!String(o.name||"").trim()){
     if(status){status.textContent="יש להזין שם אירוע";status.className="event-save-status error";}
@@ -776,12 +803,12 @@ async function saveEventForm(ev){
     form.querySelector('[name="rsvpDeadline"]')?.focus();
     return;
   }
-  const selectedManager=(state.adminData.users||[]).find(u=>String(u.id)===String(o.rsvpManagerId));
-  if(o.rsvpDeadline && !selectedManager){
-    if(status){status.textContent="יש לבחור מנהל אחראי לאישורי הגעה";status.className="event-save-status error";}
+  const selectedManager=state.session?.role==="Admin"?(state.adminData.users||[]).find(u=>String(u.id)===String(o.rsvpManagerId)):null;
+  if(state.session?.role==="Admin" && o.rsvpDeadline && !selectedManager){
+    if(status){status.textContent="יש לבחור מנהל אירוע";status.className="event-save-status error";}
     form.querySelector('[name="rsvpManagerId"]')?.focus();return;
   }
-  if(selectedManager && !String(selectedManager.phone||"").trim()){
+  if(state.session?.role==="Admin" && selectedManager && !String(selectedManager.phone||"").trim()){
     if(status){status.textContent="למנהל הנבחר חסר מספר טלפון. יש להשלימו בניהול משתמשים";status.className="event-save-status error";}
     form.querySelector('[name="rsvpManagerId"]')?.focus();return;
   }
@@ -885,7 +912,7 @@ function guestDetails(g){
 }
 
 /* ---------- Admin / Settings ---------- */
-const adminTitles={eventTypes:"סוגי אירועים",sides:"צד",groups:"קבוצה",statuses:"סטטוס",users:"משתמשי מערכת",roles:"תפקידים",permissions:"ניהול הרשאות",whatsapp:"חיבור ל-WhatsApp",versions:"גרסאות"};
+const adminTitles={eventTypes:"סוגי אירועים",sides:"צד",groups:"קבוצה",statuses:"סטטוס",users:"משתמשי מערכת",roles:"תפקידים",permissions:"ניהול הרשאות",whatsapp:"חיבור ל-WhatsApp",systemValues:"ערכי מערכת",whatsappCosts:"עלויות WhatsApp",versions:"גרסאות"};
 function renderAdmin(){
   const c=$("#adminContent");if(!c||state.session?.role!=="Admin")return;
   // V1.1.44: never read the main event from the DOM here. renderAll() renders
@@ -907,6 +934,8 @@ function renderAdmin(){
   if(state.adminTab==="roles")return renderRolesAdmin();
   if(state.adminTab==="permissions")return renderPermissionsAdmin();
   if(state.adminTab==="whatsapp")return renderWhatsAppAdmin();
+  if(state.adminTab==="systemValues")return renderSystemValuesAdminZ53_();
+  if(state.adminTab==="whatsappCosts")return renderWhatsAppCostsAdminZ53B3_();
 }
 function boolText(v){return isTrue(v,false)?"כן":"לא"}
 function adminTable(title,addClass,headers,rows){
@@ -996,8 +1025,8 @@ function renderPermissionsAdmin(){
   $("#adminContent").innerHTML=adminTable("ניהול הרשאות","add-permission",["תפקיד","מפתח הרשאה","מאושר","הערות"],rows);
 }
 function renderWhatsAppAdmin(){
-  const rows=(state.adminData.whatsapp||[]).map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.phoneNumberId)}</td><td>${esc(x.wabaId)}</td><td>${esc(x.apiVersion||"")}</td><td>${boolText(x.enabled)}</td><td>${isTrue(x.hasAccessToken)?"מוגדר":"חסר"}</td><td><button class="edit-wa" data-id="${x.id}">עריכה</button> <button class="danger delete-wa" data-id="${x.id}">מחיקה</button></td></tr>`).join("");
-  $("#adminContent").innerHTML=adminTable("חיבור ל-WhatsApp דרך Meta Web API","add-wa",["שם","Phone Number ID","WABA ID","API","פעיל","Access Token"],rows);
+  const rows=(state.adminData.whatsapp||[]).map(x=>`<tr><td>${esc(x.name)}</td><td><strong>${esc(String(x.environment||'PRODUCTION').toUpperCase())}</strong></td><td>${esc(x.phoneNumberId)}</td><td>${esc(x.wabaId)}</td><td>${esc(x.apiVersion||"")}</td><td>${boolText(x.enabled)}</td><td>${isTrue(x.hasAccessToken)?"מוגדר":"חסר"}</td><td><button class="edit-wa" data-id="${x.id}">עריכה</button> <button class="danger delete-wa" data-id="${x.id}">מחיקה</button></td></tr>`).join("");
+  $("#adminContent").innerHTML=adminTable("חיבור ל-WhatsApp דרך Meta Web API","add-wa",["שם","סביבה","Phone Number ID","WABA ID","API","פעיל","Access Token"],rows);
 }
 function lookupForm(kind,x={}){
   const scoped=kind==="sides"||kind==="groups",eventTypeId=scoped?(x.eventTypeId||ensureAdminLookupEventType_(kind)):"";
@@ -1015,7 +1044,7 @@ function userForm(x={}){
   modal(`<h2>${x.id?"עריכת":"הוספת"} משתמש</h2><form id="userForm" class="form-grid" onsubmit="return false;"><input type="hidden" name="id" value="${esc(x.id||"")}">
   <label>שם <span class="required-star">*</span><input name="name" required value="${esc(x.name||"")}"></label><label>אימייל <span class="required-star">*</span><input type="email" name="email" required value="${esc(x.email||"")}"></label>
   <label>מספר טלפון<input type="tel" name="phone" dir="ltr" maxlength="30" value="${esc(displayUserPhone_(x.phone))}" placeholder="0501234567"></label>
-  <label>סיסמה ${x.id?"(השאר ריק ללא שינוי)":"<span class='required-star'>*</span>"}<input type="password" name="password" ${x.id?"":"required"}></label><label>תפקיד <span class="required-star">*</span><select name="role" required>${roleOptions(x.role||"Family")}</select></label>
+  <label>סיסמה ${x.id?"(השאר ריק ללא שינוי)":"<span class='required-star'>*</span>"}<input type="password" name="password" ${x.id?"":"required"}></label><label>תפקיד <span class="required-star">*</span><select name="role" required>${roleOptions(x.role||"EventManager")}</select></label>
   <label class="check-label"><input type="checkbox" name="active" ${isTrue(x.active,true)?"checked":""}> פעיל</label><div class="actions"><button type="button" id="saveUserBtn" class="primary">שמירה</button></div></form>`);
   $("#saveUserBtn").onclick=saveUserForm;
 }
@@ -1028,13 +1057,14 @@ function roleForm(x={}){
 }
 function permissionForm(x={}){
   modal(`<h2>${x.id?"עריכת":"הוספת"} הרשאה</h2><form id="permissionForm" class="form-grid" onsubmit="return false;"><input type="hidden" name="id" value="${esc(x.id||"")}">
-  <label>תפקיד <span class="required-star">*</span><select name="role" required>${roleOptions(x.role||"Family")}</select></label><label>מפתח הרשאה <span class="required-star">*</span><input name="permissionKey" required placeholder="guests.edit" value="${esc(x.permissionKey||"")}"></label>
+  <label>תפקיד <span class="required-star">*</span><select name="role" required>${roleOptions(x.role||"EventManager")}</select></label><label>מפתח הרשאה <span class="required-star">*</span><input name="permissionKey" required placeholder="guests.edit" value="${esc(x.permissionKey||"")}"></label>
   <label class="check-label"><input type="checkbox" name="allowed" ${isTrue(x.allowed,true)?"checked":""}> מאושר</label>
   <label style="grid-column:1/-1">הערות<textarea name="notes">${esc(x.notes||"")}</textarea></label><div class="actions"><button type="button" id="savePermissionBtn" class="primary">שמירה</button></div></form>`);
   $("#savePermissionBtn").onclick=savePermissionForm;
 }
 function whatsappForm(x={}){
   modal(`<h2>${x.id?"עריכת":"הוספת"} חיבור WhatsApp</h2><form id="waForm" class="form-grid" onsubmit="return false;"><input type="hidden" name="id" value="${esc(x.id||"")}">
+  <label>סביבה <span class="required-star">*</span><select name="environment" required><option value="PRODUCTION" ${String(x.environment||'PRODUCTION').toUpperCase()==='PRODUCTION'?'selected':''}>PRODUCTION</option><option value="TEST" ${String(x.environment||'').toUpperCase()==='TEST'?'selected':''}>TEST</option></select></label>
   <label>שם חיבור <span class="required-star">*</span><input name="name" required value="${esc(x.name||"")}"></label><label>Phone Number ID <span class="required-star">*</span><input name="phoneNumberId" required value="${esc(x.phoneNumberId||"")}"></label>
   <label>WhatsApp Business Account ID (WABA) <span class="required-star">*</span><input name="wabaId" required value="${esc(x.wabaId||"")}"></label><label>Meta App ID<input name="appId" value="${esc(x.appId||"")}"></label>
   <label>Graph API Version<input name="apiVersion" value="${esc(x.apiVersion||"v23.0")}"></label><label>קידומת מדינה<input name="defaultCountryCode" value="${esc(x.defaultCountryCode||"972")}"></label>
@@ -1217,28 +1247,58 @@ async function waLoadSendTemplatesF14C_(){
   return pending;
 }
 function waTemplateByIdF14G_(templates,id){return (templates||[]).find(t=>String(t.id)===String(id))||null;}
+function waGuestTableTextF14Z36_(guest){
+  const st=state.seating?.eventId===String(state.activeEventId)?state.seating:null,gid=String(guest?.guestId||guest?.id||'');
+  if(!st||!gid)return 'מספר שולחן';
+  const byId=Object.fromEntries((st.tables||[]).map(t=>[String(t.id),t]));
+  const parts=(st.assignments||[]).filter(a=>String(a.guestId)===gid).map(a=>{const n=String(byId[String(a.tableId)]?.tableNumber||'').trim(),seats=Math.max(0,Number(a.seats)||0);return n?`שולחן ${n}${seats?` – ${seats} ${seats===1?'מקום':'מקומות'}`:''}`:'';}).filter(Boolean);
+  return parts.length?parts.join(', '):'מספר שולחן';
+}
 function waPreviewBodyF14G_(template,guest){
-  const greeting=String(guest?.invitationGreeting||'משפחה יקרה').trim()||'משפחה יקרה';
-  return String(template?.body||'').replace(/\{\{\s*(?:פנייה_אישית|1)\s*\}\}/g,greeting);
+  const greeting=String(guest?.invitationGreeting||guest?.name||'משפחה יקרה').trim()||'משפחה יקרה',ev=activeEvent()||{},purpose=String(template?.purpose||'');
+  const rawDate=String(ev.date||ev.eventDate||'').trim();
+  const previewDate=/^\d{4}-\d{2}-\d{2}/.test(rawDate)?rawDate.slice(0,10).split('-').reverse().join('/'):rawDate;
+  const common={greeting,eventName:String(ev.name||'האירוע המשפחתי'),eventDate:previewDate,eventTime:String(ev.eventTime||'').slice(0,5),venue:String(ev.venue||ev.location||'').trim(),table:waGuestTableTextF14Z36_(guest)};
+  common.eventDetails=[common.eventName,[common.eventDate,common.eventTime?`בשעה ${common.eventTime}`:''].filter(Boolean).join(' '),common.venue].filter(Boolean).join(' · ');
+  const vals=(purpose==='table_update'||purpose==='table_payment_update')?[common.greeting,common.eventDetails,common.table,'']:[common.greeting,common.eventDetails,common.eventDate,common.eventTime,common.venue,common.table];
+  return String(template?.body||'').replace(/\{\{\s*([^{}]+?)\s*\}\}/g,(m,k)=>{const x=String(k).trim();if(/^\d+$/.test(x))return vals[Math.max(0,Number(x)-1)]||'פרטי האירוע';if(x==='פנייה_אישית'||x==='שם_המוזמן')return common.greeting;if(x==='שם_האירוע')return common.eventName;if(x==='מספר_שולחן'||x==='שולחן'||x==='שולחנות')return common.table;if(x==='תאריך_האירוע')return common.eventDate;if(x==='שעת_האירוע')return common.eventTime;if(x==='מקום_האירוע')return common.venue;return 'פרטי האירוע';});
+}
+function waPreviewButtonsF14Z32_(template){
+  const p=String(template?.purpose||'');
+  if(p==='invitation'||p==='rsvp_update')return ['אישור הגעה'];
+  if(p==='table_update')return ['ניווט לאירוע'];
+  if(p==='table_payment_update')return ['ניווט לאירוע','תשלום'];
+  return [];
 }
 async function waTemplateImageSrcF14G_(template){
-  // F14Z4: template-list image metadata may be stale; the image endpoint is authoritative.
-  if(!template?.id)return '';
+  if(!template?.id||!template?.hasImage)return '';
   if(!(state.waSendTemplateImagesF14G instanceof Map))state.waSendTemplateImagesF14G=new Map();
   const key=String(template.id),cached=state.waSendTemplateImagesF14G.get(key);if(cached)return cached;
   const pending=API.request('getMessageTemplateImageA19P2',{id:template.id}).then(r=>{if(!r?.base64||!r?.mime){state.waSendTemplateImagesF14G.delete(key);return '';}return `data:${r.mime};base64,${r.base64}`;}).catch(e=>{state.waSendTemplateImagesF14G.delete(key);throw e;});
   state.waSendTemplateImagesF14G.set(key,pending);return pending;
 }
+function waPreviewFormatF14Z34_(text){
+  let s=esc(String(text||''));
+  s=s.replace(/\*([^*\n]+)\*/g,'<strong>$1</strong>');
+  s=s.replace(/_([^_\n]+)_/g,'<em>$1</em>');
+  s=s.replace(/~([^~\n]+)~/g,'<del>$1</del>');
+  return s.replace(/\n/g,'<br>');
+}
 async function waRenderPreviewF14G_(container,template,guest){
-  if(!container)return; if(!template){container.innerHTML='<p class="muted">בחר תבנית להצגת Preview.</p>';return;}
-  const greeting=String(guest?.invitationGreeting||'').trim();
-  if(!guest||!greeting){container.innerHTML='<p class="wa-confirm-status-v1190a16 error">לא ניתן להציג Preview: למוזמן הראשון אין פנייה אישית. יש לעדכן את הרשומה לפני השליחה.</p>';return;}
-  container.innerHTML=`<div class="wa-preview-card-f14g"><div class="wa-preview-image-wrap-f14g"><span>טוען תמונת הזמנה…</span></div><div class="wa-preview-body-f14g">${esc(waPreviewBodyF14G_(template,guest))}</div><div class="wa-preview-button-f14g">אישור הגעה</div></div><small class="muted">Preview בלבד — נתוני ${esc(guest.name||'המוזמן הראשון')}.</small>`;
-  try{const src=await waTemplateImageSrcF14G_(template);const wrap=container.querySelector('.wa-preview-image-wrap-f14g');if(!wrap)return;wrap.innerHTML=src?`<img src="${src}" alt="תמונת ההזמנה שנבחרה בתבנית">`:'<span>אין תמונת הזמנה בתבנית</span>';}catch(e){const wrap=container.querySelector('.wa-preview-image-wrap-f14g');if(wrap)wrap.innerHTML='<span>לא ניתן לטעון את תמונת ההזמנה</span>';}
+  if(!container)return;if(!template){container.innerHTML='<p class="muted">בחר תבנית להצגת Preview.</p>';return;}
+  if(!guest){container.innerHTML='<p class="wa-confirm-status-v1190a16 error">לא ניתן להציג Preview: אין מוזמן להצגה.</p>';return;}
+  const hasImage=!!template.hasImage,buttons=waPreviewButtonsF14Z32_(template);
+  container.innerHTML=`<div class="wa-preview-card-f14g">${hasImage?'<div class="wa-preview-image-wrap-f14g"><span>טוען תמונה…</span></div>':''}<div class="wa-preview-body-f14g">${waPreviewFormatF14Z34_(waPreviewBodyF14G_(template,guest))}</div>${buttons.map(x=>`<div class="wa-preview-button-f14g">${esc(x)}</div>`).join('')}</div><small class="muted">Preview בלבד — נתוני ${esc(guest.name||'המוזמן הראשון')}.</small>`;
+  if(!hasImage)return;
+  try{const src=await waTemplateImageSrcF14G_(template),wrap=container.querySelector('.wa-preview-image-wrap-f14g');if(!wrap)return;if(src)wrap.innerHTML=`<img src="${src}" alt="תמונת התבנית">`;else wrap.remove();}catch(e){const wrap=container.querySelector('.wa-preview-image-wrap-f14g');if(wrap)wrap.remove();}
 }
 function waMetaStatusLabelF14E_(status){const x=String(status||'').trim().toUpperCase();return x==='APPROVED'?'מאושרת':x==='PENDING'?'בבדיקה':x==='REJECTED'?'נדחתה':x==='DRAFT'?'טיוטה':'לא הוגדר';}
-function waTemplateOptionsF14C_(templates){return templates.map(t=>`<option value="${esc(t.id)}" data-approved="${String(t.metaStatus||'').trim().toUpperCase()==='APPROVED'?'1':'0'}">${esc(t.name||t.metaName)} · ${esc(t.metaName)} · ${esc(waMetaStatusLabelF14E_(t.metaStatus))}</option>`).join('')}
+function waTemplateOptionsF14C_(templates){return templates.map(t=>`<option value="${esc(t.id)}" data-approved="${String(t.metaStatus||'').trim().toUpperCase()==='APPROVED'?'1':'0'}">${esc(t.name||'תבנית WhatsApp')}</option>`).join('')}
 function waSelectedTemplateApprovedF14E_(select){return !!select?.selectedOptions?.[0]&&select.selectedOptions[0].dataset.approved==='1';}
+async function waFillTestTemplateSelectF14Z32_(select,status,sendButton,environment){
+  if(!select)return [];select.disabled=true;select.innerHTML='<option value="">טוען תבניות…</option>';if(sendButton)sendButton.disabled=true;
+  try{const r=await API.request('listWhatsAppTestTemplates',{eventId:state.activeEventId,environment:String(environment||'TEST').toUpperCase()});const templates=Array.isArray(r?.templates)?r.templates:[];if(!templates.length){select.innerHTML='<option value="">אין תבניות מאושרות</option>';return [];}select.innerHTML=waTemplateOptionsF14C_(templates);select.disabled=false;if(sendButton)sendButton.disabled=false;return templates;}catch(e){select.innerHTML='<option value="">שגיאה בטעינת תבניות</option>';if(status){status.textContent=e?.message||String(e);status.className='wa-confirm-status-v1190a16 error';}return [];}
+}
 async function waFillTemplateSelectF14D_(select,status,sendButton){
   if(!select)return [];
   select.disabled=true;select.innerHTML='<option value="">טוען תבניות…</option>';if(sendButton)sendButton.disabled=true;
@@ -1272,7 +1332,7 @@ function waSetSendingF14V_(button,busy,label='שולח...'){
 }
 function waResultHtmlF14V_({ok=0,fail=0,left=0,elapsedMs=0,test=false,perf=null,uncertain=false}){
   const total=ok+fail,serverMs=Number(perf?.totalMs||0),roundTripMs=Math.max(0,Number(elapsedMs||0)-serverMs),shownTotal=uncertain?'לא ידוע':total,shownOk=uncertain?'לא ידוע':ok,shownFail=uncertain?'לא ידוע':fail;
-  return `<div class="wa-result-f14v ${(fail||uncertain)?'has-error':'success'}"><strong>${uncertain?'השליחה נעצרה — מצב האצווה לא ידוע':fail?'השליחה הסתיימה עם שגיאות':'השליחה הסתיימה בהצלחה'}</strong><dl><dt>טופלו</dt><dd>${shownTotal}</dd><dt>התקבלו לשליחה</dt><dd>${shownOk}</dd><dt>נכשלו</dt><dd>${shownFail}</dd>${left?`<dt>לא נשלחו</dt><dd>${left}</dd>`:''}<dt>זמן כולל לאצווה</dt><dd>${waFormatElapsedF14V_(elapsedMs)}</dd>${perf?`<dt>Backend כולל</dt><dd>${waFormatElapsedF14V_(serverMs)}</dd><dt>תקשורת Frontend ↔ Backend</dt><dd>${waFormatElapsedF14V_(roundTripMs)}</dd><dt>טעינת אירוע</dt><dd>${waFormatElapsedF14V_(perf.eventMs||0)}</dd><dt>בדיקת מבנה Guests</dt><dd>${waFormatElapsedF14V_(perf.ensureMs||0)}</dd><dt>טעינת מוזמנים</dt><dd>${waFormatElapsedF14V_(perf.guestsMs||0)}</dd><dt>הגדרות + תבנית</dt><dd>${waFormatElapsedF14V_(perf.configTemplateMs||0)}</dd><dt>RSVP</dt><dd>${waFormatElapsedF14V_(perf.rsvpMs||0)}</dd><dt>Media</dt><dd>${waFormatElapsedF14V_(perf.mediaMs||0)}</dd><dt>בניית Payload</dt><dd>${waFormatElapsedF14V_(perf.buildMs||0)}</dd><dt>Meta API</dt><dd>${waFormatElapsedF14V_(perf.metaMs||0)}</dd><dt>עיבוד תשובות</dt><dd>${waFormatElapsedF14V_(perf.processMs||0)}</dd><dt>כתיבת עלויות</dt><dd>${waFormatElapsedF14V_(perf.costWriteMs||0)}</dd><dt>כתיבת Activity</dt><dd>${waFormatElapsedF14V_(perf.activityWriteMs||0)}</dd><dt>Diagnostics</dt><dd>${waFormatElapsedF14V_(perf.diagnosticMs||0)}</dd>`:''}</dl><small>${test?'כל ההודעות נשלחו למספר הבדיקה. ':'ההודעות נשלחו למספרי המוזמנים. '}אישור קבלת הבקשה אינו אישור קריאה ב-WhatsApp.</small></div>`;
+  return `<div class="wa-result-f14v ${(fail||uncertain)?'has-error':'success'}"><strong>${uncertain?'השליחה נעצרה — מצב קבוצת השליחה לא ידוע':fail?'השליחה הסתיימה עם שגיאות':'השליחה הסתיימה בהצלחה'}</strong><dl><dt>טופלו</dt><dd>${shownTotal}</dd><dt>התקבלו לשליחה</dt><dd>${shownOk}</dd><dt>נכשלו</dt><dd>${shownFail}</dd>${left?`<dt>לא נשלחו</dt><dd>${left}</dd>`:''}<dt>זמן כולל לקבוצת השליחה</dt><dd>${waFormatElapsedF14V_(elapsedMs)}</dd>${perf?`<dt>Backend כולל</dt><dd>${waFormatElapsedF14V_(serverMs)}</dd><dt>תקשורת Frontend ↔ Backend</dt><dd>${waFormatElapsedF14V_(roundTripMs)}</dd><dt>טעינת אירוע</dt><dd>${waFormatElapsedF14V_(perf.eventMs||0)}</dd><dt>בדיקת מבנה Guests</dt><dd>${waFormatElapsedF14V_(perf.ensureMs||0)}</dd><dt>טעינת מוזמנים</dt><dd>${waFormatElapsedF14V_(perf.guestsMs||0)}</dd><dt>הגדרות + תבנית</dt><dd>${waFormatElapsedF14V_(perf.configTemplateMs||0)}</dd><dt>RSVP</dt><dd>${waFormatElapsedF14V_(perf.rsvpMs||0)}</dd><dt>Media</dt><dd>${waFormatElapsedF14V_(perf.mediaMs||0)}</dd><dt>בניית Payload</dt><dd>${waFormatElapsedF14V_(perf.buildMs||0)}</dd><dt>Meta API</dt><dd>${waFormatElapsedF14V_(perf.metaMs||0)}</dd><dt>עיבוד תשובות</dt><dd>${waFormatElapsedF14V_(perf.processMs||0)}</dd><dt>כתיבת עלויות</dt><dd>${waFormatElapsedF14V_(perf.costWriteMs||0)}</dd><dt>כתיבת Activity</dt><dd>${waFormatElapsedF14V_(perf.activityWriteMs||0)}</dd><dt>Diagnostics</dt><dd>${waFormatElapsedF14V_(perf.diagnosticMs||0)}</dd>`:''}</dl><small>${test?'כל ההודעות נשלחו למספר הבדיקה. ':'ההודעות נשלחו למספרי המוזמנים. '}אישור קבלת הבקשה אינו אישור קריאה ב-WhatsApp.</small></div>`;
 }
 
 const WA_BATCH_PAUSE_F14Z7_MS=5000;
@@ -1280,71 +1340,110 @@ async function waPauseBetweenBatchesF14Z7_(box,done,total,nextBatch,totalBatches
   if(!box||done>=total)return;
   const span=box.querySelector('span');
   for(let left=Math.ceil(WA_BATCH_PAUSE_F14Z7_MS/1000);left>0;left--){
-    if(span)span.textContent=`${done}/${total} הושלמו · ממתין ${left} שניות לפני אצווה ${nextBatch}/${totalBatches} · ${waFormatElapsedF14V_(performance.now()-started)}`;
+    if(span)span.textContent=`${done}/${total} הושלמו · ממתין ${left} שניות לפני קבוצת שליחה ${nextBatch}/${totalBatches} · ${waFormatElapsedF14V_(performance.now()-started)}`;
     await new Promise(resolve=>setTimeout(resolve,1000));
   }
 }
 
 async function openGuestWhatsAppPreparationA19P2F6_(){
-  if(state.session?.role!=='Admin'||!state.activeEventId)return;
+  if(!['Admin','EventManager'].includes(state.session?.role)||!state.activeEventId)return;
   // F14Z1: Test Send must use the same explicit "שליחה=כן" selection as the working filtered flow.
   // The numeric limit only caps that candidate list; it must never pull arbitrary unmarked guests.
   const rows=filteredGuests().filter(g=>guestSendChecked(g));
+  const managerTest=state.session?.role==='EventManager';
   modal(`<section role="dialog" aria-labelledby="waBulkTitleF14C"><h2 id="waBulkTitleF14C">שליחת WhatsApp לבדיקה</h2>
-    <p>הבדיקה משתמשת ברשומות שמוצגות לפי הסינון הפעיל. כל ההודעות יישלחו למספר הבדיקה בלבד.</p>
-    <p><b>רשומות מסומנות לשליחה לפי הסינון הפעיל:</b> ${rows.length}</p>
-    <div class="form-grid"><label>תבנית WhatsApp <span class="required-star">*</span><select id="waF14CTestTemplate" disabled><option value="">טוען תבניות…</option></select></label>
+    ${managerTest?'':`<p>הבדיקה משתמשת ברשומות שמוצגות לפי הסינון הפעיל. כל ההודעות יישלחו למספר הבדיקה בלבד.</p><p><b>רשומות מסומנות לשליחה לפי הסינון הפעיל:</b> ${rows.length}</p>`}
+    <div class="form-grid"><label>סביבה <span class="required-star">*</span><select id="waF14CTestEnvironment"><option value="TEST" selected>TEST</option><option value="PRODUCTION">PRODUCTION</option></select></label><label>תבנית WhatsApp <span class="required-star">*</span><select id="waF14CTestTemplate" disabled><option value="">טוען תבניות…</option></select></label>
     <label>מספר טלפון לבדיקה <span class="required-star">*</span><input id="waF7Phone" class="wa-test-phone-f14e" type="tel" inputmode="tel" autocomplete="tel" placeholder="05XXXXXXXX" dir="ltr"></label>
-    <label>מספר הודעות לבדיקה <span class="required-star">*</span><input id="waTestLimitF14Z1" type="number" min="1" max="${Math.max(1,rows.length)}" value="${Math.min(50,rows.length||1)}"></label>
-    <label>פנייה אישית כאשר השדה ריק<input id="waTestGreetingF14Z1" type="text" value="משפחה יקרה"></label></div>
-    <p class="muted">הפנייה החלופית משמשת רק לבדיקה ואינה נשמרת ברשומת המוזמן.</p>
-    <dl class="wa-confirm-details-v1190a16"><dt>כמות הודעות</dt><dd id="waTestCountF14T">0</dd><dt>עלות משוערת</dt><dd id="waTestCostF14T">טוען…</dd></dl>
-    <div class="wa-send-preview-f14g" id="waTestPreviewF14G"><p class="muted">Preview ההזמנה יוצג לאחר טעינת התבנית.</p></div>
+    ${managerTest?'':`<label>מספר הודעות לבדיקה <span class="required-star">*</span><input id="waTestLimitF14Z1" type="number" min="1" max="${Math.max(1,rows.length)}" value="${Math.min(50,rows.length||1)}"></label>`}
+    ${managerTest?`<input id="waTestGreetingF14Z1" type="hidden" value="משפחה יקרה">`:`<label>פנייה אישית כאשר השדה ריק<input id="waTestGreetingF14Z1" type="text" value="משפחה יקרה"></label></div><p class="muted">הפנייה החלופית משמשת רק לבדיקה ואינה נשמרת ברשומת המוזמן.</p>`}
+    ${managerTest?`</div><span id="waTestCountF14T" hidden></span><span id="waTestCostF14T" hidden></span><div class="wa-send-preview-f14g" id="waTestPreviewF14G"><p class="muted">התצוגה המקדימה תוצג לאחר טעינת התבנית.</p></div>`:`<dl class="wa-confirm-details-v1190a16"><dt>כמות הודעות</dt><dd id="waTestCountF14T">0</dd><dt>עלות משוערת</dt><dd id="waTestCostF14T">טוען…</dd></dl><div class="wa-send-preview-f14g" id="waTestPreviewF14G"><p class="muted">Preview ההזמנה יוצג לאחר טעינת התבנית.</p></div>`}
     <p id="waF7Summary" class="wa-confirm-status-v1190a16" role="status" data-template-message="1"></p>
     <div class="wa-progress-f14c" id="waTestProgressF14C" hidden><progress max="100" value="0"></progress><span></span></div>
     <div class="actions"><button type="button" class="secondary" id="waF7Close">סגור</button><button type="button" class="primary" id="waF8Send">שלח WhatsApp לבדיקה</button></div></section>`);
-  const phone=$('#waF7Phone'),summary=$('#waF7Summary'),send=$('#waF8Send'),tpl=$('#waF14CTestTemplate'),limit=$('#waTestLimitF14Z1'),fallback=$('#waTestGreetingF14Z1'),countEl=$('#waTestCountF14T'),costEl=$('#waTestCostF14T');
+  const phone=$('#waF7Phone'),summary=$('#waF7Summary'),send=$('#waF8Send'),envSelect=$('#waF14CTestEnvironment'),tpl=$('#waF14CTestTemplate'),limit=$('#waTestLimitF14Z1'),fallback=$('#waTestGreetingF14Z1'),countEl=$('#waTestCountF14T'),costEl=$('#waTestCostF14T');
   let selected=[];
-  const selectedRows=()=>{const n=Math.max(0,Math.min(rows.length,Number(limit.value)||0));return rows.slice(0,n);};
-  const updateCost=n=>getWaCostEstimateCachedF14_(n).then(e=>{if(costEl)costEl.textContent=e?.estimatedIls!=null?'₪'+Number(e.estimatedIls).toFixed(2):'לא ניתן לחשב';});
+  const selectedRows=()=>{const n=managerTest?Math.min(1,rows.length):Math.max(0,Math.min(rows.length,Number(limit?.value)||0));return rows.slice(0,n);};
+  const updateCost=n=>{const chosen=templatesF14G.find(x=>String(x.id)===String(tpl.value));return getWaCostEstimateCachedF14_(n,chosen?.category).then(e=>{if(costEl)costEl.textContent=waCostTextF14Z34_(e,chosen?.category);});};
   const refresh=()=>{selected=selectedRows();const to=waPhonePreviewV1190A16_(phone.value),approved=waSelectedTemplateApprovedF14E_(tpl),fb=String(fallback.value||'').trim(),missing=selected.filter(g=>!String(g.invitationGreeting||'').trim()).length;if(countEl)countEl.textContent=selected.length;updateCost(selected.length);summary.textContent=!rows.length?'אין רשומות בסינון הנוכחי.':!selected.length?'יש לבחור לפחות הודעה אחת.':missing&&!fb?'יש רשומות ללא פנייה אישית. הזן פנייה חלופית לבדיקה.':!to?'יש להזין מספר בדיקה תקין.':!approved?'תבנית V3 מוכנה לבדיקה, אך השליחה חסומה עד לאישור Meta (APPROVED).':`${selected.length} הודעות יישלחו למספר +${to} בלבד${missing?` · ב-${missing} רשומות תשמש הפנייה החלופית.`:''}`;summary.className='wa-confirm-status-v1190a16'+((!to||!approved||!selected.length||(missing&&!fb))?' error':'');send.disabled=!to||!selected.length||(missing&&!fb)||tpl.disabled||!tpl.value||!approved;};
-  let templatesF14G=[];const renderPreview=()=>waRenderPreviewF14G_($('#waTestPreviewF14G'),waTemplateByIdF14G_(templatesF14G,tpl.value),selectedRows()[0]||rows[0]||null);phone.oninput=refresh;limit.oninput=()=>{refresh();renderPreview();};fallback.oninput=refresh;tpl.onchange=()=>{refresh();renderPreview();};refresh();waFillTemplateSelectF14D_(tpl,summary,send).then(t=>{templatesF14G=t;if(t.length){refresh();renderPreview();}});$('#waF7Close').onclick=closeModal;
-  send.onclick=async()=>{const to=waPhonePreviewV1190A16_(phone.value),chosen=selectedRows(),templateId=tpl.value,fb=String(fallback.value||'').trim(),missing=chosen.filter(g=>!String(g.invitationGreeting||'').trim()).length;if(!to||!chosen.length||(missing&&!fb)||!templateId||!waSelectedTemplateApprovedF14E_(tpl))return;
-    const estimate=await getWaCostEstimateCachedF14_(chosen.length).catch(()=>null);const cost=estimate?.estimatedIls!=null?'₪'+Number(estimate.estimatedIls).toFixed(2):'לא ניתן לחשב';
+  let templatesF14G=[];const renderPreview=()=>waRenderPreviewF14G_($('#waTestPreviewF14G'),waTemplateByIdF14G_(templatesF14G,tpl.value),selectedRows()[0]||rows[0]||null);const loadEnvironment=async()=>{templatesF14G=[];const env=String(envSelect?.value||'TEST').toUpperCase();if(costEl&&env==='TEST')costEl.textContent='0 — סביבת TEST';templatesF14G=await waFillTestTemplateSelectF14Z32_(tpl,summary,send,env);refresh();renderPreview();};phone.oninput=refresh;if(limit)limit.oninput=()=>{refresh();renderPreview();};fallback.oninput=refresh;tpl.onchange=()=>{refresh();renderPreview();};if(envSelect)envSelect.onchange=loadEnvironment;refresh();loadEnvironment();$('#waF7Close').onclick=closeModal;
+  send.onclick=async()=>{const environment=String(envSelect?.value||'TEST').toUpperCase(),to=waPhonePreviewV1190A16_(phone.value),chosen=selectedRows(),templateId=tpl.value,fb=String(fallback.value||'').trim(),missing=chosen.filter(g=>!String(g.invitationGreeting||'').trim()).length;if(!to||!chosen.length||(missing&&!fb)||!templateId||!waSelectedTemplateApprovedF14E_(tpl))return;
+    const selectedTemplate=templatesF14G.find(x=>String(x.id)===String(templateId));if(selectedTemplate&&(environment==='TEST'||String(selectedTemplate.purpose||'')!=='invitation')){const ok=await waConfirmSendF14V_({title:'אישור שליחת בדיקה',message:`לשלוח את התבנית "${selectedTemplate.name}" למספר הבדיקה בלבד?`,details:`<dl><dt>סביבה</dt><dd>${esc(environment)}</dd><dt>תבנית</dt><dd>${esc(selectedTemplate.name)}</dd><dt>מספר בדיקה</dt><dd dir="ltr">+${esc(to)}</dd></dl>`});if(!ok)return;waSetSendingF14V_(send,true,'שולח בדיקה...');$('#waF7Close').disabled=true;summary.textContent='שולח הודעת בדיקה…';summary.className='wa-confirm-status-v1190a16';const started=Date.now();try{const r=await API.request('sendAnyTemplateToTestNumber',{eventId:state.activeEventId,guestId:chosen[0].guestId||chosen[0].id,testPhone:phone.value,templateId,environment});if(state.session?.role==='EventManager'){summary.innerHTML=`<p><strong>הודעת הבדיקה התקבלה ב-Meta לשליחה.</strong></p><p>נמען: <span dir="ltr">+${esc(r?.recipient||to)}</span> · זמן: ${waFormatElapsedF14V_(Date.now()-started)}</p><p class="muted">הסטטוס מאשר קבלה ב-Meta, לא מסירה בפועל למכשיר.</p>`;}else{summary.innerHTML=waResultHtmlF14V_({ok:r?.accepted?1:0,fail:r?.accepted?0:1,left:0,elapsedMs:Date.now()-started,test:true});}summary.className='wa-confirm-status-v1190a16 success';waSetSendingF14V_(send,false);send.disabled=true;$('#waF7Close').disabled=false;}catch(e){summary.textContent=e?.message||String(e);summary.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);$('#waF7Close').disabled=false;}return;}
+    if(managerTest){
+      const confirmed=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp לבדיקה',message:`לשלוח הודעת בדיקה אחת למספר +${to}?`,details:`<b>תבנית:</b> ${esc(selectedTemplate?.displayName||selectedTemplate?.name||selectedTemplate?.metaName||'הזמנה לאירוע')} · <b>כמות:</b> 1`});if(!confirmed)return;
+      const started=performance.now();waSetSendingF14V_(send,true,'בודק תבנית ב-Meta...');const closeBtn=$('#waF7Close');if(closeBtn)closeBtn.disabled=true;
+      try{
+        const validation=await API.request('validateInvitationTemplateAgainstMetaF14Z43',{templateId});
+        if(!validation?.ok)throw new Error('מבנה התבנית ב-Meta אינו מתאים לשליחת ההזמנה: '+(validation?.issues||[]).join(' · '));
+        waSetSendingF14V_(send,false);waSetSendingF14V_(send,true,'שולח בדיקה...');
+        const g=chosen[0],r=await API.request('sendOneInvitationToTestNumberA19P2F8',{eventId:state.activeEventId,guestId:g.guestId||g.id,testPhone:to,templateId});
+        const elapsedMs=performance.now()-started;
+        summary.innerHTML=`<div class="wa-result-f14v success"><strong>תוצאת בדיקת WhatsApp</strong><dl><dt>תבנית</dt><dd>${esc(selectedTemplate?.displayName||selectedTemplate?.name||selectedTemplate?.metaName||'הזמנה לאירוע')}</dd><dt>מספר שהוזן</dt><dd dir="ltr">${esc(phone?.value||'')}</dd><dt>מספר שנשלח ל-Meta</dt><dd dir="ltr">+${esc(r?.requestedRecipient||to)}</dd><dt>מספר ש-Meta זיהתה</dt><dd dir="ltr">+${esc(r?.recipient||to)}</dd><dt>כמות הודעות</dt><dd>1</dd><dt>סטטוס Meta</dt><dd>${r?.accepted?'התקבלה לשליחה':'נכשלה'}</dd><dt>זמן שליחה</dt><dd>${waFormatElapsedF14V_(elapsedMs)}</dd><dt>Template Meta</dt><dd dir="ltr">${esc(r?.templateName||selectedTemplate?.metaName||'')}</dd><dt>Language</dt><dd dir="ltr">${esc(r?.templateLanguage||'')}</dd><dt>Components</dt><dd dir="ltr">${esc((r?.componentTypes||[]).join(' → '))}</dd><dt>תמונת הזמנה</dt><dd>${r?.mediaSource==='fresh-upload'?'Fresh upload — ללא Media Cache':esc(r?.mediaSource||'לא ידוע')}</dd><dt>קבלה בטלפון</dt><dd>לא ניתן לאמת ללא אישור מסירה</dd></dl><p class="muted">Meta קיבלה את בקשת השליחה, אך סטטוס זה אינו מוכיח שההודעה הגיעה למכשיר.</p></div>`;
+        summary.className='wa-confirm-status-v1190a16 success';waSetSendingF14V_(send,false);send.disabled=true;if(closeBtn)closeBtn.disabled=false;
+      }catch(e){summary.innerHTML=`<p><strong>שליחת הבדיקה נכשלה</strong></p><p>${esc(e?.message||String(e))}</p>`;summary.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);if(closeBtn)closeBtn.disabled=false;}
+      return;
+    }
+    const selectedTplCost=templatesF14G.find(x=>String(x.id)===String(templateId));const estimate=await getWaCostEstimateCachedF14_(chosen.length,selectedTplCost?.category).catch(()=>null);const cost=waCostTextF14Z34_(estimate,selectedTplCost?.category);
     const confirmed=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp לבדיקה',message:`לשלוח ${chosen.length} הודעות למספר +${to} בלבד?`,details:`<b>כמות:</b> ${chosen.length} · <b>עלות משוערת:</b> ${esc(cost)}${missing?` · <b>פנייה חלופית:</b> ${esc(fb)}`:''}`});if(!confirmed)return;
-    const started=performance.now();waSetSendingF14V_(send,true);const box=$('#waTestProgressF14C');box.hidden=false;box.querySelector('span').textContent='מכין שליחה · בודק Media ושער דולר...';let prepared;try{prepared=await API.request('prepareWhatsAppSendF14Z9',{templateId});box.querySelector('span').textContent=`הכנה הושלמה · Media: ${prepared.mediaSource} · שער דולר: ${prepared.costSource} · Messages: ${chosen.length}`;}catch(e){summary.innerHTML=`<p><strong>הכנת השליחה נכשלה:</strong> ${esc(e?.message||'שגיאה לא ידועה')}</p>`;summary.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);return;}phone.disabled=true;tpl.disabled=true;limit.disabled=true;fallback.disabled=true;$('#waF7Close').disabled=true;let ok=0,fail=0,perf={eventMs:0,ensureMs:0,guestsMs:0,configTemplateMs:0,mediaMs:0,rsvpMs:0,buildMs:0,metaMs:0,processMs:0,costWriteMs:0,activityWriteMs:0,diagnosticMs:0,writeMs:0,totalMs:0};
+    const started=performance.now();waSetSendingF14V_(send,true);const box=$('#waTestProgressF14C');box.hidden=false;box.querySelector('span').textContent='מכין שליחה · בודק Media ושער דולר...';let prepared;try{prepared=await API.request('prepareWhatsAppSendF14Z9',{templateId});box.querySelector('span').textContent=`הכנה הושלמה · Media: ${prepared.mediaSource} · שער דולר: ${prepared.costSource} · Messages: ${chosen.length}`;}catch(e){summary.innerHTML=`<p><strong>הכנת השליחה נכשלה:</strong> ${esc(e?.message||'שגיאה לא ידועה')}</p>`;summary.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);return;}if(phone)phone.disabled=true;if(tpl)tpl.disabled=true;if(limit)limit.disabled=true;if(fallback)fallback.disabled=true;const closeBtn=$('#waF7Close');if(closeBtn)closeBtn.disabled=true;let ok=0,fail=0,perf={eventMs:0,ensureMs:0,guestsMs:0,configTemplateMs:0,mediaMs:0,rsvpMs:0,buildMs:0,metaMs:0,processMs:0,costWriteMs:0,activityWriteMs:0,diagnosticMs:0,writeMs:0,totalMs:0};
     const chunkSize=16,totalBatches=Math.ceil(chosen.length/chunkSize);let done=0,batchError='',batchMeta=[];
-    for(let i=0,batchNo=1;i<chosen.length;i+=chunkSize,batchNo++){const chunk=chosen.slice(i,i+chunkSize);const elapsed=performance.now()-started;box.querySelector('span').textContent=`אצווה ${batchNo}/${totalBatches} · ${done}/${chosen.length} · הצליחו ${ok} · נכשלו ${fail} · ${waFormatElapsedF14V_(elapsed)}`;try{const r=await API.request('sendInvitationBatchF14U',{eventId:state.activeEventId,items:chunk.map(g=>({guestId:g.guestId||g.id,testGreeting:String(g.invitationGreeting||'').trim()||fb})),testPhone:to,templateId,mediaId:prepared.mediaId,costEstimate:prepared.costEstimate});if(!r||typeof r.accepted==='undefined'||typeof r.failed==='undefined')throw new Error('האצווה לא החזירה תשובה תקינה');ok+=Number(r.accepted||0);fail+=Number(r.failed||0);if(r.performance)Object.keys(perf).forEach(k=>perf[k]+=Number(r.performance[k]||0));if(r.metaSummary)batchMeta.push({batchNo,...r.metaSummary});done+=chunk.length;box.querySelector('progress').value=Math.round(done*100/chosen.length);box.querySelector('span').textContent=`אצווה ${batchNo}/${totalBatches} הסתיימה · ${done}/${chosen.length} · הצליחו ${ok} · נכשלו ${fail} · ${waFormatElapsedF14V_(performance.now()-started)}`;if(done<chosen.length)await waPauseBetweenBatchesF14Z7_(box,done,chosen.length,batchNo+1,totalBatches,started);}catch(e){batchError=e?.message||'האצווה לא החזירה תשובה תקינה';box.querySelector('span').textContent=`השליחה נעצרה באצווה ${batchNo}/${totalBatches} · ${done}/${chosen.length} טופלו`;break;}}
-    const elapsedMs=performance.now()-started,left=chosen.length-done;if(!batchError)box.querySelector('progress').value=100;box.querySelector('span').textContent=batchError?`נעצר לאחר ${done}/${chosen.length} · ${waFormatElapsedF14V_(elapsedMs)}`:`הושלם ${done}/${chosen.length} · הצליחו ${ok} · נכשלו ${fail} · ${waFormatElapsedF14V_(elapsedMs)}`;summary.innerHTML=`<p><strong>מסלול רשת:</strong> Media: ${esc(prepared.mediaSource)} · שער דולר: ${esc(prepared.costSource)} · Messages: ${chosen.length}</p>`+waBatchMetaHtmlF14Z14_(batchMeta)+(batchError?`<p><strong>השליחה נעצרה:</strong> ${esc(batchError)}. לא ניתן לקבוע אם האצווה שלא החזירה תשובה נמסרה בפועל; יש לבדוק ב-WhatsApp לפני ניסיון נוסף.</p>`:'')+waResultHtmlF14V_({ok,fail,left,elapsedMs,test:true,perf,uncertain:!!batchError});summary.className='wa-confirm-status-v1190a16 '+((fail||batchError)?'error':'success');waSetSendingF14V_(send,false);send.disabled=true;$('#waF7Close').disabled=false;
+    for(let i=0,batchNo=1;i<chosen.length;i+=chunkSize,batchNo++){const chunk=chosen.slice(i,i+chunkSize);const elapsed=performance.now()-started;box.querySelector('span').textContent=`קבוצת שליחה ${batchNo}/${totalBatches} · ${done}/${chosen.length} · הצליחו ${ok} · נכשלו ${fail} · ${waFormatElapsedF14V_(elapsed)}`;try{const r=await API.request('sendInvitationBatchF14U',{eventId:state.activeEventId,items:chunk.map(g=>({guestId:g.guestId||g.id,testGreeting:String(g.invitationGreeting||'').trim()||fb})),testPhone:to,templateId,mediaId:prepared.mediaId,costEstimate:prepared.costEstimate});if(!r||typeof r.accepted==='undefined'||typeof r.failed==='undefined')throw new Error('קבוצת השליחה לא החזירה תשובה תקינה');ok+=Number(r.accepted||0);fail+=Number(r.failed||0);if(r.performance)Object.keys(perf).forEach(k=>perf[k]+=Number(r.performance[k]||0));if(r.metaSummary)batchMeta.push({batchNo,...r.metaSummary});done+=chunk.length;box.querySelector('progress').value=Math.round(done*100/chosen.length);box.querySelector('span').textContent=`קבוצת שליחה ${batchNo}/${totalBatches} הסתיימה · ${done}/${chosen.length} · הצליחו ${ok} · נכשלו ${fail} · ${waFormatElapsedF14V_(performance.now()-started)}`;if(done<chosen.length)await waPauseBetweenBatchesF14Z7_(box,done,chosen.length,batchNo+1,totalBatches,started);}catch(e){batchError=e?.message||'קבוצת השליחה לא החזירה תשובה תקינה';box.querySelector('span').textContent=`השליחה נעצרה בקבוצת שליחה ${batchNo}/${totalBatches} · ${done}/${chosen.length} טופלו`;break;}}
+    const elapsedMs=performance.now()-started,left=chosen.length-done;if(!batchError)box.querySelector('progress').value=100;box.querySelector('span').textContent=batchError?`נעצר לאחר ${done}/${chosen.length} · ${waFormatElapsedF14V_(elapsedMs)}`:`הושלם ${done}/${chosen.length} · הצליחו ${ok} · נכשלו ${fail} · ${waFormatElapsedF14V_(elapsedMs)}`;summary.innerHTML=managerTest?(batchError?`<p><strong>שליחת הבדיקה נכשלה.</strong></p><p>${esc(batchError)}</p>`:`<p><strong>הודעת הבדיקה התקבלה ב-Meta לשליחה.</strong></p><p>נמען: <span dir="ltr">+${esc((batchMeta[batchMeta.length-1]?.recipient)||to)}</span> · זמן: ${waFormatElapsedF14V_(elapsedMs)}</p><p class="muted">אישור Meta אינו אישור שההודעה נמסרה למכשיר.</p>`):(`<p><strong>מסלול רשת:</strong> Media: ${esc(prepared.mediaSource)} · שער דולר: ${esc(prepared.costSource)} · Messages: ${chosen.length}</p>`+waBatchMetaHtmlF14Z11_(batchMeta)+(batchError?`<p><strong>השליחה נעצרה:</strong> ${esc(batchError)}. לא ניתן לקבוע אם קבוצת השליחה שלא החזירה תשובה נמסרה בפועל; יש לבדוק ב-WhatsApp לפני ניסיון נוסף.</p>`:'')+waResultHtmlF14V_({ok,fail,left,elapsedMs,test:true,perf,uncertain:!!batchError}));summary.className='wa-confirm-status-v1190a16 '+((fail||batchError)?'error':'success');waSetSendingF14V_(send,false);send.disabled=true;$('#waF7Close').disabled=false;
   };
 }
 
 
-function waBatchMetaHtmlF14Z14_(rows){
+function waBatchMetaHtmlF14Z11_(rows){
   if(!Array.isArray(rows)||!rows.length)return '';
-  return `<div class="wa-meta-batches-f14z11"><strong>אבחון Meta לפי אצווה:</strong>${rows.map(x=>{const statuses=Object.entries(x.messageStatusCounts||{}).map(([k,v])=>`${esc(k)}: ${v}`).join(' · ')||'ללא סטטוס';return `<p>אצווה ${x.batchNo}: תגובות ${x.responseCount} · HTTP 2xx ${x.http2xxCount} · wamid ${x.messageIdCount} · ייחודיים ${x.uniqueMessageIdCount} · ${statuses}</p>`;}).join('')}</div>`;
+  return `<div class="wa-meta-batches-f14z11"><strong>אבחון Meta לפי קבוצת שליחה:</strong>${rows.map(x=>{const statuses=Object.entries(x.messageStatusCounts||{}).map(([k,v])=>`${esc(k)}: ${v}`).join(' · ')||'ללא סטטוס';return `<p>קבוצה ${x.batchNo}: תגובות ${x.responseCount} · HTTP 2xx ${x.http2xxCount} · wamid ${x.messageIdCount} · ייחודיים ${x.uniqueMessageIdCount} · ${statuses}</p>`;}).join('')}</div>`;
 }
 
-async function openGuestWhatsAppRealF14C_(){
-  if(state.session?.role!=='Admin'||!state.activeEventId)return;
+function waEligibleGuestsForTemplateF14Z35_(rows,template,seating,event){
+  const purpose=String(template?.purpose||'invitation'),assignments=seating?.assignments||[];
+  const assigned=new Set(assignments.map(a=>String(a.guestId||'')));
+  const hasAssignment=g=>assigned.has(String(g.guestId||g.id))||!!String(g.tableId||g.tableNumber||'').trim();
+  const isConfirmed=g=>String(g.rsvpStatus||g.status||'').toLowerCase()==='confirmed'||Number(g.confirmedCount||0)>0;
+  const isPending=g=>['pending','ממתין','ממתינים לתשובה'].includes(String(g.rsvpStatus||g.status||'').toLowerCase());
+  const paymentEnabled=isTrue(event?.paymentEnabled??event?.PaymentEnabled,false);
+  return (rows||[]).filter(g=>{
+    if(!guestSendChecked(g)||!waPhonePreviewV1190A16_(g.phone))return false;
+    if(purpose==='rsvp_update')return isPending(g);
+    if(purpose==='table_update')return isConfirmed(g)&&hasAssignment(g);
+    if(purpose==='table_payment_update')return paymentEnabled&&isConfirmed(g)&&hasAssignment(g);
+    if(purpose==='thank_you')return Number(g.actualAttendees||g.actualAttendance||0)>0;
+    return true;
+  });
+}
+async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestId=''){
+  if(!['Admin','EventManager'].includes(state.session?.role)||!state.activeEventId)return;
   const filter=$('#guestSendFilterA19P2F6');filter.value='yes';renderGuests();
-  const rows=filteredGuests(),eligible=rows.filter(g=>waPhonePreviewV1190A16_(g.phone)&&String(g.invitationGreeting||'').trim());
-  const invalid=rows.filter(g=>!waPhonePreviewV1190A16_(g.phone)||!String(g.invitationGreeting||'').trim());
-  modal(`<section role="dialog"><h2>שליחת WhatsApp</h2><p>סינון ״שליחה״ הוגדר ל״כן״. יתר הסינונים נשמרו.</p>
+  const filtered=filteredGuests(),rows=preferredGuestId?filtered.filter(g=>String(g.guestId||g.id)===String(preferredGuestId)):filtered;
+  let eligible=rows.filter(g=>waPhonePreviewV1190A16_(g.phone)),invalid=rows.filter(g=>!waPhonePreviewV1190A16_(g.phone)),templatesF14Z35=[];
+  modal(`<section role="dialog"><h2>שליחת WhatsApp</h2><p>${preferredGuestId?'שליחה למוזמן שנבחר.':'סינון ״שליחה״ הוגדר ל״כן״. יתר הסינונים נשמרו.'}</p>
   <div class="form-grid"><label>תבנית WhatsApp <span class="required-star">*</span><select id="waRealTemplateF14C" disabled><option value="">טוען תבניות…</option></select></label></div>
-  <p><b>מיועדים לשליחה:</b> ${eligible.length}${invalid.length?` · <b>חסומים בגלל נתון חסר/לא תקין:</b> ${invalid.length}`:''}</p>
+  <p id="waRealEligibleLineF14Z35"><b>מיועדים לשליחה:</b> ${eligible.length}${invalid.length?` · <b>חסומים בגלל נתון חסר/לא תקין:</b> ${invalid.length}`:''}</p>
   <div class="wa-send-preview-f14g" id="waRealPreviewF14G"><p class="muted">Preview ההזמנה יוצג לאחר טעינת התבנית.</p></div>
-  <dl class="wa-confirm-details-v1190a16"><dt>כמות הודעות</dt><dd>${eligible.length}</dd><dt>עלות משוערת</dt><dd id="waRealCostF14C">טוען…</dd></dl>
+  <dl class="wa-confirm-details-v1190a16"><dt>כמות הודעות</dt><dd id="waRealCountF14Z35">${eligible.length}</dd><dt>עלות משוערת</dt><dd id="waRealCostF14C">טוען…</dd></dl>
   <p id="waRealStatusF14C" class="wa-confirm-status-v1190a16"></p><div class="wa-progress-f14c" id="waRealProgressF14C" hidden><progress max="100" value="0"></progress><span></span></div>
   <div class="actions"><button type="button" class="secondary" id="waRealCloseF14C">סגור</button><button type="button" class="danger" id="waRealStopF14C" hidden>עצור שליחה</button><button type="button" class="primary" id="waRealSendF14C" ${!eligible.length||invalid.length?'disabled':''}>שלח WhatsApp</button></div></section>`);
-  getWaCostEstimateCachedF14_(eligible.length).then(e=>{const x=$('#waRealCostF14C');if(x)x.textContent=e?.estimatedIls!=null?'₪'+Number(e.estimatedIls).toFixed(2):'לא ניתן לחשב';});
-  waFillTemplateSelectF14D_($('#waRealTemplateF14C'),$('#waRealStatusF14C'),$('#waRealSendF14C')).then(t=>{const sel=$('#waRealTemplateF14C');const preview=()=>waRenderPreviewF14G_($('#waRealPreviewF14G'),waTemplateByIdF14G_(t,sel.value),eligible[0]||rows[0]||null);if(t.length&&!invalid.length&&eligible.length&&waSelectedTemplateApprovedF14E_(sel))$('#waRealSendF14C').disabled=false;sel.onchange=()=>{$('#waRealSendF14C').disabled=!!invalid.length||!eligible.length||!waSelectedTemplateApprovedF14E_(sel);preview();};if(t.length)preview();});
+  {const x=$('#waRealCostF14C');if(x)x.textContent='ממתין לבחירת תבנית…';}
+  waFillTemplateSelectF14D_($('#waRealTemplateF14C'),$('#waRealStatusF14C'),$('#waRealSendF14C')).then(async t=>{
+    templatesF14Z35=t;const sel=$('#waRealTemplateF14C');if(preferredTemplateId&&[...sel.options].some(o=>String(o.value)===String(preferredTemplateId)))sel.value=String(preferredTemplateId);
+    const refresh=async()=>{const chosen=waTemplateByIdF14G_(t,sel.value);if(!chosen)return;
+      if(['table_update','table_payment_update'].includes(String(chosen.purpose||''))&&(!state.seating||String(state.seating.eventId)!==String(state.activeEventId))){try{state.seating=await API.request('seatingStateV169',{eventId:state.activeEventId});}catch(ignore){}}
+      eligible=waEligibleGuestsForTemplateF14Z35_(rows,chosen,state.seating,activeEvent());invalid=rows.filter(g=>!waPhonePreviewV1190A16_(g.phone));
+      const line=$('#waRealEligibleLineF14Z35'),cnt=$('#waRealCountF14Z35'),send=$('#waRealSendF14C');if(line)line.innerHTML=`<b>מיועדים לשליחה:</b> ${eligible.length} · <b>לא מתאימים לתנאי התבנית:</b> ${Math.max(0,rows.length-eligible.length-invalid.length)}${invalid.length?` · <b>טלפון חסר/לא תקין:</b> ${invalid.length}`:''}`;if(cnt)cnt.textContent=String(eligible.length);
+      waRenderPreviewF14G_($('#waRealPreviewF14G'),chosen,eligible[0]||rows[0]||null);getWaCostEstimateCachedF14_(eligible.length,chosen.category).then(e=>{const x=$('#waRealCostF14C');if(x)x.textContent=waCostTextF14Z34_(e,chosen.category);});
+      send.disabled=!eligible.length||!waSelectedTemplateApprovedF14E_(sel);
+    };
+    sel.onchange=refresh;await refresh();
+  });
   $('#waRealCloseF14C').onclick=closeModal;let stopped=false;$('#waRealStopF14C').onclick=()=>{stopped=true;$('#waRealStopF14C').disabled=true;$('#waRealStatusF14C').textContent='העצירה התקבלה. לא תתחיל הודעה נוספת לאחר ההודעה המטופלת כעת.';};
-  $('#waRealSendF14C').onclick=async()=>{const templateId=$('#waRealTemplateF14C').value;if(!templateId)return;const cost=$('#waRealCostF14C').textContent;const confirmed=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp',message:`לשלוח ${eligible.length} הודעות למספרי המוזמנים?`,details:`<b>כמות:</b> ${eligible.length} · <b>עלות משוערת:</b> ${esc(cost)}`});if(!confirmed)return;
+  $('#waRealSendF14C').onclick=async()=>{const templateId=$('#waRealTemplateF14C').value;if(!templateId)return;const selectedTpl=waTemplateByIdF14G_(templatesF14Z35,templateId);const cost=$('#waRealCostF14C').textContent;if(selectedTpl&&String(selectedTpl.purpose||'')!=='invitation'){if(eligible.length!==1){const status=$('#waRealStatusF14C');status.textContent='לשליחה קבוצתית בתבנית זו יש לבחור מוזמן דרך סמליל WhatsApp ברשימה. מנגנון הסינון הקבוצתי לפי סוג התבנית יופעל בשלב הבא.';status.className='wa-confirm-status-v1190a16 error';return;}const confirmed=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp',message:`לשלוח את התבנית "${selectedTpl.name}" למוזמן שנבחר?`,details:`<b>מוזמן:</b> ${esc(eligible[0].name||'')} · <b>עלות משוערת:</b> ${esc(cost)}`});if(!confirmed)return;const send=$('#waRealSendF14C'),close=$('#waRealCloseF14C'),status=$('#waRealStatusF14C');waSetSendingF14V_(send,true);close.disabled=true;try{const r=await API.request('sendAnyTemplateToGuest',{eventId:state.activeEventId,guestId:eligible[0].guestId||eligible[0].id,templateId});status.textContent=r?.accepted?'ההודעה התקבלה לשליחה ב-WhatsApp.':'השליחה לא אושרה.';status.className='wa-confirm-status-v1190a16 '+(r?.accepted?'success':'error');send.disabled=true;}catch(e){status.textContent=e?.message||String(e);status.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);close.disabled=false;}return;}const confirmed=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp',message:`לשלוח ${eligible.length} הודעות למספרי המוזמנים?`,details:`<b>כמות:</b> ${eligible.length} · <b>עלות משוערת:</b> ${esc(cost)}`});if(!confirmed)return;
     const started=performance.now(),send=$('#waRealSendF14C'),close=$('#waRealCloseF14C'),stop=$('#waRealStopF14C'),box=$('#waRealProgressF14C'),status=$('#waRealStatusF14C');waSetSendingF14V_(send,true);close.disabled=true;stop.hidden=false;box.hidden=false;box.querySelector('span').textContent='מכין שליחה · בודק Media ושער דולר...';let prepared;try{prepared=await API.request('prepareWhatsAppSendF14Z9',{templateId});box.querySelector('span').textContent=`הכנה הושלמה · Media: ${prepared.mediaSource} · שער דולר: ${prepared.costSource} · Messages: ${eligible.length}`;}catch(e){status.innerHTML=`<p><strong>הכנת השליחה נכשלה:</strong> ${esc(e?.message||'שגיאה לא ידועה')}</p>`;status.className='wa-confirm-status-v1190a16 error';stop.hidden=true;waSetSendingF14V_(send,false);close.disabled=false;return;}let ok=0,fail=0,done=0,perf={eventMs:0,ensureMs:0,guestsMs:0,configTemplateMs:0,mediaMs:0,rsvpMs:0,buildMs:0,metaMs:0,processMs:0,costWriteMs:0,activityWriteMs:0,diagnosticMs:0,writeMs:0,totalMs:0};
     const chunkSize=16,totalBatches=Math.ceil(eligible.length/chunkSize);let batchError='',batchMeta=[];
-    for(let i=0,batchNo=1;i<eligible.length;i+=chunkSize,batchNo++){if(stopped)break;const chunk=eligible.slice(i,i+chunkSize);box.querySelector('span').textContent=`אצווה ${batchNo}/${totalBatches} · שולח ${done+1}–${done+chunk.length} מתוך ${eligible.length}`;try{const r=await API.request('sendInvitationBatchF14U',{eventId:state.activeEventId,items:chunk.map(g=>({guestId:g.guestId||g.id})),templateId,mediaId:prepared.mediaId,costEstimate:prepared.costEstimate});if(!r||typeof r.accepted==='undefined'||typeof r.failed==='undefined')throw new Error('האצווה לא החזירה תשובה תקינה');ok+=Number(r.accepted||0);fail+=Number(r.failed||0);if(r.performance)Object.keys(perf).forEach(k=>perf[k]+=Number(r.performance[k]||0));if(r.metaSummary)batchMeta.push({batchNo,...r.metaSummary});done+=chunk.length;box.querySelector('progress').value=Math.round(done*100/eligible.length);if(done<eligible.length&&!stopped)await waPauseBetweenBatchesF14Z7_(box,done,eligible.length,batchNo+1,totalBatches,started);}catch(e){batchError=e?.message||'האצווה לא החזירה תשובה תקינה';break;}}
-    const elapsedMs=performance.now()-started,left=eligible.length-done;status.innerHTML=`<p><strong>מסלול רשת:</strong> Media: ${esc(prepared.mediaSource)} · שער דולר: ${esc(prepared.costSource)} · Messages: ${eligible.length}</p>`+waBatchMetaHtmlF14Z14_(batchMeta)+(batchError?`<p><strong>השליחה נעצרה:</strong> ${esc(batchError)}. לא ניתן לקבוע אם האצווה שלא החזירה תשובה נמסרה בפועל; יש לבדוק ב-WhatsApp לפני ניסיון נוסף.</p>`:'')+waResultHtmlF14V_({ok,fail,left,elapsedMs,test:false,perf,uncertain:!!batchError});status.className='wa-confirm-status-v1190a16 '+((fail||batchError)?'error':'success');box.querySelector('span').textContent=batchError?`נעצר לאחר ${done} מתוך ${eligible.length} · ${waFormatElapsedF14V_(elapsedMs)}`:`טופלו ${done} מתוך ${eligible.length} · ${waFormatElapsedF14V_(elapsedMs)}`;stop.hidden=true;waSetSendingF14V_(send,false);send.disabled=true;close.disabled=false;
+    for(let i=0,batchNo=1;i<eligible.length;i+=chunkSize,batchNo++){if(stopped)break;const chunk=eligible.slice(i,i+chunkSize);box.querySelector('span').textContent=`קבוצת שליחה ${batchNo}/${totalBatches} · שולח ${done+1}–${done+chunk.length} מתוך ${eligible.length}`;try{const r=await API.request('sendInvitationBatchF14U',{eventId:state.activeEventId,items:chunk.map(g=>({guestId:g.guestId||g.id})),templateId,mediaId:prepared.mediaId,costEstimate:prepared.costEstimate});if(!r||typeof r.accepted==='undefined'||typeof r.failed==='undefined')throw new Error('קבוצת השליחה לא החזירה תשובה תקינה');ok+=Number(r.accepted||0);fail+=Number(r.failed||0);if(r.performance)Object.keys(perf).forEach(k=>perf[k]+=Number(r.performance[k]||0));if(r.metaSummary)batchMeta.push({batchNo,...r.metaSummary});done+=chunk.length;box.querySelector('progress').value=Math.round(done*100/eligible.length);if(done<eligible.length&&!stopped)await waPauseBetweenBatchesF14Z7_(box,done,eligible.length,batchNo+1,totalBatches,started);}catch(e){batchError=e?.message||'קבוצת השליחה לא החזירה תשובה תקינה';break;}}
+    const elapsedMs=performance.now()-started,left=eligible.length-done;status.innerHTML=`<p><strong>מסלול רשת:</strong> Media: ${esc(prepared.mediaSource)} · שער דולר: ${esc(prepared.costSource)} · Messages: ${eligible.length}</p>`+waBatchMetaHtmlF14Z11_(batchMeta)+(batchError?`<p><strong>השליחה נעצרה:</strong> ${esc(batchError)}. לא ניתן לקבוע אם קבוצת השליחה שלא החזירה תשובה נמסרה בפועל; יש לבדוק ב-WhatsApp לפני ניסיון נוסף.</p>`:'')+waResultHtmlF14V_({ok,fail,left,elapsedMs,test:false,perf,uncertain:!!batchError});status.className='wa-confirm-status-v1190a16 '+((fail||batchError)?'error':'success');box.querySelector('span').textContent=batchError?`נעצר לאחר ${done} מתוך ${eligible.length} · ${waFormatElapsedF14V_(elapsedMs)}`:`טופלו ${done} מתוך ${eligible.length} · ${waFormatElapsedF14V_(elapsedMs)}`;stop.hidden=true;waSetSendingF14V_(send,false);send.disabled=true;close.disabled=false;
   };
 }
 
@@ -1408,12 +1507,53 @@ async function openWhatsAppTestConfirmV1190A16_(g){
   };
 }
 
+
+
+/* ---------- F14Z53 System values / WhatsApp pricing ---------- */
+const systemValueDefsZ53_=[
+  {key:'WHATSAPP_PERSONAL_GREETING_DEFAULT',group:'WHATSAPP',label:'פנייה אישית — ברירת מחדל',value:'משפחה יקרה',description:'משמש כאשר למוזמן אין פנייה אישית.'},
+  {key:'WHATSAPP_EVENT_DETAILS_FORMAT',group:'WHATSAPP',label:'פרטי האירוע',value:'{eventName}\n{eventDate} בשעה {eventTime}\n{eventVenue}',description:'מבנה הערך המורכב שמועבר לתבניות WhatsApp.'},
+  {key:'WHATSAPP_TABLE_ASSIGNMENT_FORMAT',group:'WHATSAPP',label:'שיוך שולחן',value:'{tableAssignment}',description:'מבנה תצוגת שיוך השולחן/שולחנות.'},
+  {key:'WHATSAPP_EXTRA_NOTES_DEFAULT',group:'WHATSAPP',label:'הערות נוספות — ברירת מחדל',value:'',description:'ערך ברירת מחדל כאשר אין הערות נוספות.'}
+];
+const systemTokenLabelsZ53_={eventName:'שם האירוע',eventDate:'תאריך',eventTime:'שעה',eventVenue:'מיקום',personalGreeting:'פנייה אישית',guestName:'שם המוזמן',tableAssignment:'שיוך שולחן',extraNotes:'הערות נוספות'};
+function systemValueMergedZ53_(rows,key){const d=systemValueDefsZ53_.find(x=>x.key===key)||{key,label:key,value:'',group:'GENERAL',description:''};return Object.assign({},d,(rows||[]).find(x=>String(x.key)===key)||{});}
+function systemPreviewZ53_(v){const sample={eventName:'בר מצווה של דותן',eventDate:'15/10/2026',eventTime:'19:30',eventVenue:'אולמי הדוגמה',personalGreeting:'משפחה יקרה',guestName:'משפחת ישראלי',tableAssignment:'שולחן 12',extraNotes:'נשמח לראותכם'};return String(v||'').replace(/\{([A-Za-z0-9_]+)\}/g,(m,k)=>sample[k]??m);}
+async function renderSystemValuesAdminZ53_(){
+  const c=$('#adminContent');if(!c)return;c.innerHTML='<div class="admin-loading-z53b6"><span class="admin-spinner-z53b6" aria-hidden="true"></span><strong>טוען ערכי מערכת…</strong></div>';
+  try{const r=await API.request('listSystemSettingsZ53',{}),rows=r.settings||[];
+    const cards=systemValueDefsZ53_.map(d=>{const x=systemValueMergedZ53_(rows,d.key);return `<article class="system-value-card-z53"><h3>${esc(x.label)}</h3><p class="muted">${esc(x.description||'')}</p><textarea data-system-value-z53="${esc(x.key)}" rows="4">${esc(x.value||'')}</textarea><div class="system-token-bar-z53">${Object.entries(systemTokenLabelsZ53_).map(([k,l])=>`<button type="button" data-insert-token-z53="${k}" data-target-z53="${esc(x.key)}">+ ${esc(l)}</button>`).join('')}</div><p><b>תצוגה מקדימה:</b></p><pre data-system-preview-z53="${esc(x.key)}">${esc(systemPreviewZ53_(x.value))}</pre><div class="actions"><button class="primary save-system-value-z53" data-key="${esc(x.key)}">שמירה</button></div></article>`}).join('');
+    c.innerHTML=`<div class="system-help-z53"><h2>ערכי מערכת</h2><p>ערכי המערכת מגדירים כיצד נבנה המידע הדינמי שמועבר לתבניות WhatsApp. ניתן לשלב כמה שדות באותו ערך — למשל שם האירוע, תאריך, שעה ומיקום — ולראות מיד את התוצאה בתצוגה המקדימה.</p><p><b>איך משתמשים?</b> מקמו את הסמן במקום הרצוי ולחצו על אחד מכפתורי „הוסף שדה”. אפשר להוסיף טקסט חופשי, רווחים ושורות חדשות. בסיום לחצו „שמירה”.</p><p class="system-help-note-z53">שינוי במסך זה אינו משנה את תבנית Meta. הוא משנה רק את הערכים שהמערכת תעביר לתבנית בזמן השליחה.</p></div><div class="system-values-grid-z53">${cards}</div>`;
+  }catch(e){c.innerHTML=`<div class="event-save-status error">${esc(e?.message||String(e))}</div>`;}
+}
+function formatAdminDateZ53B3_(v){if(!v)return '—';const d=new Date(v);if(Number.isNaN(d.getTime()))return String(v);return new Intl.DateTimeFormat('he-IL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(d).replace(',', '');}
+function formatBoiRateDateZ53B5_(v){if(!v)return '—';const d=new Date(v);if(!Number.isNaN(d.getTime()))return new Intl.DateTimeFormat('he-IL',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d);return String(v);}
+function friendlyTierZ53B3_(v){const s=String(v||'').trim();if(!s)return '—';if(/^0:MAX$/i.test(s))return '0–MAX';const m=s.match(/^(\d+):(\d+)$/);return m?`${Number(m[1]).toLocaleString('en-US')}–${Number(m[2]).toLocaleString('en-US')}`:s;}
+async function renderWhatsAppCostsAdminZ53B3_(){
+  const c=$('#adminContent');if(!c)return;c.innerHTML='<div class="admin-loading-z53b6"><span class="admin-spinner-z53b6" aria-hidden="true"></span><strong>טוען עלויות WhatsApp…</strong></div>';
+  try{const [r,watch]=await Promise.all([API.request('listSystemSettingsZ53',{}),API.request('metaPricingWatchStatusZ53B',{})]),pricing=(r.pricing||[]).filter(x=>String(x.source||'').includes('Meta'));
+    const rows=pricing.map(x=>`<tr class="wa-pricing-row-z53b2" data-wa-price-id="${esc(x.id)}" title="לחיצה כפולה להצגת פרטים"><td>${esc(x.environment)}</td><td>${esc(x.category)}</td><td>${esc(x.country)}</td><td>${esc(x.currency)}</td><td>${esc(x.unitPrice)}</td><td class="wa-tier-z53b3">${esc(friendlyTierZ53B3_(x.tier))}</td><td>${esc(x.source||'')}</td><td>${esc(formatAdminDateZ53B3_(x.updatedAt))}</td></tr>`).join('');
+    c.innerHTML=`<div class="system-help-z53 system-pricing-help-z53"><div><h2>עלויות WhatsApp</h2><p>המחירים נקראים אוטומטית מנתוני Meta עבור הודעות שנמסרו בסביבת PRODUCTION. סביבת TEST אינה מחויבת ועלותה 0.</p><p class="system-help-note-z53">המחיר מחושב מנתוני Meta pricing_analytics לפי COST ÷ VOLUME. הרשומות הן לקריאה בלבד; לחיצה כפולה על שורה מציגה את מלוא פרטי הרשומה.</p><p class="system-help-note-z53">מדרגת נפח היא טווח כמות ההודעות שעל פיו Meta קובעת את המחיר; המחיר עשוי להשתנות במעבר למדרגת נפח אחרת.</p><div class="pricing-watch-status-z53b"><b>בדיקה אוטומטית:</b> ${watch.enabled?'פעילה — פעם ביום, סביב 16:00':'לא פעילה'} · <b>בדיקה אחרונה:</b> ${esc(formatAdminDateZ53B3_(watch.last?.checkedAt))} · <b>סטטוס:</b> ${watch.last?.ok===false?'שגיאה':watch.last?.ok===true?'תקין':'—'}${watch.last?.changed?` · <b>שינויים שזוהו:</b> ${esc(watch.last.changed)}`:''}<br><b>שער USD/ILS:</b> ${watch.fx?.rate?esc(Number(watch.fx.rate).toFixed(4)):'—'} · <b>מקור:</b> בנק ישראל · <b>תאריך השער:</b> ${esc(formatBoiRateDateZ53B5_(watch.fx?.date))} · <b>נבדק לאחרונה:</b> ${esc(formatAdminDateZ53B3_(watch.fx?.lastCheckedAt))}</div></div><div class="pricing-watch-actions-z53b"><button class="primary sync-wa-pricing-z53b">בדיקה עכשיו מול Meta</button><button class="toggle-wa-pricing-watch-z53b">${watch.enabled?'כיבוי עדכון יומי':'הפעלת עדכון יומי'}</button></div></div><div class="table-wrap system-pricing-table-z53 wa-pricing-table-z53b2"><table class="admin-table"><thead><tr><th>סביבה</th><th>קטגוריה</th><th>מדינה</th><th>מטבע</th><th>מחיר ליחידה</th><th>מדרגת נפח</th><th>מקור</th><th>עודכן</th></tr></thead><tbody>${rows||'<tr><td colspan="8" class="system-empty-z53">אין עדיין נתוני מחיר מ־Meta. לחצו „בדיקה עכשיו מול Meta”.</td></tr>'}</tbody></table></div>`;
+    c._waPricingZ53B3=pricing;
+  }catch(e){c.innerHTML=`<div class="event-save-status error">${esc(e?.message||String(e))}</div>`;}
+}
+function showWaPricingDetailsZ53B3_(x){if(!x)return;modal(`<h2>פרטי עלות WhatsApp</h2><div class="wa-pricing-details-z53b2"><p><b>סביבה:</b> ${esc(x.environment||'—')}</p><p><b>קטגוריה:</b> ${esc(x.category||'—')}</p><p><b>מדינה:</b> ${esc(x.country||'—')}</p><p><b>מטבע:</b> ${esc(x.currency||'—')}</p><p><b>מחיר ליחידה:</b> ${esc(x.unitPrice||'—')}</p><p><b>מדרגת נפח:</b> <span class="wa-tier-z53b3">${esc(friendlyTierZ53B3_(x.tier))}</span></p><p><b>Pricing type:</b> ${esc(x.pricingType||'—')}</p><p><b>Volume:</b> ${esc(x.volume??'—')}</p><p><b>Cost:</b> ${esc(x.cost??'—')}</p><p><b>מקור:</b> ${esc(x.source||'—')}</p><p><b>תקופת נתונים:</b> ${esc(formatAdminDateZ53B3_(x.periodStart))} – ${esc(formatAdminDateZ53B3_(x.periodEnd))}</p><p><b>בדיקה אחרונה:</b> ${esc(formatAdminDateZ53B3_(x.lastCheckedAt||x.updatedAt))}</p><p><b>שינוי אחרון:</b> ${esc(formatAdminDateZ53B3_(x.changeDetectedAt))}</p><p><b>מחיר קודם:</b> ${esc(x.previousUnitPrice||'—')}</p><p><b>הערות:</b> ${esc(x.notes||'—')}</p></div><div class="actions"><button class="primary" onclick="closeModal()">סגור</button></div>`);}
+function setAdminButtonBusyZ53B6_(button,busy,label){if(!button)return;if(busy){if(!button.dataset.busyHtmlZ53B6)button.dataset.busyHtmlZ53B6=button.innerHTML;button.disabled=true;button.setAttribute('aria-busy','true');button.innerHTML=`<span class="admin-spinner-z53b6 admin-spinner-button-z53b6" aria-hidden="true"></span><span>${esc(label||'מעדכן…')}</span>`;}else{button.disabled=false;button.removeAttribute('aria-busy');if(button.dataset.busyHtmlZ53B6){button.innerHTML=button.dataset.busyHtmlZ53B6;delete button.dataset.busyHtmlZ53B6;}}}
+async function saveSystemValueUiZ53_(key,button){const ta=document.querySelector(`[data-system-value-z53="${CSS.escape(key)}"]`),d=systemValueDefsZ53_.find(x=>x.key===key);if(!ta||!d)return;setAdminButtonBusyZ53B6_(button,true,'שומר…');try{const r=await API.request('saveSystemSettingZ53',{setting:{...d,value:ta.value,active:true}});showToast('ערך המערכת נשמר','success');const p=document.querySelector(`[data-system-preview-z53="${CSS.escape(key)}"]`);if(p)p.textContent=systemPreviewZ53_(r.setting?.value??ta.value);}catch(e){showToast(e?.message||String(e),'error')}finally{setAdminButtonBusyZ53B6_(button,false)}}
+
+document.addEventListener('dblclick',e=>{const tr=e.target.closest?.('.wa-pricing-row-z53b2');if(!tr)return;const c=$('#adminContent'),x=(c?._waPricingZ53B3||[]).find(v=>String(v.id)===String(tr.dataset.waPriceId));if(x)showWaPricingDetailsZ53B3_(x);});
+document.addEventListener('input',e=>{const ta=e.target.closest?.('[data-system-value-z53]');if(!ta)return;const p=document.querySelector(`[data-system-preview-z53="${CSS.escape(ta.dataset.systemValueZ53)}"]`);if(p)p.textContent=systemPreviewZ53_(ta.value);});
+
 /* ---------- Events ---------- */
 document.addEventListener("click",async e=>{
   const sortHead=e.target.closest(".guests-table th.sortable"); if(sortHead){setGuestSort(sortHead.dataset.sort);return}
   const nav=e.target.closest("[data-page]");if(nav)showPage(nav.dataset.page);
 
   const tab=e.target.closest("[data-admin-tab]");if(tab){state.adminTab=tab.dataset.adminTab;renderAdmin();return}
+  const tok=e.target.closest('[data-insert-token-z53]');if(tok){const key=tok.dataset.targetZ53,ta=document.querySelector(`[data-system-value-z53="${CSS.escape(key)}"]`);if(ta){const token=`{${tok.dataset.insertTokenZ53}}`,a=ta.selectionStart??ta.value.length,b=ta.selectionEnd??a;ta.setRangeText(token,a,b,'end');ta.dispatchEvent(new Event('input',{bubbles:true}));}return}
+  const sv=e.target.closest('.save-system-value-z53');if(sv){await saveSystemValueUiZ53_(sv.dataset.key,sv);return}
+  if(e.target.closest('.sync-wa-pricing-z53b')){const b=e.target.closest('.sync-wa-pricing-z53b');setAdminButtonBusyZ53B6_(b,true,'בודק…');try{const r=await API.request('syncMetaPricingAnalyticsZ53B',{});showToast(`בדיקת Meta הסתיימה: ${r.updated||0} מחירים, ${r.changed||0} שינויים`,'success');await renderWhatsAppCostsAdminZ53B3_()}catch(err){setAdminButtonBusyZ53B6_(b,false);showToast(err.message,'error')}return}
+  if(e.target.closest('.toggle-wa-pricing-watch-z53b')){const b=e.target.closest('.toggle-wa-pricing-watch-z53b');setAdminButtonBusyZ53B6_(b,true,'מעדכן…');try{const st=await API.request('metaPricingWatchStatusZ53B',{});await API.request('setMetaPricingWatchEnabledZ53B',{enabled:!st.enabled});showToast(!st.enabled?'עדכון המחירים היומי הופעל':'עדכון המחירים היומי כובה','success');await renderWhatsAppCostsAdminZ53B3_()}catch(err){setAdminButtonBusyZ53B6_(b,false);showToast(err.message,'error')}return}
   if(e.target.closest(".run-system-health")){await runSystemHealthUi_();return}
   if(e.target.closest(".check-event-type-assignments")){await diagnoseEventTypeAssignmentsUi_();return}
   if(e.target.closest(".repair-event-type-assignments")){await repairEventTypeAssignmentsUi_();return}
@@ -1422,12 +1562,12 @@ document.addEventListener("click",async e=>{
   const card=e.target.closest("[data-event]");if(card&&!e.target.closest("button,input,select")){setCurrentEvent_(card.dataset.event)}
   const er=e.target.closest(".edit-event");if(er){e.stopPropagation();eventForm(state.events.find(x=>x.id===er.dataset.id))}
   const dr=e.target.closest(".delete-event");if(dr){e.stopPropagation();if(confirm("למחוק את האירוע ואת שיוכי המוזמנים שלו?")){const id=dr.dataset.id,started=performance.now();const r=await API.request("deleteEvent",{id});removeLocal_(state.events,id);state.guests=state.guests.filter(x=>String(x.eventId)!==String(id));state.tables=state.tables.filter(x=>String(x.eventId)!==String(id));if(String(state.activeEventId)===String(id)){state.activeEventId=null;restoreCurrentEvent_()}renderAll();mutationDone_("האירוע נמחק",r,started)}}
-  const waTest=e.target.closest('[data-wa-test]');if(waTest){
+  const waRow=e.target.closest('[data-wa-send-row]');if(waRow){
     e.stopPropagation();
-    const g=state.guests.find(x=>String(x.guestId||x.id)===String(waTest.dataset.waTest));
+    const g=state.guests.find(x=>String(x.guestId||x.id)===String(waRow.dataset.waSendRow));
     if(!g)return;
     if(!guestSendChecked(g)){showToast('המוזמן מסומן שליחה: לא','error');return}
-    openWhatsAppTestConfirmV1190A16_(g);
+    openGuestWhatsAppRealF14C_('',g.guestId||g.id);
     return;
   }
   const rsvpLink=e.target.closest('[data-rsvp-link]');if(rsvpLink){
@@ -1570,11 +1710,19 @@ $("#loginForm").addEventListener("submit",async event=>{
     setUser();
     loginFeedbackV184("התחברת בהצלחה!","success");
     $("#loginBtnLabel").textContent="התחברת בהצלחה";
-    await new Promise(resolve=>setTimeout(resolve,850));
-    $("#loginOverlay").classList.remove("show");
+    await new Promise(resolve=>setTimeout(resolve,350));
     $("#loginPassword").value="";
+    document.body.classList.add("role-routing-v18");
+    $("#loginOverlay").classList.remove("show");
+    startupProgressF14Z32_(0,5,"טוען נתוני מערכת במקביל…");
+    await startupPaintF14Z32_();
     await bootstrap();
+    const landing=state.session?.role==="TableManager"?"seating":"dashboard";
+    showPage(landing);
+    document.body.classList.remove("role-routing-v18");
+    startupHideF14Z32_();
   }catch(err){
+    startupHideF14Z32_();$("#loginOverlay").classList.add("show");
     loginFeedbackV184(err?.message||"ההתחברות נכשלה. נסו שוב.","error");
   }finally{
     loginBusyV184=false;
@@ -1588,7 +1736,7 @@ setTheme(localStorage.getItem(APP_CONFIG.THEME_KEY)||"dark");
 restoreSession();
 $$("#mainNav [data-page]").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===currentPage));
 const initialPageName=$("#mobilePageName");if(initialPageName)initialPageName.textContent="ראשי";
-if(state.session){setUser();$("#loginOverlay").classList.remove("show");bootstrap().catch(e=>{alert(e.message);clearSession()})}
+if(state.session){setUser();document.body.classList.add("role-routing-v18");$("#loginOverlay").classList.remove("show");startupProgressF14Z32_(0,5,"משחזר נתוני מערכת…");startupPaintF14Z32_().then(()=>bootstrap()).then(()=>{showPage(state.session?.role==="TableManager"?"seating":"dashboard");document.body.classList.remove("role-routing-v18");startupHideF14Z32_()}).catch(e=>{document.body.classList.remove("role-routing-v18");startupHideF14Z32_();alert(e.message);clearSession()})}
 document.addEventListener("keydown",e=>{const th=e.target.closest?.(".guests-table th.sortable");if(th&&(e.key==="Enter"||e.key===" ")){e.preventDefault();setGuestSort(th.dataset.sort)}});
 
 /* V1.1.90A5 — mobile guest filters default closed */
@@ -1636,15 +1784,30 @@ function renderSeatingWorkspaceV170_(){
   const st=state.seating;
   if(!st||String(st.eventId)!==String(state.activeEventId)){host.innerHTML='<p class="muted">בחר אירוע כדי לטעון את השיוכים.</p>';return}
   const byId=Object.fromEntries(st.tables.map(t=>[String(t.id),t]));
-  const rows=st.guests.filter(g=>Number(g.confirmedCount)>0);
-  const assigned=rows.filter(g=>g.seatingStatus==='FULL').length;
-  const partial=rows.filter(g=>g.seatingStatus==='PARTIAL').length;
-  host.innerHTML=`<div class="table-summary"><span>שובצו במלואם: <b>${assigned}</b></span><span>שובצו חלקית: <b>${partial}</b></span><span>לא שובצו: <b>${rows.length-assigned-partial}</b></span></div>
-    <div class="table-wrap"><table class="admin-table"><thead><tr><th>מוזמן</th><th>מאושרים</th><th>שובצו</th><th>נותרו</th><th>שולחנות</th><th>פעולה</th></tr></thead><tbody>${rows.map(g=>{
+  const sideSel=$('#tableLookupSideV15'),groupSel=$('#tableLookupGroupV15');
+  const q=String($('#tableLookupSearchV15')?.value||'').trim().toLowerCase();
+  const readOnly=state.session?.role==='TableManager';
+  let baseRows=st.guests.filter(g=>Number(g.confirmedCount)>0);
+  if(readOnly) baseRows=baseRows.filter(g=>st.assignments.some(a=>String(a.guestId)===String(g.guestId)));
+  const tableTextFor=g=>st.assignments.filter(a=>String(a.guestId)===String(g.guestId)).map(a=>String(byId[String(a.tableId)]?.tableNumber||'')).join(' ');
+  const matchesQ=g=>!q||[g.name,g.phone,g.side,g.group,tableTextFor(g)].join(' ').toLowerCase().includes(q);
+  const selectedSide=String(sideSel?.value||''),selectedGroup=String(groupSel?.value||'');
+  const sideSource=baseRows.filter(g=>matchesQ(g)&&(!selectedGroup||String(g.group)===selectedGroup));
+  const groupSource=baseRows.filter(g=>matchesQ(g)&&(!selectedSide||String(g.side)===selectedSide));
+  const sides=[...new Set(sideSource.map(g=>String(g.side||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'he'));
+  const groups=[...new Set(groupSource.map(g=>String(g.group||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'he'));
+  const fill=(el,vals,label,keep)=>{if(!el)return;el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');el.value=vals.includes(keep)?keep:'';};
+  fill(sideSel,sides,'כל הצדדים',selectedSide);fill(groupSel,groups,'כל הקבוצות',selectedGroup);
+  const side=String(sideSel?.value||''),group=String(groupSel?.value||'');
+  let rows=baseRows.filter(g=>matchesQ(g)&&(!side||String(g.side)===side)&&(!group||String(g.group)===group));
+  const assigned=rows.filter(g=>g.seatingStatus==='FULL').length,partial=rows.filter(g=>g.seatingStatus==='PARTIAL').length;
+  host.innerHTML=`<div class="table-summary"><span>נמצאו: <b>${rows.length}</b></span><span>שובצו במלואם: <b>${assigned}</b></span><span>שובצו חלקית: <b>${partial}</b></span></div>
+    <div class="table-wrap"><table class="admin-table"><thead><tr><th>מוזמן</th><th>טלפון</th><th>צד</th><th>קבוצה</th><th>מאושרים</th><th>שולחנות</th>${readOnly?'':'<th>פעולה</th>'}</tr></thead><tbody>${rows.map(g=>{
       const mine=st.assignments.filter(a=>String(a.guestId)===String(g.guestId));
-      const labels=mine.map(a=>`${esc(byId[String(a.tableId)]?.tableNumber||'—')} (${Number(a.seats)||0})`).join(', ');
-      return `<tr><td>${esc(g.name)}</td><td>${g.confirmedCount}</td><td>${g.assignedCount}</td><td>${g.remainingCount}</td><td>${labels||'לא שובץ'}</td><td><button type="button" data-seat-guest="${esc(g.guestId)}">${mine.length?'שינוי שיוך':'שיוך'}</button></td></tr>`
-    }).join('')||'<tr><td colspan="6">אין מוזמנים שאישרו הגעה</td></tr>'}</tbody></table></div>`;
+      const labels=mine.map(a=>`שולחן ${esc(byId[String(a.tableId)]?.tableNumber||'—')} - ${Number(a.seats)||0}`).join(' | ');
+      return `<tr><td>${esc(g.name)}</td><td>${esc(displayUserPhone_(g.phone||''))}</td><td>${esc(g.side||'—')}</td><td>${esc(g.group||'—')}</td><td>${g.confirmedCount}</td><td>${labels||'לא שובץ'}</td>${readOnly?'':`<td><button type="button" data-seat-guest="${esc(g.guestId)}">${mine.length?'שינוי שיוך':'שיוך'}</button></td>`}</tr>`
+    }).join('')||`<tr><td colspan="${readOnly?6:7}">לא נמצאו מוזמנים בהתאם לחיפוש</td></tr>`}</tbody></table></div>`;
+  ['tableLookupSearchV15','tableLookupSideV15','tableLookupGroupV15'].forEach(id=>{const el=$('#'+id);if(el&&!el.dataset.boundV15){el.dataset.boundV15='1';el.addEventListener(id==='tableLookupSearchV15'?'input':'change',renderSeatingWorkspaceV170_);}});
 }
 async function openSeatingGuestV170_(gid){
   if(!state.seating||String(state.seating.eventId)!==String(state.activeEventId)){
@@ -1808,3 +1971,32 @@ window.addEventListener('storage',e=>{
  if(rsvpRefreshBusyV1189A4_)rsvpRefreshNeededV1189A4_=true;else refreshGuestsAfterRsvpV1189A4_();
 });
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.session&&currentPage==='guests')refreshGuestsAfterRsvpV1189A4_()});
+
+/* V1.1.90A19P2F14Z55 — WhatsApp log UI */
+let waLogRowsZ55=[];
+function waLogStatusLabelZ55_(s){return ({META_ACCEPTED:'התקבל ב-Meta',API_FAILED:'נכשל ב-API',SENT:'נשלח',DELIVERED:'נמסר',READ:'נקרא',FAILED:'נכשל במסירה'})[String(s||'')]||String(s||'');}
+function waLogEventNameZ55_(id){return state.events.find(e=>String(e.id)===String(id))?.name||id||'';}
+function waLogInitFiltersZ55_(){const sel=$('#waLogEventZ55B');if(!sel)return;const old=sel.value;sel.innerHTML='<option value="">כל האירועים</option>'+state.events.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');sel.value=state.events.some(e=>String(e.id)===old)?old:'';}
+async function loadWhatsAppLogZ55_(){
+  const body=$('#waLogBodyZ55B');if(!body)return;waLogInitFiltersZ55_();body.innerHTML='<tr><td colspan="9">טוען…</td></tr>';
+  const filters={eventId:$('#waLogEventZ55B')?.value||'',environment:$('#waLogEnvironmentZ55B')?.value||'',status:$('#waLogStatusZ55B')?.value||'',fromDate:$('#waLogFromZ55B')?.value||'',toDate:$('#waLogToZ55B')?.value||'',search:$('#waLogSearchZ55B')?.value||'',limit:500};
+  try{const d=await API.request('listWhatsAppLogZ55',{filters});waLogRowsZ55=d.rows||[];renderWhatsAppLogZ55_(d);}catch(e){body.innerHTML=`<tr><td colspan="9" class="error">${esc(e.message)}</td></tr>`;}
+}
+function waLogSortValueZ55B_(r,key){if(key==='eventName')return waLogEventNameZ55_(r.eventId);if(key==='createdAt')return String(r.createdAt||'');return String(r[key]||'');}
+function sortedWhatsAppLogZ55B_(){const {key,dir}=state.waLogSort||{key:'createdAt',dir:'desc'},mul=dir==='asc'?1:-1;return [...waLogRowsZ55].sort((a,b)=>waLogSortValueZ55B_(a,key).localeCompare(waLogSortValueZ55B_(b,key),'he',{numeric:true,sensitivity:'base'})*mul);}
+function updateWhatsAppLogSortUIZ55B_(){
+  $$('#page-whatsappLog th[data-wa-sort]').forEach(th=>{const active=th.dataset.waSort===state.waLogSort.key;th.classList.toggle('sorted',active);const icon=th.querySelector('.sort-icon');if(icon)icon.textContent=active?(state.waLogSort.dir==='asc'?'↑':'↓'):'↕';});
+  $$('#page-whatsappLog td[data-col]').forEach(td=>td.classList.toggle('sorted-col',td.dataset.col===state.waLogSort.key));
+}
+function setWhatsAppLogSortZ55B_(key){if(state.waLogSort.key===key)state.waLogSort.dir=state.waLogSort.dir==='asc'?'desc':'asc';else state.waLogSort={key,dir:'asc'};renderWhatsAppLogZ55_({summary:waLogSummaryFromRowsZ55B_(),truncated:waLogRowsZ55.length>=500,canPurge:state.session?.role==='Admin'});}
+function waLogSummaryFromRowsZ55B_(){const rows=waLogRowsZ55;return {total:rows.length,metaAccepted:rows.filter(r=>r.status==='META_ACCEPTED').length,delivered:rows.filter(r=>r.status==='DELIVERED').length,read:rows.filter(r=>r.status==='READ').length,failed:rows.filter(r=>['API_FAILED','FAILED'].includes(r.status)).length};}
+function renderWhatsAppLogZ55_(d){
+  const s=d.summary||waLogSummaryFromRowsZ55B_(),sum=$('#waLogSummaryZ55B');if(sum)sum.innerHTML=[['סה״כ',s.total||0,'blue'],['התקבלו ב-Meta',s.metaAccepted||0,'amber'],['נמסרו',s.delivered||0,'green'],['נקראו',s.read||0,'blue'],['נכשלו',s.failed||0,'red']].map(x=>`<button type="button" class="guest-stat-card-v178 ${x[2]}" tabindex="-1"><span>${x[0]}</span><strong>${x[1]}</strong></button>`).join('');
+  const rows=sortedWhatsAppLogZ55B_(),b=$('#waLogBodyZ55B');b.innerHTML=rows.map(r=>`<tr title="${esc(r.wamid||'')}"><td data-col="createdAt">${esc(String(r.createdAt||'').replace('T',' ').slice(0,19))}</td><td data-col="eventName">${esc(waLogEventNameZ55_(r.eventId))}</td><td data-col="guestName">${esc(r.guestName||r.guestId)}</td><td data-col="phone" dir="ltr">${esc(r.phone||'')}</td><td data-col="templateName">${esc(r.templateName||'')}</td><td data-col="environment">${esc(r.environment||'')}</td><td data-col="status" class="wa-log-status-z55">${esc(waLogStatusLabelZ55_(r.status))}</td><td data-col="wamid" class="wa-log-wamid-z55">${esc(r.wamid||'')}</td><td data-col="errorMessage" class="wa-log-error-z55">${esc(r.errorMessage||'')}</td></tr>`).join('')||'<tr><td colspan="9" class="empty-cell">אין רשומות בהתאם לסינון.</td></tr>';
+  const n=$('#waLogNoticeZ55B');if(n)n.innerHTML=`<span>מוצגות <b>${rows.length}</b> מתוך <b>${s.total||rows.length}</b> רשומות</span>${d.truncated?'<span class="guest-filter-active-v178">500 הרשומות האחרונות</span>':''}`;
+  const purge=$('#waLogPurgeZ55B');if(purge)purge.hidden=!(d.canPurge??state.session?.role==='Admin');updateWhatsAppLogSortUIZ55B_();
+}
+async function purgeWhatsAppLogZ55_(){if(state.session?.role!=='Admin')return;const beforeDate=prompt('מחק רשומות WhatsApp שנוצרו לפני תאריך (YYYY-MM-DD):');if(!beforeDate)return;if(!/^\d{4}-\d{2}-\d{2}$/.test(beforeDate)){showToast('תאריך לא תקין','error');return;}if(!confirm(`למחוק לצמיתות את כל רשומות WhatsApp מלפני ${beforeDate}?`))return;try{const d=await API.request('purgeWhatsAppLogZ55',{beforeDate});showToast(`נמחקו ${d.deleted||0} רשומות`);await loadWhatsAppLogZ55_();}catch(e){showToast(e.message,'error');}}
+document.addEventListener('change',e=>{if(['waLogEventZ55B','waLogEnvironmentZ55B','waLogStatusZ55B','waLogFromZ55B','waLogToZ55B'].includes(e.target?.id))loadWhatsAppLogZ55_();});
+document.addEventListener('click',e=>{const t=e.target?.closest?.('#waLogFiltersToggleZ55B');if(t){const box=$('#waLogFiltersZ55B'),open=box?.classList.toggle('filters-open-a5');t.setAttribute('aria-expanded',String(!!open));const spans=t.querySelectorAll('span');if(spans[0])spans[0].textContent=open?'הסתר סינון':'הצג סינון';if(spans[1])spans[1].textContent=open?'▴':'▾';return;}const th=e.target?.closest?.('#page-whatsappLog th[data-wa-sort]');if(th){setWhatsAppLogSortZ55B_(th.dataset.waSort);return;}if(e.target?.closest?.('#waLogRefreshZ55B'))loadWhatsAppLogZ55_();if(e.target?.closest?.('#waLogClearFiltersZ55B')){['waLogEventZ55B','waLogEnvironmentZ55B','waLogStatusZ55B','waLogFromZ55B','waLogToZ55B','waLogSearchZ55B'].forEach(id=>{const x=$('#'+id);if(x)x.value='';});loadWhatsAppLogZ55_();}if(e.target?.closest?.('#waLogPurgeZ55B'))purgeWhatsAppLogZ55_();});
+document.addEventListener('keydown',e=>{const th=e.target?.closest?.('#page-whatsappLog th[data-wa-sort]');if(th&&(e.key==='Enter'||e.key===' ')){e.preventDefault();setWhatsAppLogSortZ55B_(th.dataset.waSort);return;}if(e.target?.id==='waLogSearchZ55B'&&e.key==='Enter')loadWhatsAppLogZ55_();});
