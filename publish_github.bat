@@ -1,8 +1,8 @@
 @echo off
 setlocal
-echo Publishing Events Management V1.1.90A19P2F14Z56A
+echo Publishing Events Management 1.1.90A19P2F14Z58D5C
 git add .
-git commit -m "Events Management V1.1.90A19P2F14Z56A"
+git commit -m "Events Management 1.1.90A19P2F14Z58D5C"
 git push
-echo Published V1.1.90A19P2F14Z56A
+echo Published 1.1.90A19P2F14Z58D5C
 pause

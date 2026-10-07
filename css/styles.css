@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z53B1 */
+/* V1.1.90A19P2F14Z58D5C */
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Hebrew",sans-serif;background:var(--bg);color:var(--text)}
 body.light{--bg:#f5f7fa;--card:#fff;--card2:#eef2f6;--text:#18212b;--muted:#65727e;--line:#d8dee4}
@@ -1378,3 +1378,108 @@ button[aria-busy="true"]{cursor:wait;opacity:.82}
 #page-whatsappLog .wa-log-action-btn-z55c:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media(max-width:650px){#page-whatsappLog .wa-log-actions-z55c{display:grid;grid-template-columns:1fr 1fr;width:100%}#page-whatsappLog .wa-log-action-btn-z55c{width:100%}}
 @media(max-width:480px){#page-whatsappLog .guest-clear-filters-v180 span{display:none}#page-whatsappLog .guest-clear-filters-v180{min-width:44px;padding:8px 11px}}
+
+/* V1.1.90A19P2F14Z56B1 — WhatsApp log: balanced desktop columns; preserve operational data */
+@media(min-width:1300px){
+  #page-whatsappLog .guest-table-area-a19{overflow-x:hidden}
+  #page-whatsappLog .wa-log-table-z55{table-layout:fixed;width:100%;min-width:0;font-size:.91rem}
+  #page-whatsappLog .wa-log-table-z55 th,#page-whatsappLog .wa-log-table-z55 td{padding-left:6px;padding-right:6px;white-space:nowrap}
+  #page-whatsappLog .wa-log-table-z55 th:nth-child(1){width:10%}
+  #page-whatsappLog .wa-log-table-z55 th:nth-child(2){width:14%}
+  #page-whatsappLog .wa-log-table-z55 th:nth-child(3){width:8%}
+  #page-whatsappLog .wa-log-table-z55 th:nth-child(4){width:11%}
+  #page-whatsappLog .wa-log-table-z55 th:nth-child(5){width:17%}
+  #page-whatsappLog .wa-log-table-z55 th:nth-child(6){width:9%}
+  #page-whatsappLog .wa-log-table-z55 th:nth-child(7){width:8%}
+  #page-whatsappLog .wa-log-table-z55 th:nth-child(8){width:14%}
+  #page-whatsappLog .wa-log-table-z55 th:nth-child(9){width:9%}
+  #page-whatsappLog .wa-log-table-z55 td:nth-child(1),
+  #page-whatsappLog .wa-log-table-z55 td:nth-child(2),
+  #page-whatsappLog .wa-log-table-z55 td:nth-child(3),
+  #page-whatsappLog .wa-log-table-z55 td:nth-child(4),
+  #page-whatsappLog .wa-log-table-z55 td:nth-child(6),
+  #page-whatsappLog .wa-log-table-z55 td:nth-child(7){overflow:visible;text-overflow:clip}
+  #page-whatsappLog .wa-log-table-z55 td:nth-child(5),
+  #page-whatsappLog .wa-log-table-z55 td:nth-child(8),
+  #page-whatsappLog .wa-log-table-z55 td:nth-child(9){overflow:hidden;text-overflow:ellipsis}
+  #page-whatsappLog .wa-log-wamid-z55{max-width:none;direction:ltr;text-align:left}
+  #page-whatsappLog .wa-log-error-z55{max-width:none;white-space:nowrap}
+}
+@media(min-width:901px) and (max-width:1299px){
+  #page-whatsappLog .guest-table-area-a19{overflow-x:auto}
+  #page-whatsappLog .wa-log-table-z55{min-width:1180px}
+}
+
+/* Z56C — simplified operational WhatsApp log for EventManager only. */
+#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(6),
+#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 td:nth-child(6),
+#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(8),
+#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 td:nth-child(8),
+#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(9),
+#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 td:nth-child(9){display:none!important}
+#page-whatsappLog .wa-log-manager-hidden-z56c{display:none!important}
+@media(min-width:1101px){
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(1){width:16%}
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(2){width:20%}
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(3){width:16%}
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(4){width:16%}
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(5){width:20%}
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(7){width:12%}
+}
+
+
+/* V1.1.90A19P2F14Z57A — Activity Log aligned with WhatsApp Log, without summary cards */
+#page-activity #activityFiltersToggleZ57{margin:18px 0 12px;padding:15px 18px;border-radius:15px}
+#page-activity #activityFiltersZ57{grid-template-columns:minmax(220px,1.4fr) repeat(5,minmax(125px,1fr)) auto}
+#page-activity #activityFiltersZ57.filters-open-a5{margin:0 0 22px;padding:18px;gap:12px;border-radius:15px}
+#page-activity #activityNoticeZ57{margin:22px 0 14px;padding:14px 17px}
+#page-activity .guest-table-area-a19{margin-top:0;border-radius:15px}
+#page-activity .activity-log-table-z57{width:100%;border-collapse:collapse;table-layout:fixed}
+#page-activity .activity-log-table-z57 th,#page-activity .activity-log-table-z57 td{border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;padding-inline:8px}
+#page-activity .activity-log-table-z57 tbody tr:nth-child(even){background:var(--card2)}
+#page-activity .activity-log-table-z57 tbody tr:hover{filter:brightness(1.08)}
+#page-activity .activity-log-table-z57 th:nth-child(1){width:14%}#page-activity .activity-log-table-z57 th:nth-child(2){width:14%}#page-activity .activity-log-table-z57 th:nth-child(3){width:13%}#page-activity .activity-log-table-z57 th:nth-child(4){width:13%}#page-activity .activity-log-table-z57 th:nth-child(5){width:15%}#page-activity .activity-log-table-z57 th:nth-child(6){width:31%}
+#page-activity .activity-log-table-z57 td:nth-child(5),#page-activity .activity-log-table-z57 td:nth-child(6){overflow:hidden;text-overflow:ellipsis}
+#page-activity .guest-clear-filters-v180{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 14px;border:1px solid var(--accent);border-radius:10px;color:#62adff;background:rgba(61,143,230,.11);font-weight:800;cursor:pointer}
+#page-activity .activity-log-actions-z57{gap:10px}
+#page-activity .wa-log-action-btn-z55c{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 16px;border-radius:10px;font-weight:800;cursor:pointer}
+#page-activity .wa-log-action-btn-z55c.refresh{color:#75b8ff;background:rgba(42,113,190,.22);border:1px solid #315f8f}#page-activity .wa-log-action-btn-z55c.purge{color:#fff;background:#d94f4f;border:1px solid #ed6a6a}
+@media(max-width:1100px){#page-activity #activityFiltersZ57{grid-template-columns:repeat(3,minmax(0,1fr))}#page-activity #activityFiltersZ57 .search-field{grid-column:span 2}}
+@media(max-width:700px){#page-activity #activityFiltersZ57{display:none!important;padding:12px;border:1px solid var(--line);background:var(--card);grid-template-columns:repeat(2,minmax(0,1fr))!important}#page-activity #activityFiltersZ57.filters-open-a5{display:grid!important}#page-activity #activityFiltersZ57 .search-field{grid-column:1/-1!important}#page-activity .activity-log-table-z57{min-width:900px}}
+@media(max-width:480px){#page-activity #activityFiltersZ57{grid-template-columns:1fr!important}.activity-log-actions-z57{width:100%;display:grid;grid-template-columns:1fr 1fr}}
+
+
+/* V1.1.90A19P2F14Z57A — unified log action feedback and active filters */
+#page-whatsappLog .guest-clear-filters-v180.has-active-filters-z57a,
+#page-activity .guest-clear-filters-v180.has-active-filters-z57a{background:#2466b4;color:#fff;border-color:#60a5fa;box-shadow:0 0 0 1px rgba(96,165,250,.22)}
+#page-whatsappLog .guest-clear-filters-v180.has-active-filters-z57a:hover,
+#page-activity .guest-clear-filters-v180.has-active-filters-z57a:hover{background:#1c559a}
+.log-btn-spinner-z57a{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:seating-spin-v171 .7s linear infinite;flex:0 0 auto}
+#page-whatsappLog button.is-busy-z57a,#page-activity button.is-busy-z57a{cursor:wait;opacity:.82}
+#page-whatsappLog button:disabled,#page-activity button:disabled{cursor:not-allowed}
+
+
+/* Z58D4 ROOT UI — Event Costs rebuilt from the approved visual mockup */
+.cost-page-z58d4{--cost-blue:#2388f5;--cost-border:rgba(132,158,190,.22);--cost-panel:rgba(15,27,45,.72);--cost-input:rgba(8,18,32,.72)}
+.cost-hero-z58d4{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;margin-bottom:16px}.cost-hero-z58d4 h1{margin:0 0 5px;font-size:1.65rem}.cost-hero-z58d4 p{margin:0;color:var(--muted)}.cost-hero-actions-z58d4{display:flex;gap:10px}
+.ui-btn-z58d4{min-height:44px;border:1px solid transparent;border-radius:12px;padding:0 17px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font:inherit;font-weight:800;cursor:pointer;transition:transform .16s ease,background .16s ease,border-color .16s ease,box-shadow .16s ease,color .16s ease}.ui-btn-z58d4:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 7px 20px rgba(0,0,0,.18)}.ui-btn-z58d4:focus-visible{outline:3px solid rgba(35,136,245,.3);outline-offset:2px}.ui-btn-z58d4:disabled{opacity:.58;cursor:not-allowed;transform:none}.ui-btn-z58d4.primary{background:linear-gradient(180deg,#2d92fb,#1679dd);color:#fff;border-color:#3697f7}.ui-btn-z58d4.primary:hover:not(:disabled){background:linear-gradient(180deg,#43a2ff,#2388f5)}.ui-btn-z58d4.secondary{background:rgba(27,45,69,.92);color:var(--text);border-color:var(--cost-border)}.ui-btn-z58d4.secondary:hover:not(:disabled),.ui-btn-z58d4.ghost:hover:not(:disabled){background:rgba(42,65,94,.96);border-color:rgba(74,153,239,.5)}.ui-btn-z58d4.ghost{background:transparent;color:var(--text);border-color:var(--cost-border)}.ui-btn-z58d4.compact{min-height:36px;padding:0 12px}.ui-btn-z58d4.filter{background:rgba(29,46,69,.88);color:var(--text);border-color:var(--cost-border);white-space:nowrap}.ui-btn-z58d4.filter.filters-active-z57a{background:#9a6716;border-color:#d99a2d;color:#fff;box-shadow:0 0 0 2px rgba(217,154,45,.12)}
+.cost-summary-z58d4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}.cost-card-z58d4{position:relative;overflow:hidden;min-height:82px;border:1px solid var(--cost-border);border-radius:15px;padding:14px 18px;background:linear-gradient(135deg,rgba(22,39,62,.94),rgba(13,26,44,.9));box-shadow:0 8px 24px rgba(0,0,0,.08)}.cost-card-z58d4:before{content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;width:4px;background:#7f93ad}.cost-card-z58d4.actual:before{background:#28a977}.cost-card-z58d4.expected:before{background:#e2a63c}.cost-card-z58d4.whatsapp:before{background:#2f96ff}.cost-card-z58d4 span{display:block;color:var(--muted);font-weight:750;margin-bottom:5px}.cost-card-z58d4 strong{font-size:1.55rem;letter-spacing:.2px}
+.cost-panel-z58d4{border:1px solid var(--cost-border);border-radius:16px;background:var(--cost-panel);box-shadow:0 10px 28px rgba(0,0,0,.08);margin-bottom:14px;overflow:hidden}.cost-panel-title-z58d4,.cost-table-toolbar-z58d4{min-height:50px;padding:0 15px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--cost-border)}.cost-count-z58d4{color:var(--muted);font-weight:700}
+.cost-filterbar-z58d4{display:grid;grid-template-columns:minmax(210px,1.45fr) minmax(145px,.9fr) minmax(145px,.9fr) minmax(130px,.75fr) 140px 140px auto;gap:9px;padding:13px}.cost-filterbar-z58d4 input,.cost-filterbar-z58d4 select{width:100%;height:44px;min-width:0;border:1px solid var(--cost-border);border-radius:11px;background:var(--cost-input);color:var(--text);padding:0 12px;font:inherit;transition:border-color .16s,box-shadow .16s,background .16s}.cost-filterbar-z58d4 input:hover,.cost-filterbar-z58d4 select:hover{border-color:rgba(72,149,237,.55)}.cost-filterbar-z58d4 input:focus,.cost-filterbar-z58d4 select:focus{outline:0;border-color:#318fe9;box-shadow:0 0 0 3px rgba(49,143,233,.14)}.cost-search-z58d4{position:relative}.cost-search-z58d4>span{position:absolute;inset-inline-start:13px;top:50%;transform:translateY(-50%);z-index:1;color:var(--muted)}.cost-search-z58d4 input{padding-inline-start:38px}
+.cost-table-z58d4{width:100%;border-collapse:collapse;table-layout:fixed}.cost-table-z58d4 th,.cost-table-z58d4 td{padding:12px 11px;text-align:right;border-bottom:1px solid var(--cost-border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cost-table-z58d4 th{font-weight:850;background:rgba(255,255,255,.025);cursor:default}.cost-table-z58d4 th.sortable{cursor:pointer}.cost-table-z58d4 th.sorted{background:rgba(35,136,245,.15);color:#8ec6ff}.cost-table-z58d4 tbody tr:nth-child(even){background:rgba(255,255,255,.027)}.cost-table-z58d4 tbody tr:hover{background:rgba(35,136,245,.085)}.cost-table-z58d4 tbody tr:last-child td{border-bottom:0}.cost-table-z58d4 th:nth-child(1){width:13%}.cost-table-z58d4 th:nth-child(2){width:14%}.cost-table-z58d4 th:nth-child(3){width:23%}.cost-table-z58d4 th:nth-child(4){width:11%}.cost-table-z58d4 th:nth-child(5){width:10%}.cost-table-z58d4 th:nth-child(6){width:10%}.cost-table-z58d4 th:nth-child(7){width:11%}.cost-table-z58d4 th:nth-child(8){width:8%}
+.ui-icon-btn-z58d4{width:35px;height:35px;border:1px solid var(--cost-border);border-radius:9px;background:rgba(24,42,64,.92);color:var(--text);cursor:pointer;transition:.16s;font-size:1rem}.ui-icon-btn-z58d4:hover:not(:disabled){transform:translateY(-1px);background:rgba(48,80,116,.98);border-color:#458fdc}.ui-icon-btn-z58d4.delete{color:#ff8585}.ui-icon-btn-z58d4.delete:hover:not(:disabled){background:rgba(145,38,48,.28);border-color:#d95a67}.ui-icon-btn-z58d4.edit{color:#77c89c}
+.event-cost-manager-z58a .event-cost-admin-tech-z58a{display:none}
+.event-cost-modal-z58d4{width:min(820px,calc(100vw - 28px))!important;max-width:820px!important;padding:0!important;overflow:hidden}.cost-dialog-z58d4{padding:0}.cost-dialog-head-z58d4{padding:18px 20px 15px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--cost-border);background:linear-gradient(180deg,rgba(24,43,68,.9),rgba(15,29,49,.7))}.cost-dialog-head-z58d4 h2{margin:0 0 3px;font-size:1.35rem}.cost-dialog-head-z58d4 p{margin:0;color:var(--muted);font-size:.92rem}.cost-dialog-icon-z58d4{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:rgba(35,136,245,.16);border:1px solid rgba(35,136,245,.35);color:#7bc0ff;font-size:1.25rem;font-weight:900}.cost-form-z58d4{padding:16px 20px 18px}.cost-form-grid-z58d4{display:grid;gap:11px;margin-bottom:11px}.cost-form-grid-z58d4.cols-3{grid-template-columns:1.2fr .85fr 1fr}.cost-form-grid-z58d4.cols-main{grid-template-columns:2fr .85fr}.cost-form-z58d4 label{display:grid;gap:6px;font-weight:750}.cost-form-z58d4 label>span{font-size:.9rem;color:#d7e3f2}.cost-form-z58d4 input,.cost-form-z58d4 select,.cost-form-z58d4 textarea{width:100%;box-sizing:border-box;border:1px solid var(--cost-border);border-radius:10px;background:var(--cost-input);color:var(--text);font:inherit;padding:10px 11px;transition:.16s}.cost-form-z58d4 input,.cost-form-z58d4 select{height:43px}.cost-form-z58d4 input:focus,.cost-form-z58d4 select:focus,.cost-form-z58d4 textarea:focus{outline:0;border-color:#318fe9;box-shadow:0 0 0 3px rgba(49,143,233,.14)}.cost-custom-only-z58d4{margin:0 0 11px;max-width:48%}.cost-pricing-z58d4{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;align-items:end;margin:0 0 11px;padding:11px;border:1px solid var(--cost-border);border-radius:12px;background:rgba(255,255,255,.018)}.cost-pricing-z58d4 .cost-total-input-z58d4{grid-column:1/2}.cost-calc-z58d4{height:43px;border:1px solid rgba(35,136,245,.28);border-radius:10px;background:rgba(35,136,245,.09);padding:0 12px;display:flex;align-items:center;justify-content:space-between}.cost-calc-z58d4 span{color:var(--muted);font-weight:700}.cost-calc-z58d4 strong{font-size:1.1rem}.cost-notes-z58d4 textarea{min-height:62px;resize:vertical}.cost-actions-z58d4{display:flex;justify-content:flex-start;gap:9px;margin-top:14px;padding-top:13px;border-top:1px solid var(--cost-border)}
+@media(max-width:1180px){.cost-filterbar-z58d4{grid-template-columns:repeat(3,minmax(0,1fr))}.cost-search-z58d4{grid-column:1/-1}.cost-filterbar-z58d4 .ui-btn-z58d4{width:100%}}
+@media(max-width:760px){.cost-hero-z58d4{align-items:stretch;flex-direction:column}.cost-hero-actions-z58d4{display:grid;grid-template-columns:1fr 1fr}.cost-summary-z58d4{grid-template-columns:1fr 1fr}.cost-filterbar-z58d4{grid-template-columns:1fr}.cost-search-z58d4{grid-column:auto}.table-panel-z58d4 .table-wrap{overflow-x:auto}.cost-table-z58d4{min-width:850px;table-layout:auto}.cost-form-grid-z58d4.cols-3,.cost-form-grid-z58d4.cols-main,.cost-pricing-z58d4{grid-template-columns:1fr}.cost-custom-only-z58d4{max-width:none}.cost-pricing-z58d4 .cost-total-input-z58d4{grid-column:auto}.event-cost-modal-z58d4{width:calc(100vw - 16px)!important}.cost-form-z58d4{padding:14px}.cost-dialog-head-z58d4{padding:15px}}
+
+
+/* Z58D5A — Event Costs visual completion: mockup cards + log-grade interaction */
+.cost-card-z58d4{display:flex;align-items:center;gap:14px}.cost-card-z58d4>div{min-width:0}.cost-card-icon-z58d5{width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:grid!important;place-items:center;margin:0!important;font-size:1.25rem!important;font-weight:900!important;color:#b8c9dc!important;background:rgba(127,147,173,.13);border:1px solid rgba(127,147,173,.28)}
+.cost-card-z58d4.actual .cost-card-icon-z58d5{color:#77d7ae!important;background:rgba(40,169,119,.12);border-color:rgba(40,169,119,.32)}.cost-card-z58d4.expected .cost-card-icon-z58d5{color:#f1c66f!important;background:rgba(226,166,60,.12);border-color:rgba(226,166,60,.32)}.cost-card-z58d4.whatsapp .cost-card-icon-z58d5{color:#86c6ff!important;background:rgba(47,150,255,.12);border-color:rgba(47,150,255,.32)}
+.cost-filterbar-z58d4 select,.cost-form-z58d4 select{color-scheme:dark}.cost-filterbar-z58d4 select option,.cost-form-z58d4 select option{background:#111c2b;color:#eef4fb}.cost-filterbar-z58d4 select option:checked,.cost-form-z58d4 select option:checked{background:#246fd0;color:#fff}
+#eventCostsClearZ58C.filters-active-z57a{background:linear-gradient(180deg,#d39125,#a96b0e)!important;border-color:#efb24a!important;color:#fff!important;box-shadow:0 0 0 2px rgba(239,178,74,.15),0 7px 18px rgba(0,0,0,.16)}
+.cost-table-z58d4 th.sortable span{display:inline-grid;place-items:center;min-width:18px;margin-inline-start:4px;color:#7f93ad}.cost-table-z58d4 th.sortable:hover{background:rgba(35,136,245,.09)}.cost-table-z58d4 th.sorted span{color:#8ec6ff}
+.event-cost-modal-z58d4 .modal-x{left:14px;top:14px;width:40px;height:40px;border:1px solid rgba(72,149,237,.38);border-radius:11px;background:rgba(35,136,245,.14);color:#eaf4ff;font-size:0;display:grid;place-items:center;transition:.16s;z-index:4}.event-cost-modal-z58d4 .modal-x:before{content:'×';font-size:28px;line-height:1}.event-cost-modal-z58d4 .modal-x:hover{background:rgba(35,136,245,.28);border-color:#4b9ff1;transform:translateY(-1px);box-shadow:0 7px 18px rgba(0,0,0,.2)}.event-cost-modal-z58d4 .modal-x:focus-visible{outline:3px solid rgba(35,136,245,.3);outline-offset:2px}
+.event-cost-modal-z58d4{max-height:calc(100dvh - 32px)!important;overflow-y:auto!important;scrollbar-gutter:stable}.cost-actions-z58d4 .ui-btn-z58d4{min-width:112px}.cost-pricing-z58d4:empty{display:none}
+@media(max-width:760px){.cost-card-z58d4{gap:10px}.cost-card-icon-z58d5{width:38px;height:38px;flex-basis:38px;border-radius:11px}.cost-card-z58d4 strong{font-size:1.28rem}}

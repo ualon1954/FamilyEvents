@@ -1,14 +1,16 @@
-/* V1.1.90A19P2F14Z55B */
+/* V1.1.90A19P2F14Z58D5C */
 let state={
   session:null,events:[],eventTypes:[],guests:[],tables:[],activity:[],activeEventId:null,
   guestSort:{key:"name",dir:"asc"},
   waLogSort:{key:"createdAt",dir:"desc"},
+  activitySort:{key:"at",dir:"desc"},
   lookups:{sides:[],groups:[],statuses:[]},
   adminData:{users:[],roles:[],permissions:[],whatsapp:[],eventTypes:[]},
   waSendTemplatesCacheF14G:new Map(),waSendTemplateImagesF14G:new Map(),
   lookupIndex:{sidesByType:{},groupsByType:{},statuses:[],labelMap:{}},
   adminTab:"eventTypes",adminLookupEventTypeId:null,adminLookupBoundEventId:null,adminLookupManualOverride:false,guestImportPreview:null,guestImportShowAll:false,seating:null,
-  waCostBaseF14:null,waCostPromiseF14:null,waCostBaseByCategoryF14:new Map()
+  waCostBaseF14:null,waCostPromiseF14:null,waCostBaseByCategoryF14:new Map(),
+  serverVersion:null
 };
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -27,6 +29,29 @@ function formatDateHE_(v){
   return `${d}/${m}/${y}`;
 }
 const CURRENT_EVENT_KEY="events_management_current_event_id";
+
+// Z58D1: stable version handshake. Compare the project build token, not the
+// deployment date prefix. A missing frontend/backend version is a loading/config
+// error, never a false "version mismatch".
+function versionBuildKey_(value){
+  const s=String(value||"").trim();
+  const m=s.match(/(?:^|[-_])V?(\d+\.\d+\.\d+A\d+P\d+F\d+Z[0-9A-Z]+)$/i);
+  if(m)return m[1].toUpperCase();
+  const direct=s.match(/^V?(\d+\.\d+\.\d+A\d+P\d+F\d+Z[0-9A-Z]+)$/i);
+  return direct?direct[1].toUpperCase():"";
+}
+function frontendBuildKey_(){
+  const key=versionBuildKey_(APP_VERSION?.FRONTEND_VERSION);
+  if(!key)throw new Error("לא ניתן לטעון את גרסת ה-Frontend. יש לרענן את קבצי המערכת.");
+  return key;
+}
+function assertBackendVersion_(serverVersion){
+  const front=frontendBuildKey_();
+  const back=versionBuildKey_(serverVersion);
+  if(!back)throw new Error("השרת לא החזיר מידע גרסה תקין. אין אפשרות לאמת את גרסת המערכת.");
+  if(back!==front)throw new Error(`אי-התאמת גרסאות. Frontend: ${APP_VERSION.FRONTEND_VERSION} | Backend: ${serverVersion}`);
+  return true;
+}
 let currentPage="home";
 
 function showPage(name){
@@ -43,11 +68,13 @@ function showPage(name){
   $$(".page").forEach(x=>x.classList.remove("active"));
   $("#page-"+name)?.classList.add("active");
   $$("#mainNav [data-page]").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===name));
-  const labels={home:"ראשי",dashboard:"לוח בקרה",events:"אירועים",guests:"מוזמנים",seating:"ניהול שולחנות",messages:"תבניות WhatsApp",whatsappLog:"יומן WhatsApp",about:"אודות",activity:"יומן פעילות",admin:"ניהול"};
+  const labels={home:"ראשי",dashboard:"לוח בקרה",events:"אירועים",guests:"מוזמנים",seating:"ניהול שולחנות",messages:"תבניות WhatsApp",whatsappLog:"יומן WhatsApp",eventCosts:"עלויות אירוע",about:"אודות",activity:"יומן פעילות",admin:"ניהול"};
   const pageName=$("#mobilePageName"); if(pageName) pageName.textContent=labels[name]||"";
   if(name==="admin") renderAdmin();
   if(name==="messages") tplLoadA19P2();
   if(name==="whatsappLog") loadWhatsAppLogZ55_();
+  if(name==="eventCosts") loadEventCostsZ58_();
+  if(name==="activity") loadActivityLogZ57_();
   if(name==="seating") loadSeatingV170_();
   if(name==="guests"&&canManageTables_())loadSeatingV170_();
   if(name==="guests"&&state.activeEventId){
@@ -88,8 +115,17 @@ function setUser(){
 }
 window.addEventListener("resize",()=>{if(state.session)setUser()});
 function setTheme(t){document.body.classList.toggle("light",t==="light");localStorage.setItem(APP_CONFIG.THEME_KEY,t);const b=$("#themeBtn");if(b)b.textContent="◐";const icon=$("#loginThemeIcon"),label=$("#loginThemeLabel"),loginBtn=$("#loginThemeBtn");if(icon)icon.textContent=t==="light"?"☾":"☀";if(label)label.textContent=t==="light"?"מצב כהה":"מצב בהיר";if(loginBtn)loginBtn.setAttribute("aria-label",t==="light"?"מעבר למצב כהה":"מעבר למצב בהיר")}
-function modal(html){$("#modalContent").innerHTML=html;$("#modal").classList.add("show")}
+function modal(html){const shell=$("#modal .modal");if(shell)shell.classList.remove("event-cost-modal-z58d2","event-cost-modal-z58d3","event-cost-modal-z58d4");$("#modalContent").innerHTML=html;$("#modal").classList.add("show")}
 function closeModal(){$("#modal").classList.remove("show")}
+function clearVersionMismatchToast_(){
+  const box=$("#appToast");
+  if(box && box.dataset.kind==="version-mismatch"){
+    clearTimeout(showToast._timer);
+    box.classList.remove("show");
+    box.textContent="";
+    delete box.dataset.kind;
+  }
+}
 function showToast(message,type="success"){
   let box=$("#appToast");
   if(!box){
@@ -100,6 +136,8 @@ function showToast(message,type="success"){
   }
   box.className=`app-toast ${type} show`;
   box.textContent=message;
+  if(String(message||"").includes("אי-התאמת גרסאות")) box.dataset.kind="version-mismatch";
+  else delete box.dataset.kind;
   clearTimeout(showToast._timer);
   const duration=type==="error"?10000:7000;
   showToast._timer=setTimeout(()=>box.classList.remove("show"),duration);
@@ -157,24 +195,42 @@ function startupProgressF14Z32_(done,total,label){
 }
 function startupPaintF14Z32_(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));}
 function startupHideF14Z32_(){const overlay=$("#startupOverlayF14Z32");if(overlay)overlay.hidden=true;}
+async function startExistingSessionZ58D3_(){
+  document.body.classList.add('role-routing-v18');
+  $('#loginOverlay').classList.remove('show');
+  startupProgressF14Z32_(0,5,'טוען ומאמת נתוני מערכת…');
+  await startupPaintF14Z32_();
+  setUser();
+  // Single bootstrap path: the normal authenticated API calls also carry the
+  // server version. No extra GET/fetch/version endpoint is used.
+  await bootstrap();
+  showPage(state.session?.role==='TableManager'?'seating':'dashboard');
+  document.body.classList.remove('role-routing-v18');
+  startupHideF14Z32_();
+}
+
 async function bootstrap(){
   setGuestsLoadingF14Z4_(true);
   getWaCostEstimateCachedF14_(1).catch(()=>{});
-  const jobs=[
-    ["bootstrapCoreParallel","טוען אירועים והגדרות…"],
-    ["bootstrapGuestsParallel","טוען מוזמנים…"],
-    ["bootstrapTablesParallel","טוען שולחנות…"],
-    ["bootstrapAdminParallel","טוען הרשאות וניהול…"],
-    ["getEventsContextV158","מאמת רשימת אירועים…"]
-  ];
-  let done=0;startupProgressF14Z32_(0,jobs.length,"טוען נתוני מערכת במקביל…");
-  const results=await Promise.all(jobs.map(([action,label])=>API.request(action,{token:state.session?.token}).then(r=>{done++;startupProgressF14Z32_(done,jobs.length,label);return r;})));
-  const [core,guestPart,tablePart,adminPart,eventResult]=results;
-  for(const r of results)if(r.serverVersion!==APP_VERSION.REQUIRED_SERVER_VERSION)throw new Error(`גרסת השרת אינה הגרסה הנדרשת. שרת: ${r.serverVersion||"לא ידועה"} | נדרש: ${APP_VERSION.REQUIRED_SERVER_VERSION}`);
-  let events=Array.isArray(eventResult.events)&&eventResult.events.length?eventResult.events:(Array.isArray(core.events)?core.events:[]);
-  state.events=events;state.eventTypes=Array.isArray(core.eventTypes)?core.eventTypes:[];state.guests=Array.isArray(guestPart.guests)?guestPart.guests:[];state.tables=Array.isArray(tablePart.tables)?tablePart.tables:[];state.activity=Array.isArray(core.activity)?core.activity:[];
-  state.lookups=core.lookups||{sides:[],groups:[],statuses:[]};rebuildLookupIndex_();state.adminData=adminPart.adminData||{users:[],roles:[],permissions:[],whatsapp:[],eventTypes:[]};if(!state.eventTypes.length)state.eventTypes=state.adminData.eventTypes||[];
-  restoreCurrentEvent_();renderAll();setGuestsLoadingF14Z4_(false);startupProgressF14Z32_(jobs.length,jobs.length,"הטעינה הושלמה");
+  startupProgressF14Z32_(0,1,"טוען ומאמת את נתוני המערכת…");
+  // Z58D4 ROOT FIX: one authenticated bootstrap request, one version check.
+  // No parallel version races and no secondary event/version request.
+  clearVersionMismatchToast_();
+  const data=await API.request("bootstrap",{token:state.session?.token});
+  assertBackendVersion_(data?.serverVersion);
+  state.serverVersion=data.serverVersion;
+  clearVersionMismatchToast_();
+  state.events=Array.isArray(data.events)?data.events:[];
+  state.eventTypes=Array.isArray(data.eventTypes)?data.eventTypes:[];
+  state.guests=Array.isArray(data.guests)?data.guests:[];
+  state.tables=Array.isArray(data.tables)?data.tables:[];
+  state.activity=Array.isArray(data.activity)?data.activity:[];
+  state.lookups=data.lookups||{sides:[],groups:[],statuses:[]};
+  rebuildLookupIndex_();
+  state.adminData=data.adminData||{users:[],roles:[],permissions:[],whatsapp:[],eventTypes:[]};
+  if(!state.eventTypes.length)state.eventTypes=state.adminData.eventTypes||[];
+  restoreCurrentEvent_();renderAll();setGuestsLoadingF14Z4_(false);
+  startupProgressF14Z32_(1,1,"הטעינה הושלמה");
 }
 function setGuestsLoadingF14Z4_(loading){
   const body=document.querySelector('#guestsBody');
@@ -186,7 +242,7 @@ function setGuestsLoadingF14Z4_(loading){
 function renderAll(){
   renderLookupFilters();renderEvents();renderGuests();renderDashboard();renderTables();renderActivity();renderAdmin();renderCurrentEventContext_();
   $("#frontVersion") && ($("#frontVersion").textContent=APP_VERSION.FRONTEND_VERSION);
-  $("#serverVersion") && ($("#serverVersion").textContent=APP_VERSION.REQUIRED_SERVER_VERSION);
+  $("#serverVersion") && ($("#serverVersion").textContent=state.serverVersion||"טרם נטען");
   $("#aboutVersion").textContent=APP_VERSION.FRONTEND_VERSION;
   const active=state.events.find(e=>eventKey_(e)===String(state.activeEventId));
   $("#homeActiveEvent").textContent=active?active.name:"לא נבחר אירוע";
@@ -393,7 +449,7 @@ function renderEvents(){
         <p><b>טלפון איש קשר:</b> ${esc(rsvpPhone)}</p>
         <p><b>הודעה לאחר תפוגה:</b> ${esc(e.rsvpClosedMessage||"לא הוגדרה")}</p>
       </section>
-      <div class="actions"><button class="primary edit-event" data-id="${e.id}">עריכה</button><button class="danger delete-event" data-id="${e.id}">מחיקה</button></div>
+      <div class="actions"><button class="primary edit-event" data-id="${e.id}">עריכה</button><button class="danger delete-event" data-id="${e.id}">🗑</button></div>
     </article>`;
   }).join("")||'<div class="empty">אין אירועים. צור אירוע ראשון.</div>';
 }
@@ -697,7 +753,7 @@ function renderTables(){
   
   $("#tableSummary").innerHTML=state.activeEventId?`<span>שולחנות: <b>${rows.length}</b></span><span>מקומות: <b>${rows.reduce((s,t)=>s+t.seats,0)}</b></span><span>תפוסים: <b>${rows.reduce((s,t)=>s+t.occupied,0)}</b></span><span>פנויים: <b>${rows.reduce((s,t)=>s+t.free,0)}</b></span>`:`<span>יש לבחור אירוע פעיל</span>`;
   renderSeatingWorkspaceV170_();
-  $("#tablesBody").innerHTML=rows.map(t=>`<tr><td>${esc(t.tableNumber)}</td><td>${t.seats}</td><td>${t.occupied}</td><td>${t.free}</td><td>${tableReadOnly?"צפייה בלבד":`<button class="edit-table" data-id="${t.id}">עריכה</button> <button class="danger delete-table" data-id="${t.id}">מחיקה</button>`}</td></tr>`).join("") || `<tr><td colspan="5" class="empty-cell">${state.activeEventId?"אין שולחנות באירוע זה":"יש לבחור אירוע"}</td></tr>`;
+  $("#tablesBody").innerHTML=rows.map(t=>`<tr><td>${esc(t.tableNumber)}</td><td>${t.seats}</td><td>${t.occupied}</td><td>${t.free}</td><td>${tableReadOnly?"צפייה בלבד":`<button class="edit-table" data-id="${t.id}">עריכה</button> <button class="danger delete-table" data-id="${t.id}">🗑</button>`}</td></tr>`).join("") || `<tr><td colspan="5" class="empty-cell">${state.activeEventId?"אין שולחנות באירוע זה":"יש לבחור אירוע"}</td></tr>`;
 }
 
 function tableForm(t={}){
@@ -713,7 +769,53 @@ function tableForm(t={}){
   $("#saveTableBtn").onclick=saveTableForm;
 }
 
-function renderActivity(){$("#activityList").innerHTML=(state.activity||[]).map(a=>`<div><b>${esc(a.action)}</b> — ${esc(a.details)} <small>${esc(a.at)}</small></div>`).join("")||'<div class="empty">אין פעולות עדיין.</div>'}
+function renderActivity(){ if(currentPage==="activity") loadActivityLogZ57_(); }
+
+function logButtonBusyZ57A_(button,busy,label){
+  if(!button)return;
+  if(busy){if(!button.dataset.logOldHtml)button.dataset.logOldHtml=button.innerHTML;button.disabled=true;button.classList.add('is-busy-z57a');button.innerHTML=`<span class="log-btn-spinner-z57a" aria-hidden="true"></span><span>${esc(label||'טוען...')}</span>`;}
+  else{button.disabled=false;button.classList.remove('is-busy-z57a');if(button.dataset.logOldHtml){button.innerHTML=button.dataset.logOldHtml;delete button.dataset.logOldHtml;}}
+}
+function logFiltersActiveZ57A_(ids){return ids.some(id=>String($('#'+id)?.value||'').trim()!=='');}
+function updateLogClearFilterStateZ57A_(kind){
+  const wa=kind==='wa',ids=wa?['waLogEventZ55B','waLogEnvironmentZ55B','waLogStatusZ55B','waLogFromZ55B','waLogToZ55B','waLogSearchZ55B']:['activityUserZ57','activityActionZ57','activityTypeZ57','activityFromZ57','activityToZ57','activitySearchZ57'];
+  const b=$(wa?'#waLogClearFiltersZ55B':'#activityClearFiltersZ57'),active=logFiltersActiveZ57A_(ids);if(!b)return;
+  b.classList.toggle('has-active-filters-z57a',active);b.setAttribute('aria-pressed',String(active));b.title=active?'נקה את הסינונים הפעילים והחיפוש':'אין סינונים פעילים';
+}
+
+let activityRowsZ57=[];
+function activityUserNameZ57_(r){return r.userName||r.userId||'';}
+function activitySortValueZ57_(r,key){if(key==='userName')return activityUserNameZ57_(r);return String(r[key]||'');}
+function sortedActivityZ57_(){const {key,dir}=state.activitySort||{key:'at',dir:'desc'},mul=dir==='asc'?1:-1;return [...activityRowsZ57].sort((a,b)=>activitySortValueZ57_(a,key).localeCompare(activitySortValueZ57_(b,key),'he',{numeric:true,sensitivity:'base'})*mul);}
+function activityInitFiltersZ57_(meta={}){
+  const user=$('#activityUserZ57'),action=$('#activityActionZ57'),type=$('#activityTypeZ57');
+  if(user){const old=user.value;user.innerHTML='<option value="">כל המשתמשים</option>'+(meta.users||[]).map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)}</option>`).join('');user.value=old;}
+  if(action){const old=action.value;action.innerHTML='<option value="">כל הפעולות</option>'+(meta.actions||[]).map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');action.value=old;}
+  if(type){const old=type.value;type.innerHTML='<option value="">כל סוגי הרשומות</option>'+(meta.entityTypes||[]).map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');type.value=old;}
+}
+async function loadActivityLogZ57_(button){
+  if(state.session?.role!=='Admin')return;
+  const body=$('#activityBodyZ57');if(!body)return;logButtonBusyZ57A_(button,true,'מרענן...');body.innerHTML='<tr><td colspan="6"><span class="log-btn-spinner-z57a" aria-hidden="true"></span> טוען...</td></tr>';
+  const filters={userId:$('#activityUserZ57')?.value||'',action:$('#activityActionZ57')?.value||'',entityType:$('#activityTypeZ57')?.value||'',fromDate:$('#activityFromZ57')?.value||'',toDate:$('#activityToZ57')?.value||'',search:$('#activitySearchZ57')?.value||'',limit:500};
+  try{const d=await API.request('listActivityLogZ57',{filters});activityRowsZ57=d.rows||[];activityInitFiltersZ57_(d.meta||{});renderActivityLogZ57_(d);}catch(e){body.innerHTML=`<tr><td colspan="6" class="error">${esc(e.message)}</td></tr>`;}finally{logButtonBusyZ57A_(button,false);updateLogClearFilterStateZ57A_('activity');}
+}
+function renderActivityLogZ57_(d={}){
+  const rows=sortedActivityZ57_(),body=$('#activityBodyZ57');if(!body)return;
+  body.innerHTML=rows.map(r=>`<tr><td data-col="at">${esc(formatWaLogDateTimeZ56B1_(r.at))}</td><td data-col="userName">${esc(activityUserNameZ57_(r))}</td><td data-col="action">${esc(r.action||'')}</td><td data-col="entityType">${esc(r.entityType||'')}</td><td data-col="entityId" title="${esc(r.entityId||'')}">${esc(r.entityId||'')}</td><td data-col="details" title="${esc(r.details||'')}">${esc(r.details||'')}</td></tr>`).join('')||'<tr><td colspan="6" class="empty-cell">אין רשומות בהתאם לסינון.</td></tr>';
+  const n=$('#activityNoticeZ57'),total=Number(d.total??rows.length);if(n)n.innerHTML=`<span>מוצגות <b>${rows.length}</b> מתוך <b>${total}</b> רשומות</span>${d.truncated?'<span class="guest-filter-active-v178">500 הרשומות האחרונות</span>':''}`;
+  $$('#page-activity th[data-activity-sort]').forEach(th=>{const active=th.dataset.activitySort===state.activitySort.key;th.classList.toggle('sorted',active);const i=th.querySelector('.sort-icon');if(i)i.textContent=active?(state.activitySort.dir==='asc'?'↑':'↓'):'↕';});
+  $$('#page-activity td[data-col]').forEach(td=>td.classList.toggle('sorted-col',td.dataset.col===state.activitySort.key));
+}
+function setActivitySortZ57_(key){if(state.activitySort.key===key)state.activitySort.dir=state.activitySort.dir==='asc'?'desc':'asc';else state.activitySort={key,dir:'asc'};renderActivityLogZ57_({total:activityRowsZ57.length});}
+function purgeActivityLogDialogZ57_(){
+  if(state.session?.role!=='Admin')return;
+  modal(`<h2>ניקוי יומן פעילויות</h2><p>בחר אילו רשומות יש למחוק. הפעולה אינה ניתנת לביטול.</p><label>תקופת שמירה<select id="activityPurgeRangeZ57"><option value="30">מחק רשומות ישנות מ־30 יום</option><option value="60">מחק רשומות ישנות מ־60 יום</option><option value="90" selected>מחק רשומות ישנות מ־90 יום</option><option value="ALL">ניקוי מלא של היומן</option></select></label><div class="actions"><button type="button" onclick="closeModal()">ביטול</button><button type="button" class="danger" id="activityPurgeConfirmZ57">🗑</button></div>`);
+  $('#activityPurgeConfirmZ57').onclick=async()=>{const v=$('#activityPurgeRangeZ57').value;if(!confirm(v==='ALL'?'למחוק לצמיתות את כל יומן הפעילויות?':`למחוק לצמיתות רשומות ישנות מ־${v} יום?`))return;const b=$('#activityPurgeConfirmZ57');logButtonBusyZ57A_(b,true,'מוחק...');try{const d=await API.request('purgeActivityLogZ57',{days:v});closeModal();showToast(`נמחקו ${d.deleted||0} רשומות`);await loadActivityLogZ57_();}catch(e){logButtonBusyZ57A_(b,false);showToast(e.message,'error');}};
+}
+document.addEventListener('change',e=>{if(['activityUserZ57','activityActionZ57','activityTypeZ57','activityFromZ57','activityToZ57'].includes(e.target?.id)){updateLogClearFilterStateZ57A_('activity');loadActivityLogZ57_();}});
+document.addEventListener('click',e=>{const toggle=e.target?.closest?.('#activityFiltersToggleZ57');if(toggle){const box=$('#activityFiltersZ57'),open=box?.classList.toggle('filters-open-a5');toggle.setAttribute('aria-expanded',String(!!open));const spans=toggle.querySelectorAll('span');if(spans[0])spans[0].textContent=open?'הסתר סינון':'הצג סינון';if(spans[1])spans[1].textContent=open?'▴':'▾';return;}const th=e.target?.closest?.('#page-activity th[data-activity-sort]');if(th){setActivitySortZ57_(th.dataset.activitySort);return;}if(e.target?.closest?.('#activityRefreshZ57'))loadActivityLogZ57_(e.target.closest('#activityRefreshZ57'));if(e.target?.closest?.('#activityClearFiltersZ57')){const cb=e.target.closest('#activityClearFiltersZ57');logButtonBusyZ57A_(cb,true,'מנקה...');['activityUserZ57','activityActionZ57','activityTypeZ57','activityFromZ57','activityToZ57','activitySearchZ57'].forEach(id=>{const x=$('#'+id);if(x)x.value='';});updateLogClearFilterStateZ57A_('activity');loadActivityLogZ57_().finally(()=>logButtonBusyZ57A_(cb,false));}if(e.target?.closest?.('#activityPurgeZ57'))purgeActivityLogDialogZ57_();});
+document.addEventListener('input',e=>{if(e.target?.id==='activitySearchZ57')updateLogClearFilterStateZ57A_('activity');});
+document.addEventListener('keydown',e=>{const th=e.target?.closest?.('#page-activity th[data-activity-sort]');if(th&&(e.key==='Enter'||e.key===' ')){e.preventDefault();setActivitySortZ57_(th.dataset.activitySort);return;}if(e.target?.id==='activitySearchZ57'&&e.key==='Enter')loadActivityLogZ57_();});
 
 function eventForm(e={}){
   const types=activeEventTypes();
@@ -907,7 +1009,7 @@ function guestDetails(g){
   modal(`<h2>${esc(g.name)}</h2><p><b>Guest ID:</b> ${esc(g.guestId||g.id)}</p><p><b>טלפון:</b> ${esc(g.phone)}</p>${parts.length?`<p>${parts.join(" | ")}</p>`:""}
   <p><b>מספר מוזמנים:</b> ${g.invitedCount||g.partySize||1} · <b>אישרו:</b> ${g.confirmedCount||0}</p><p><b>סטטוס:</b> ${esc(statusText(status))}</p>
   <p><b>פנייה אישית:</b> ${esc(g.invitationGreeting||"—")}</p><p><b>שליחה:</b> ${guestSendChecked(g)?"מסומן — יקבל הודעת WhatsApp":"לא מסומן"}</p><p><b>הערות:</b> ${esc(g.notes||"—")}</p>
-  <div class="actions"><button class="primary" id="detailEdit">עריכה</button><button class="danger" id="detailDelete">מחיקה</button></div>`);
+  <div class="actions"><button class="primary" id="detailEdit">עריכה</button><button class="danger" id="detailDelete">🗑</button></div>`);
   $("#detailEdit").onclick=()=>guestForm(g);$("#detailDelete").onclick=async()=>{await deleteGuestV179_(g)}
 }
 
@@ -927,7 +1029,7 @@ function renderAdmin(){
     }
   }
   $$("#adminTabs [data-admin-tab]").forEach(b=>b.classList.toggle("active",b.dataset.adminTab===state.adminTab));
-  if(state.adminTab==="versions"){c.innerHTML=`<h2>גרסאות</h2><p>Frontend: <b>${esc(APP_VERSION.FRONTEND_VERSION)}</b></p><p>Server: <b>${esc(APP_VERSION.REQUIRED_SERVER_VERSION)}</b></p><div class="admin-section-head"><h3>בדיקת תקינות ואופטימיזציה</h3></div><p>בדיקה מלאה לקריאות גיליונות, Handlers, מזהים כפולים וקישורים בין אירועים, מוזמנים, צדדים, קבוצות ושולחנות.</p><div class="actions"><button type="button" class="primary run-system-health">בדיקת תקינות מלאה</button></div><div id="systemHealthResult" class="event-save-status" aria-live="polite"></div><div class="admin-section-head"><h3>בדיקת שיוך סוג אירוע</h3></div><p>הבדיקה מאתרת אירועים ששמם מצביע באופן חד-משמעי על סוג אירוע אחר מזה ששמור ב-eventTypeId.</p><div class="actions"><button type="button" class="check-event-type-assignments">בדיקה בלבד</button><button type="button" class="primary repair-event-type-assignments">בדיקה ותיקון</button></div><div id="eventTypeAssignmentResult" class="event-save-status" aria-live="polite"></div>`;return}
+  if(state.adminTab==="versions"){c.innerHTML=`<h2>גרסאות</h2><p>Frontend: <b>${esc(APP_VERSION.FRONTEND_VERSION)}</b></p><p>Server: <b>${esc(state.serverVersion||"טרם נטען")}</b></p><div class="admin-section-head"><h3>בדיקת תקינות ואופטימיזציה</h3></div><p>בדיקה מלאה לקריאות גיליונות, Handlers, מזהים כפולים וקישורים בין אירועים, מוזמנים, צדדים, קבוצות ושולחנות.</p><div class="actions"><button type="button" class="primary run-system-health">בדיקת תקינות מלאה</button></div><div id="systemHealthResult" class="event-save-status" aria-live="polite"></div><div class="admin-section-head"><h3>בדיקת שיוך סוג אירוע</h3></div><p>הבדיקה מאתרת אירועים ששמם מצביע באופן חד-משמעי על סוג אירוע אחר מזה ששמור ב-eventTypeId.</p><div class="actions"><button type="button" class="check-event-type-assignments">בדיקה בלבד</button><button type="button" class="primary repair-event-type-assignments">בדיקה ותיקון</button></div><div id="eventTypeAssignmentResult" class="event-save-status" aria-live="polite"></div>`;return}
   if(state.adminTab==="eventTypes")return renderEventTypesAdmin();
   if(["sides","groups","statuses"].includes(state.adminTab)) return renderLookupAdmin(state.adminTab);
   if(state.adminTab==="users")return renderUsersAdmin();
@@ -942,7 +1044,7 @@ function adminTable(title,addClass,headers,rows){
   return `<div class="admin-section-head"><h2>${esc(title)}</h2><button class="primary ${addClass}">+ הוספה</button></div><div class="table-wrap"><table class="admin-table"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join("")}<th></th></tr></thead><tbody>${rows||'<tr><td colspan="99">אין רשומות</td></tr>'}</tbody></table></div>`;
 }
 function renderEventTypesAdmin(){
-  const rows=(state.eventTypes||[]).map(x=>`<tr><td>${esc(x.name)}</td><td>${boolText(x.usesSides)}</td><td>${boolText(x.usesGroups)}</td><td>${boolText(x.defaultSeatingEnabled)}</td><td>${+x.sortOrder||0}</td><td>${boolText(x.active)}</td><td><button class="edit-event-type" data-id="${esc(x.eventTypeId||x.id)}">עריכה</button> <button class="danger delete-event-type" data-id="${esc(x.eventTypeId||x.id)}">מחיקה</button></td></tr>`).join("");
+  const rows=(state.eventTypes||[]).map(x=>`<tr><td>${esc(x.name)}</td><td>${boolText(x.usesSides)}</td><td>${boolText(x.usesGroups)}</td><td>${boolText(x.defaultSeatingEnabled)}</td><td>${+x.sortOrder||0}</td><td>${boolText(x.active)}</td><td><button class="edit-event-type" data-id="${esc(x.eventTypeId||x.id)}">עריכה</button> <button class="danger delete-event-type" data-id="${esc(x.eventTypeId||x.id)}">🗑</button></td></tr>`).join("");
   $("#adminContent").innerHTML=adminTable("סוגי אירועים","add-event-type",["שם","צדדים","קבוצות","שולחנות ברירת מחדל","סדר","פעיל"],rows);
 }
 function eventTypeForm(x={}){
@@ -993,7 +1095,7 @@ function renderLookupAdmin(kind){
     list=list.filter(x=>String(x.eventTypeId)===String(selected));
     scopeHtml=`<div class="admin-lookup-scope"><label>סוג אירוע<select id="adminLookupEventTypeSelect">${eligible.map(t=>`<option value="${esc(t.eventTypeId||t.id)}" ${String(t.eventTypeId||t.id)===String(selected)?"selected":""}>${esc(t.name)}</option>`).join("")}</select></label></div>`;
   }
-  const rows=list.map(x=>`<tr><td>${esc(x.value)}</td><td>${esc(x.label)}</td><td>${+x.sortOrder||0}</td><td>${boolText(x.active)}</td><td><button class="edit-lookup" data-kind="${kind}" data-id="${x.id}">עריכה</button> <button class="danger delete-lookup" data-kind="${kind}" data-id="${x.id}">מחיקה</button></td></tr>`).join("");
+  const rows=list.map(x=>`<tr><td>${esc(x.value)}</td><td>${esc(x.label)}</td><td>${+x.sortOrder||0}</td><td>${boolText(x.active)}</td><td><button class="edit-lookup" data-kind="${kind}" data-id="${x.id}">עריכה</button> <button class="danger delete-lookup" data-kind="${kind}" data-id="${x.id}">🗑</button></td></tr>`).join("");
   $("#adminContent").innerHTML=scopeHtml+adminTable(adminTitles[kind],"add-lookup",[kind==="sides"?"שם":"ערך","תיאור","סדר","פעיל"],rows);
   $(".add-lookup").dataset.kind=kind;
   const scope=$("#adminLookupEventTypeSelect");if(scope)scope.onchange=e=>{
@@ -1012,20 +1114,20 @@ function applyAdminLookupScope_(eventTypeId,manual=false){
   if(["sides","groups"].includes(state.adminTab)) renderLookupAdmin(state.adminTab);
 }
 function renderUsersAdmin(){
-  const rows=(state.adminData.users||[]).map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.email)}</td><td>${esc(displayUserPhone_(x.phone))}</td><td>${esc(roleLabel(x.role))}</td><td>${boolText(x.active)}</td><td><button class="edit-user" data-id="${x.id}">עריכה</button> <button class="danger delete-user" data-id="${x.id}">מחיקה</button></td></tr>`).join("");
+  const rows=(state.adminData.users||[]).map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.email)}</td><td>${esc(displayUserPhone_(x.phone))}</td><td>${esc(roleLabel(x.role))}</td><td>${boolText(x.active)}</td><td><button class="edit-user" data-id="${x.id}">עריכה</button> <button class="danger delete-user" data-id="${x.id}">🗑</button></td></tr>`).join("");
   $("#adminContent").innerHTML=adminTable("משתמשי מערכת","add-user",["שם","אימייל","טלפון","תפקיד","פעיל"],rows);
 }
 function roleLabel(v){return (state.adminData.roles||[]).find(r=>r.value===v)?.label||v}
 function renderRolesAdmin(){
-  const rows=(state.adminData.roles||[]).map(x=>`<tr><td>${esc(x.value)}</td><td>${esc(x.label)}</td><td>${+x.sortOrder||0}</td><td>${boolText(x.active)}</td><td><button class="edit-role" data-id="${x.id}">עריכה</button> <button class="danger delete-role" data-id="${x.id}">מחיקה</button></td></tr>`).join("");
+  const rows=(state.adminData.roles||[]).map(x=>`<tr><td>${esc(x.value)}</td><td>${esc(x.label)}</td><td>${+x.sortOrder||0}</td><td>${boolText(x.active)}</td><td><button class="edit-role" data-id="${x.id}">עריכה</button> <button class="danger delete-role" data-id="${x.id}">🗑</button></td></tr>`).join("");
   $("#adminContent").innerHTML=adminTable("תפקידים","add-role",["קוד","שם תפקיד","סדר","פעיל"],rows);
 }
 function renderPermissionsAdmin(){
-  const rows=(state.adminData.permissions||[]).map(x=>`<tr><td>${esc(roleLabel(x.role))}</td><td>${esc(x.permissionKey)}</td><td>${boolText(x.allowed)}</td><td>${esc(x.notes||"")}</td><td><button class="edit-permission" data-id="${x.id}">עריכה</button> <button class="danger delete-permission" data-id="${x.id}">מחיקה</button></td></tr>`).join("");
+  const rows=(state.adminData.permissions||[]).map(x=>`<tr><td>${esc(roleLabel(x.role))}</td><td>${esc(x.permissionKey)}</td><td>${boolText(x.allowed)}</td><td>${esc(x.notes||"")}</td><td><button class="edit-permission" data-id="${x.id}">עריכה</button> <button class="danger delete-permission" data-id="${x.id}">🗑</button></td></tr>`).join("");
   $("#adminContent").innerHTML=adminTable("ניהול הרשאות","add-permission",["תפקיד","מפתח הרשאה","מאושר","הערות"],rows);
 }
 function renderWhatsAppAdmin(){
-  const rows=(state.adminData.whatsapp||[]).map(x=>`<tr><td>${esc(x.name)}</td><td><strong>${esc(String(x.environment||'PRODUCTION').toUpperCase())}</strong></td><td>${esc(x.phoneNumberId)}</td><td>${esc(x.wabaId)}</td><td>${esc(x.apiVersion||"")}</td><td>${boolText(x.enabled)}</td><td>${isTrue(x.hasAccessToken)?"מוגדר":"חסר"}</td><td><button class="edit-wa" data-id="${x.id}">עריכה</button> <button class="danger delete-wa" data-id="${x.id}">מחיקה</button></td></tr>`).join("");
+  const rows=(state.adminData.whatsapp||[]).map(x=>`<tr><td>${esc(x.name)}</td><td><strong>${esc(String(x.environment||'PRODUCTION').toUpperCase())}</strong></td><td>${esc(x.phoneNumberId)}</td><td>${esc(x.wabaId)}</td><td>${esc(x.apiVersion||"")}</td><td>${boolText(x.enabled)}</td><td>${isTrue(x.hasAccessToken)?"מוגדר":"חסר"}</td><td><button class="edit-wa" data-id="${x.id}">עריכה</button> <button class="danger delete-wa" data-id="${x.id}">🗑</button></td></tr>`).join("");
   $("#adminContent").innerHTML=adminTable("חיבור ל-WhatsApp דרך Meta Web API","add-wa",["שם","סביבה","Phone Number ID","WABA ID","API","פעיל","Access Token"],rows);
 }
 function lookupForm(kind,x={}){
@@ -1703,7 +1805,11 @@ $("#loginForm").addEventListener("submit",async event=>{
   $("#loginBtnLabel").textContent="מתחבר…";
   loginFeedbackV184("","");
   try{
+    clearVersionMismatchToast_();
     const r=await API.request("login",{email,password});
+    assertBackendVersion_(r?.serverVersion);
+    clearVersionMismatchToast_();
+    state.serverVersion=r.serverVersion;
     state.session=r.session;
     state.waCostBaseF14=null;state.waCostPromiseF14=null;
     saveSession();
@@ -1736,7 +1842,7 @@ setTheme(localStorage.getItem(APP_CONFIG.THEME_KEY)||"dark");
 restoreSession();
 $$("#mainNav [data-page]").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===currentPage));
 const initialPageName=$("#mobilePageName");if(initialPageName)initialPageName.textContent="ראשי";
-if(state.session){setUser();document.body.classList.add("role-routing-v18");$("#loginOverlay").classList.remove("show");startupProgressF14Z32_(0,5,"משחזר נתוני מערכת…");startupPaintF14Z32_().then(()=>bootstrap()).then(()=>{showPage(state.session?.role==="TableManager"?"seating":"dashboard");document.body.classList.remove("role-routing-v18");startupHideF14Z32_()}).catch(e=>{document.body.classList.remove("role-routing-v18");startupHideF14Z32_();alert(e.message);clearSession()})}
+if(state.session){startExistingSessionZ58D3_().catch(e=>{document.body.classList.remove("role-routing-v18");startupHideF14Z32_();showToast(e?.message||String(e),"error");clearSession()})}
 document.addEventListener("keydown",e=>{const th=e.target.closest?.(".guests-table th.sortable");if(th&&(e.key==="Enter"||e.key===" ")){e.preventDefault();setGuestSort(th.dataset.sort)}});
 
 /* V1.1.90A5 — mobile guest filters default closed */
@@ -1974,13 +2080,15 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.ses
 
 /* V1.1.90A19P2F14Z55 — WhatsApp log UI */
 let waLogRowsZ55=[];
-function waLogStatusLabelZ55_(s){return ({META_ACCEPTED:'התקבל ב-Meta',API_FAILED:'נכשל ב-API',SENT:'נשלח',DELIVERED:'נמסר',READ:'נקרא',FAILED:'נכשל במסירה'})[String(s||'')]||String(s||'');}
+function waLogStatusLabelZ55_(s){return ({META_ACCEPTED:'ממתינה למסירה',API_FAILED:'נכשלה',SENT:'ממתינה למסירה',DELIVERED:'נמסרה',READ:'נקראה',FAILED:'נכשלה'})[String(s||'')]||String(s||'');}
+function waLogIsEventManagerZ56C_(){return state.session?.role==='EventManager';}
+function waLogApplyRoleViewZ56C_(){const simple=waLogIsEventManagerZ56C_(),page=$('#page-whatsappLog');if(!page)return;page.classList.toggle('wa-log-manager-z56c',simple);const env=$('#waLogEnvironmentZ55B');if(env)env.closest('select')?.classList.toggle('wa-log-manager-hidden-z56c',simple);const search=$('#waLogSearchZ55B');if(search)search.placeholder=simple?'חיפוש לפי שם או טלפון':'חיפוש לפי שם, טלפון או wamid';const intro=page.querySelector('.wa-log-intro-z55');if(intro)intro.textContent=simple?'כאן ניתן לראות אם הודעות WhatsApp ממתינות למסירה, נמסרו, נקראו או נכשלו.':'הסטטוס „ממתינה למסירה” מציין שההודעה התקבלה במערכת השליחה אך טרם התקבל אישור מסירה לטלפון.';}
 function waLogEventNameZ55_(id){return state.events.find(e=>String(e.id)===String(id))?.name||id||'';}
 function waLogInitFiltersZ55_(){const sel=$('#waLogEventZ55B');if(!sel)return;const old=sel.value;sel.innerHTML='<option value="">כל האירועים</option>'+state.events.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');sel.value=state.events.some(e=>String(e.id)===old)?old:'';}
-async function loadWhatsAppLogZ55_(){
-  const body=$('#waLogBodyZ55B');if(!body)return;waLogInitFiltersZ55_();body.innerHTML='<tr><td colspan="9">טוען…</td></tr>';
+async function loadWhatsAppLogZ55_(button){
+  const body=$('#waLogBodyZ55B');if(!body)return;logButtonBusyZ57A_(button,true,'מרענן...');waLogApplyRoleViewZ56C_();waLogInitFiltersZ55_();body.innerHTML='<tr><td colspan="9"><span class="log-btn-spinner-z57a" aria-hidden="true"></span> טוען...</td></tr>';
   const filters={eventId:$('#waLogEventZ55B')?.value||'',environment:$('#waLogEnvironmentZ55B')?.value||'',status:$('#waLogStatusZ55B')?.value||'',fromDate:$('#waLogFromZ55B')?.value||'',toDate:$('#waLogToZ55B')?.value||'',search:$('#waLogSearchZ55B')?.value||'',limit:500};
-  try{const d=await API.request('listWhatsAppLogZ55',{filters});waLogRowsZ55=d.rows||[];renderWhatsAppLogZ55_(d);}catch(e){body.innerHTML=`<tr><td colspan="9" class="error">${esc(e.message)}</td></tr>`;}
+  try{const d=await API.request('listWhatsAppLogZ55',{filters});waLogRowsZ55=d.rows||[];renderWhatsAppLogZ55_(d);}catch(e){body.innerHTML=`<tr><td colspan="9" class="error">${esc(e.message)}</td></tr>`;}finally{logButtonBusyZ57A_(button,false);updateLogClearFilterStateZ57A_('wa');}
 }
 function waLogSortValueZ55B_(r,key){if(key==='eventName')return waLogEventNameZ55_(r.eventId);if(key==='createdAt')return String(r.createdAt||'');return String(r[key]||'');}
 function sortedWhatsAppLogZ55B_(){const {key,dir}=state.waLogSort||{key:'createdAt',dir:'desc'},mul=dir==='asc'?1:-1;return [...waLogRowsZ55].sort((a,b)=>waLogSortValueZ55B_(a,key).localeCompare(waLogSortValueZ55B_(b,key),'he',{numeric:true,sensitivity:'base'})*mul);}
@@ -1989,14 +2097,68 @@ function updateWhatsAppLogSortUIZ55B_(){
   $$('#page-whatsappLog td[data-col]').forEach(td=>td.classList.toggle('sorted-col',td.dataset.col===state.waLogSort.key));
 }
 function setWhatsAppLogSortZ55B_(key){if(state.waLogSort.key===key)state.waLogSort.dir=state.waLogSort.dir==='asc'?'desc':'asc';else state.waLogSort={key,dir:'asc'};renderWhatsAppLogZ55_({summary:waLogSummaryFromRowsZ55B_(),truncated:waLogRowsZ55.length>=500,canPurge:state.session?.role==='Admin'});}
-function waLogSummaryFromRowsZ55B_(){const rows=waLogRowsZ55;return {total:rows.length,metaAccepted:rows.filter(r=>r.status==='META_ACCEPTED').length,delivered:rows.filter(r=>r.status==='DELIVERED').length,read:rows.filter(r=>r.status==='READ').length,failed:rows.filter(r=>['API_FAILED','FAILED'].includes(r.status)).length};}
+function waLogSummaryFromRowsZ55B_(){const rows=waLogRowsZ55;return {total:rows.length,metaAccepted:rows.filter(r=>r.status==='META_ACCEPTED').length,pending:rows.filter(r=>['META_ACCEPTED','SENT'].includes(r.status)).length,delivered:rows.filter(r=>['DELIVERED','READ'].includes(r.status)).length,read:rows.filter(r=>r.status==='READ').length,failed:rows.filter(r=>['API_FAILED','FAILED'].includes(r.status)).length};}
+function formatWaLogDateTimeZ56B1_(value){
+  const raw=String(value||'').trim(); if(!raw)return '';
+  const m=raw.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  return m?`${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}`:raw.replace('T',' ').slice(0,16);
+}
 function renderWhatsAppLogZ55_(d){
-  const s=d.summary||waLogSummaryFromRowsZ55B_(),sum=$('#waLogSummaryZ55B');if(sum)sum.innerHTML=[['סה״כ',s.total||0,'blue'],['התקבלו ב-Meta',s.metaAccepted||0,'amber'],['נמסרו',s.delivered||0,'green'],['נקראו',s.read||0,'blue'],['נכשלו',s.failed||0,'red']].map(x=>`<button type="button" class="guest-stat-card-v178 ${x[2]}" tabindex="-1"><span>${x[0]}</span><strong>${x[1]}</strong></button>`).join('');
-  const rows=sortedWhatsAppLogZ55B_(),b=$('#waLogBodyZ55B');b.innerHTML=rows.map(r=>`<tr title="${esc(r.wamid||'')}"><td data-col="createdAt">${esc(String(r.createdAt||'').replace('T',' ').slice(0,19))}</td><td data-col="eventName">${esc(waLogEventNameZ55_(r.eventId))}</td><td data-col="guestName">${esc(r.guestName||r.guestId)}</td><td data-col="phone" dir="ltr">${esc(r.phone||'')}</td><td data-col="templateName">${esc(r.templateName||'')}</td><td data-col="environment">${esc(r.environment||'')}</td><td data-col="status" class="wa-log-status-z55">${esc(waLogStatusLabelZ55_(r.status))}</td><td data-col="wamid" class="wa-log-wamid-z55">${esc(r.wamid||'')}</td><td data-col="errorMessage" class="wa-log-error-z55">${esc(r.errorMessage||'')}</td></tr>`).join('')||'<tr><td colspan="9" class="empty-cell">אין רשומות בהתאם לסינון.</td></tr>';
+  const s=d.summary||waLogSummaryFromRowsZ55B_(),sum=$('#waLogSummaryZ55B');if(sum)sum.innerHTML=[['סה״כ',s.total||0,'blue'],['ממתינות למסירה',s.pending??s.metaAccepted??0,'amber'],['נמסרו',s.delivered||0,'green'],['נקראו',s.read||0,'blue'],['נכשלו',s.failed||0,'red']].map(x=>`<button type="button" class="guest-stat-card-v178 ${x[2]}" tabindex="-1"><span>${x[0]}</span><strong>${x[1]}</strong></button>`).join('');
+  const rows=sortedWhatsAppLogZ55B_(),b=$('#waLogBodyZ55B');b.innerHTML=rows.map(r=>`<tr title="${esc(r.wamid||'')}"><td data-col="createdAt">${esc(formatWaLogDateTimeZ56B1_(r.createdAt))}</td><td data-col="eventName">${esc(waLogEventNameZ55_(r.eventId))}</td><td data-col="guestName">${esc(r.guestName||r.guestId)}</td><td data-col="phone" dir="ltr">${esc(r.phone||'')}</td><td data-col="templateName" title="${esc(r.templateName||'')}">${esc(waLogIsEventManagerZ56C_()?(r.templateDisplayName||r.templateName||''):(r.templateName||''))}</td><td data-col="environment">${esc(r.environment||'')}</td><td data-col="status" class="wa-log-status-z55">${esc(waLogStatusLabelZ55_(r.status))}</td><td data-col="wamid" class="wa-log-wamid-z55">${esc(r.wamid||'')}</td><td data-col="errorMessage" class="wa-log-error-z55">${esc(r.errorMessage||'')}</td></tr>`).join('')||'<tr><td colspan="9" class="empty-cell">אין רשומות בהתאם לסינון.</td></tr>';
   const n=$('#waLogNoticeZ55B');if(n)n.innerHTML=`<span>מוצגות <b>${rows.length}</b> מתוך <b>${s.total||rows.length}</b> רשומות</span>${d.truncated?'<span class="guest-filter-active-v178">500 הרשומות האחרונות</span>':''}`;
   const purge=$('#waLogPurgeZ55B');if(purge)purge.hidden=!(d.canPurge??state.session?.role==='Admin');updateWhatsAppLogSortUIZ55B_();
 }
-async function purgeWhatsAppLogZ55_(){if(state.session?.role!=='Admin')return;const beforeDate=prompt('מחק רשומות WhatsApp שנוצרו לפני תאריך (YYYY-MM-DD):');if(!beforeDate)return;if(!/^\d{4}-\d{2}-\d{2}$/.test(beforeDate)){showToast('תאריך לא תקין','error');return;}if(!confirm(`למחוק לצמיתות את כל רשומות WhatsApp מלפני ${beforeDate}?`))return;try{const d=await API.request('purgeWhatsAppLogZ55',{beforeDate});showToast(`נמחקו ${d.deleted||0} רשומות`);await loadWhatsAppLogZ55_();}catch(e){showToast(e.message,'error');}}
-document.addEventListener('change',e=>{if(['waLogEventZ55B','waLogEnvironmentZ55B','waLogStatusZ55B','waLogFromZ55B','waLogToZ55B'].includes(e.target?.id))loadWhatsAppLogZ55_();});
-document.addEventListener('click',e=>{const t=e.target?.closest?.('#waLogFiltersToggleZ55B');if(t){const box=$('#waLogFiltersZ55B'),open=box?.classList.toggle('filters-open-a5');t.setAttribute('aria-expanded',String(!!open));const spans=t.querySelectorAll('span');if(spans[0])spans[0].textContent=open?'הסתר סינון':'הצג סינון';if(spans[1])spans[1].textContent=open?'▴':'▾';return;}const th=e.target?.closest?.('#page-whatsappLog th[data-wa-sort]');if(th){setWhatsAppLogSortZ55B_(th.dataset.waSort);return;}if(e.target?.closest?.('#waLogRefreshZ55B'))loadWhatsAppLogZ55_();if(e.target?.closest?.('#waLogClearFiltersZ55B')){['waLogEventZ55B','waLogEnvironmentZ55B','waLogStatusZ55B','waLogFromZ55B','waLogToZ55B','waLogSearchZ55B'].forEach(id=>{const x=$('#'+id);if(x)x.value='';});loadWhatsAppLogZ55_();}if(e.target?.closest?.('#waLogPurgeZ55B'))purgeWhatsAppLogZ55_();});
+async function purgeWhatsAppLogZ55_(button){if(state.session?.role!=='Admin')return;const beforeDate=prompt('מחק רשומות WhatsApp שנוצרו לפני תאריך (YYYY-MM-DD):');if(!beforeDate)return;if(!/^\d{4}-\d{2}-\d{2}$/.test(beforeDate)){showToast('תאריך לא תקין','error');return;}if(!confirm(`למחוק לצמיתות את כל רשומות WhatsApp מלפני ${beforeDate}?`))return;logButtonBusyZ57A_(button,true,'מנקה...');try{const d=await API.request('purgeWhatsAppLogZ55',{beforeDate});showToast(`נמחקו ${d.deleted||0} רשומות`);await loadWhatsAppLogZ55_();}catch(e){showToast(e.message,'error');}finally{logButtonBusyZ57A_(button,false);}}
+document.addEventListener('change',e=>{if(['waLogEventZ55B','waLogEnvironmentZ55B','waLogStatusZ55B','waLogFromZ55B','waLogToZ55B'].includes(e.target?.id)){updateLogClearFilterStateZ57A_('wa');loadWhatsAppLogZ55_();}});
+document.addEventListener('click',e=>{const t=e.target?.closest?.('#waLogFiltersToggleZ55B');if(t){const box=$('#waLogFiltersZ55B'),open=box?.classList.toggle('filters-open-a5');t.setAttribute('aria-expanded',String(!!open));const spans=t.querySelectorAll('span');if(spans[0])spans[0].textContent=open?'הסתר סינון':'הצג סינון';if(spans[1])spans[1].textContent=open?'▴':'▾';return;}const th=e.target?.closest?.('#page-whatsappLog th[data-wa-sort]');if(th){setWhatsAppLogSortZ55B_(th.dataset.waSort);return;}if(e.target?.closest?.('#waLogRefreshZ55B'))loadWhatsAppLogZ55_(e.target.closest('#waLogRefreshZ55B'));if(e.target?.closest?.('#waLogClearFiltersZ55B')){const cb=e.target.closest('#waLogClearFiltersZ55B');logButtonBusyZ57A_(cb,true,'מנקה...');['waLogEventZ55B','waLogEnvironmentZ55B','waLogStatusZ55B','waLogFromZ55B','waLogToZ55B','waLogSearchZ55B'].forEach(id=>{const x=$('#'+id);if(x)x.value='';});updateLogClearFilterStateZ57A_('wa');loadWhatsAppLogZ55_().finally(()=>logButtonBusyZ57A_(cb,false));}if(e.target?.closest?.('#waLogPurgeZ55B'))purgeWhatsAppLogZ55_(e.target.closest('#waLogPurgeZ55B'));});
+document.addEventListener('input',e=>{if(e.target?.id==='waLogSearchZ55B')updateLogClearFilterStateZ57A_('wa');});
 document.addEventListener('keydown',e=>{const th=e.target?.closest?.('#page-whatsappLog th[data-wa-sort]');if(th&&(e.key==='Enter'||e.key===' ')){e.preventDefault();setWhatsAppLogSortZ55B_(th.dataset.waSort);return;}if(e.target?.id==='waLogSearchZ55B'&&e.key==='Enter')loadWhatsAppLogZ55_();});
+
+
+// V1.1.90A19P2F14Z58C2 — Event Costs aligned with WhatsApp log UI
+let eventCostsDataZ58=null;
+let eventCostSortZ58A={key:'date',dir:'desc'};
+function moneyZ58_(v){return '₪'+Number(v||0).toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function eventCostEventNameZ58_(id){return state.events.find(e=>String(e.id||e.eventId)===String(id))?.name||id||'';}
+function eventCostIsManagerZ58A_(){return state.session?.role==='EventManager';}
+async function loadEventCostsZ58_(button){const body=$('#eventCostsBodyZ58');if(!body)return;logButtonBusyZ57A_(button,true,'מרענן...');body.innerHTML='<tr><td colspan="8"><span class="log-btn-spinner-z57a"></span> טוען...</td></tr>';try{const sel=$('#eventCostsEventZ58'),eid=sel?.value||'';const d=await API.request('eventCostsContextZ58',{eventId:eid});eventCostsDataZ58=d;renderEventCostsZ58_(d);}catch(e){body.innerHTML=`<tr><td colspan="8" class="error">${esc(e.message)}</td></tr>`;}finally{logButtonBusyZ57A_(button,false);}}
+function eventCostUnifiedRowsZ58A_(){if(!eventCostsDataZ58)return[];const manual=(eventCostsDataZ58.manualRows||[]).map(r=>({...r,source:'MANUAL',sourceLabel:'ידני'}));const wa=(eventCostsDataZ58.whatsAppRows||[]).map(r=>({id:'WA:'+String(r.messageId||''),eventId:r.eventId,date:String(r.createdAt||'').slice(0,10),createdAt:r.createdAt,category:'WhatsApp',description:r.templateDisplayName||r.templateName||'WhatsApp',amount:Number(r.estimatedIls||0),costType:'ACTUAL',notes:'',source:'WHATSAPP',sourceLabel:'אוטומטי'}));return manual.concat(wa);}
+function eventCostFilteredRowsZ58A_(){let a=eventCostUnifiedRowsZ58A_();const cat=$('#eventCostsCategoryZ58C')?.value||'',type=$('#eventCostsTypeZ58C')?.value||'',from=$('#eventCostsFromZ58C')?.value||'',to=$('#eventCostsToZ58C')?.value||'',q=String($('#eventCostsSearchZ58C')?.value||'').trim().toLowerCase();if(cat)a=a.filter(r=>r.category===cat);if(type)a=a.filter(r=>type==='WHATSAPP'?r.source==='WHATSAPP':r.costType===type&&r.source!=='WHATSAPP');if(from)a=a.filter(r=>String(r.date||'')>=from);if(to)a=a.filter(r=>String(r.date||'')<=to);if(q)a=a.filter(r=>[r.category,r.description,r.notes].some(v=>String(v||'').toLowerCase().includes(q)));const {key,dir}=eventCostSortZ58A,m=dir==='asc'?1:-1;return a.sort((x,y)=>{const A=key==='amount'?Number(x.amount||0):String(x[key]||''),B=key==='amount'?Number(y.amount||0):String(y[key]||'');return(typeof A==='number'?A-B:String(A).localeCompare(String(B),'he',{numeric:true,sensitivity:'base'}))*m;});}
+function updateEventCostClearZ58A_(){const active=['eventCostsCategoryZ58C','eventCostsTypeZ58C','eventCostsFromZ58C','eventCostsToZ58C','eventCostsSearchZ58C'].some(id=>String($('#'+id)?.value||'').trim());const b=$('#eventCostsClearZ58C');if(b){b.classList.toggle('filters-active-z57a',active);b.setAttribute('aria-pressed',String(active));b.title=active?'נקה את הסינון הפעיל':'אין סינון פעיל';}}
+function renderEventCostsRowsZ58A_(){const rows=eventCostFilteredRowsZ58A_(),manager=eventCostIsManagerZ58A_(),b=$('#eventCostsBodyZ58');if(!b)return;b.innerHTML=rows.map(r=>`<tr><td>${esc(formatWaLogDateTimeZ56B1_(r.createdAt||r.date))}</td><td>${esc(r.category||'')}</td><td title="${esc(r.description||'')}">${esc(r.description||'')}</td><td><b>${moneyZ58_(r.amount)}</b></td><td>${r.source==='WHATSAPP'?'בפועל':(r.costType==='EXPECTED'?'צפויה':'בפועל')}</td><td class="event-cost-admin-tech-z58a">${esc(r.sourceLabel||'')}</td><td title="${esc(r.notes||'')}">${esc(r.notes||'')}</td><td>${r.source==='WHATSAPP'?'—':`<button type="button" class="ui-icon-btn-z58d4 edit event-cost-edit-z58" title="עריכה" aria-label="עריכה" data-id="${esc(r.id)}">✎</button> <button type="button" class="ui-icon-btn-z58d4 delete event-cost-delete-z58" title="מחיקה" aria-label="מחיקה" data-id="${esc(r.id)}">🗑</button>`}</td></tr>`).join('')||'<tr><td colspan="8" class="empty-cell">אין הוצאות בהתאם לסינון.</td></tr>';$('#page-eventCosts')?.classList.toggle('event-cost-manager-z58a',manager);const n=$('#eventCostsNoticeZ58C');if(n)n.textContent=`מוצגות ${rows.length} מתוך ${eventCostUnifiedRowsZ58A_().length} רשומות`;$$('#page-eventCosts th[data-cost-sort]').forEach(th=>{const on=th.dataset.costSort===eventCostSortZ58A.key;th.classList.toggle('sorted',on);const sp=th.querySelector('span');if(sp)sp.textContent=on?(eventCostSortZ58A.dir==='asc'?'↑':'↓'):'↕';});updateEventCostClearZ58A_();}
+function renderEventCostsZ58_(d){const sel=$('#eventCostsEventZ58'),keep=sel?.value||'';if(sel){const all=d.canSeeAll?'<option value="">כל האירועים</option>':'';sel.innerHTML=all+(d.events||[]).map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');sel.value=(d.events||[]).some(e=>String(e.id)===String(keep))?keep:(d.canSeeAll?'':String(d.events?.[0]?.id||''));}$('#eventCostsTotalZ58').textContent=moneyZ58_(d.summary?.totalIls);$('#eventCostsActualZ58C').textContent=moneyZ58_(d.summary?.actualIls);$('#eventCostsExpectedZ58C').textContent=moneyZ58_(d.summary?.expectedIls);$('#eventCostsWaZ58').textContent=moneyZ58_(d.summary?.whatsappIls);const cs=$('#eventCostsCategoryZ58C'),old=cs?.value||'';if(cs){const names=[...new Set((d.categories||[]).map(c=>c.name).concat(['WhatsApp']))];cs.innerHTML='<option value="">כל הקטגוריות</option>'+names.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');cs.value=names.includes(old)?old:'';}const allWrap=$('#eventCostsByEventWrapZ58');if(allWrap){allWrap.hidden=!(d.canSeeAll&&!d.selectedEventId);$('#eventCostsByEventZ58').innerHTML=(d.byEvent||[]).map(x=>`<tr><td>${esc(x.eventName)}</td><td>${moneyZ58_(x.manual)}</td><td>${moneyZ58_(x.whatsapp)}</td><td><b>${moneyZ58_(x.total)}</b></td></tr>`).join('');}renderEventCostsRowsZ58A_();}
+function eventCostDialogZ58_(r={}){
+ const d=eventCostsDataZ58;if(!d)return;
+ const known=(d.categories||[]),knownNames=new Set(known.map(c=>c.name));
+ const editIsCustom=!!r.category&&!knownNames.has(r.category);
+ const events=(d.events||[]).map(e=>`<option value="${esc(e.id)}" ${String(e.id)===String(r.eventId||d.selectedEventId||'')?'selected':''}>${esc(e.name)}</option>`).join('');
+ const cats=known.map(c=>`<option value="${esc(c.id)}" data-mode="${esc(c.pricingMode)}" ${c.name===r.category||((c.name==='אחר')&&editIsCustom)?'selected':''}>${esc(c.name)}</option>`).join('');
+ modal(`<div class="cost-dialog-z58d4">
+   <div class="cost-dialog-head-z58d4"><div><h2>${r.id?'עריכת הוצאה':'הוספת הוצאה'}</h2><p>הזן את פרטי ההוצאה של האירוע</p></div><span class="cost-dialog-icon-z58d4">₪</span></div>
+   <form id="eventCostFormZ58" class="cost-form-z58d4">
+    <input type="hidden" name="id" value="${esc(r.id||'')}">
+    <div class="cost-form-grid-z58d4 cols-3"><label><span>אירוע</span><select name="eventId" required>${events}</select></label><label><span>תאריך</span><input name="date" type="date" required value="${esc(String(r.date||new Date().toISOString().slice(0,10)).slice(0,10))}"></label><label><span>קטגוריה</span><select name="categoryId" id="eventCostCategoryInputZ58C" required><option value="">בחר קטגוריה</option>${cats}</select></label></div>
+    <div id="eventCostDynamicCategoryZ58D4"></div>
+    <div class="cost-form-grid-z58d4 cols-main"><label><span>תיאור</span><input name="description" required value="${esc(r.description||'')}" placeholder="לדוגמה: צילום סטילס + מגנטים"></label><label><span>מצב הוצאה</span><select name="costType"><option value="EXPECTED" ${r.costType!=='ACTUAL'?'selected':''}>צפויה</option><option value="ACTUAL" ${r.costType==='ACTUAL'?'selected':''}>בפועל</option></select></label></div>
+    <div id="eventCostPricingZ58D4" class="cost-pricing-z58d4"></div>
+    <label class="cost-notes-z58d4"><span>הערות</span><textarea name="notes" rows="2" placeholder="הערה אופציונלית">${esc(r.notes||'')}</textarea></label>
+    <div class="cost-actions-z58d4"><button type="button" class="ui-btn-z58d4 secondary" onclick="closeModal()"><span>ביטול</span></button><button type="submit" class="ui-btn-z58d4 primary" id="eventCostSaveZ58"><span>שמירה</span></button></div>
+   </form></div>`);
+ const shell=$("#modal .modal");if(shell)shell.classList.add("event-cost-modal-z58d4");
+ const form=$('#eventCostFormZ58'),cat=$('#eventCostCategoryInputZ58C'),dynCat=$('#eventCostDynamicCategoryZ58D4'),pricing=$('#eventCostPricingZ58D4');
+ const initialCustom=editIsCustom?String(r.category||''):'';
+ const rebuild=()=>{
+   const o=cat.options[cat.selectedIndex],mode=o?.dataset.mode||'TOTAL',other=o?.textContent==='אחר';
+   dynCat.innerHTML=other?`<label class="cost-custom-only-z58d4"><span>שם הקטגוריה</span><input name="customCategory" required value="${esc(initialCustom)}" placeholder="לדוגמה: אבטחה מיוחדת"></label>`:'';
+   if(mode==='UNIT') pricing.innerHTML=`<label><span>כמות</span><input name="quantity" type="number" min="0" step="1" value="${esc(r.quantity||1)}"></label><label><span>מחיר יחידה ₪</span><input name="unitCost" type="number" min="0" step="0.01" required value="${esc(r.unitCost||'')}"></label><div class="cost-calc-z58d4"><span>סה״כ</span><strong id="eventCostCalcValueZ58D4">₪0.00</strong></div>`;
+   else pricing.innerHTML=`<label class="cost-total-input-z58d4"><span>סכום כולל ₪</span><input name="unitCost" type="number" min="0" step="0.01" required value="${esc(r.unitCost||r.amount||'')}"></label><input type="hidden" name="quantity" value="1">`;
+   const recalc=()=>{const out=$('#eventCostCalcValueZ58D4');if(out)out.textContent=moneyZ58_(Number(form.elements.quantity?.value||0)*Number(form.elements.unitCost?.value||0));};
+   form.elements.quantity?.addEventListener('input',recalc);form.elements.unitCost?.addEventListener('input',recalc);recalc();
+ };
+ cat.addEventListener('change',rebuild);rebuild();
+ form.onsubmit=async e=>{e.preventDefault();const o=Object.fromEntries(new FormData(form)),b=$('#eventCostSaveZ58');logButtonBusyZ57A_(b,true,'שומר...');try{await API.request('saveEventCostZ58',{cost:o});closeModal();showToast('ההוצאה נשמרה');await loadEventCostsZ58_();}catch(err){showToast(err.message,'error');logButtonBusyZ57A_(b,false);}};
+}
+document.addEventListener('change',e=>{if(e.target?.id==='eventCostsEventZ58')loadEventCostsZ58_();if(['eventCostsCategoryZ58C','eventCostsTypeZ58C','eventCostsFromZ58C','eventCostsToZ58C'].includes(e.target?.id)){updateEventCostClearZ58A_();renderEventCostsRowsZ58A_();}});
+document.addEventListener('input',e=>{if(e.target?.id==='eventCostsSearchZ58C'){updateEventCostClearZ58A_();renderEventCostsRowsZ58A_();}});
+document.addEventListener('click',async e=>{const ft=e.target?.closest?.('#eventCostsFiltersToggleZ58C');if(ft){const box=$('#eventCostsFiltersZ58C'),open=box?.classList.toggle('filters-open-a5');ft.setAttribute('aria-expanded',String(!!open));const spans=ft.querySelectorAll('span');if(spans[0])spans[0].textContent=open?'הסתר סינון':'הצג סינון';if(spans[1])spans[1].textContent=open?'▴':'▾';return;}const th=e.target?.closest?.('#page-eventCosts th[data-cost-sort]');if(th){const k=th.dataset.costSort;if(eventCostSortZ58A.key===k)eventCostSortZ58A.dir=eventCostSortZ58A.dir==='asc'?'desc':'asc';else eventCostSortZ58A={key:k,dir:'asc'};renderEventCostsRowsZ58A_();return;}if(e.target?.closest?.('#eventCostsClearZ58C')){const b=e.target.closest('#eventCostsClearZ58C');logButtonBusyZ57A_(b,true,'מנקה...');['eventCostsCategoryZ58C','eventCostsTypeZ58C','eventCostsFromZ58C','eventCostsToZ58C','eventCostsSearchZ58C'].forEach(id=>{const x=$('#'+id);if(x)x.value='';});renderEventCostsRowsZ58A_();setTimeout(()=>logButtonBusyZ57A_(b,false),180);}if(e.target?.closest?.('#eventCostsRefreshZ58'))loadEventCostsZ58_(e.target.closest('#eventCostsRefreshZ58'));if(e.target?.closest?.('#eventCostAddZ58'))eventCostDialogZ58_();const ed=e.target?.closest?.('.event-cost-edit-z58');if(ed){const r=eventCostsDataZ58?.manualRows?.find(x=>String(x.id)===String(ed.dataset.id));if(r)eventCostDialogZ58_(r);}const del=e.target?.closest?.('.event-cost-delete-z58');if(del&&confirm('למחוק את ההוצאה?')){logButtonBusyZ57A_(del,true,'מוחק...');try{await API.request('deleteEventCostZ58',{id:del.dataset.id});showToast('ההוצאה נמחקה');await loadEventCostsZ58_();}catch(err){showToast(err.message,'error');logButtonBusyZ57A_(del,false);}}});

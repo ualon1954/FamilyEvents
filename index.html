@@ -1,4 +1,4 @@
-<!-- V1.1.90A19P2F14Z52 -->
+<!-- V1.1.90A19P2F14Z58D5C -->
 <!doctype html>
 <html lang="he" dir="rtl">
 <head>
@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ניהול אירועים</title>
   <link rel="icon" href="./favicon.ico" sizes="any">
-  <link rel="stylesheet" href="./css/styles.css?v=1.1.90A19P2F14Z56">
+  <link rel="stylesheet" href="./css/styles.css?v=V1.1.90A19P2F14Z58D5C">
   <!-- V1.1.5: embedded CSS fallback. Keeps the UI styled even if hosting/path setup blocks the external CSS file. -->
   <style id="embeddedStylesV1112">
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
@@ -1109,6 +1109,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
     <button data-page="seating">ניהול שולחנות</button>
     <button data-page="messages" data-roles="Admin,EventManager">תבניות WhatsApp</button>
     <button data-page="whatsappLog" data-roles="Admin,EventManager">יומן WhatsApp</button>
+    <button data-page="eventCosts" data-roles="Admin,EventManager">עלויות אירוע</button>
     <button data-page="about">אודות</button>
     <button data-page="activity" data-role="Admin">יומן פעילות</button>
     <button data-page="admin" data-role="Admin">ניהול</button>
@@ -1279,7 +1280,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       <button class="wa-log-action-btn-z55c refresh" id="waLogRefreshZ55B" type="button" title="רענון היומן"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/></svg><span>רענון</span></button>
       <button class="wa-log-action-btn-z55c purge" id="waLogPurgeZ55B" data-role="Admin" type="button" title="ניקוי רשומות לוג ישנות"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg><span>ניקוי לוג ישן</span></button>
     </div></div>
-    <p class="muted wa-log-intro-z55">הסטטוס „התקבל ב-Meta” מאשר קבלת בקשת השליחה בלבד. סטטוסי מסירה לטלפון יתווספו בשלב המעקב הבא.</p>
+    <p class="muted wa-log-intro-z55">הסטטוס „ממתינה למסירה” מציין שההודעה התקבלה במערכת השליחה אך טרם התקבל אישור מסירה לטלפון.</p>
     <div class="guest-stat-sections-v178 guest-area-a19" id="waLogStatsZ55B" aria-label="סטטיסטיקות WhatsApp">
       <section class="guest-stat-section-v178"><h2>סטטוס הודעות WhatsApp</h2><div id="waLogSummaryZ55B" class="guest-stat-grid-v178"></div></section>
     </div>
@@ -1288,7 +1289,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       <div class="search-field"><span class="search-icon" aria-hidden="true">⌕</span><input id="waLogSearchZ55B" placeholder="חיפוש לפי שם, טלפון או wamid"></div>
       <select id="waLogEventZ55B" aria-label="סינון לפי אירוע"><option value="">כל האירועים</option></select>
       <select id="waLogEnvironmentZ55B" aria-label="סינון לפי סביבה"><option value="">כל הסביבות</option><option value="PRODUCTION">PRODUCTION</option><option value="TEST">TEST</option></select>
-      <select id="waLogStatusZ55B" aria-label="סינון לפי סטטוס"><option value="">כל הסטטוסים</option><option value="META_ACCEPTED">התקבל ב-Meta</option><option value="API_FAILED">נכשל ב-API</option><option value="SENT">נשלח</option><option value="DELIVERED">נמסר</option><option value="READ">נקרא</option><option value="FAILED">נכשל במסירה</option></select>
+      <select id="waLogStatusZ55B" aria-label="סינון לפי סטטוס"><option value="">כל הסטטוסים</option><option value="META_ACCEPTED">ממתינה למסירה</option><option value="API_FAILED">נכשלה</option><option value="SENT">ממתינה למסירה</option><option value="DELIVERED">נמסרה</option><option value="READ">נקראה</option><option value="FAILED">נכשלה</option></select>
       <input type="date" id="waLogFromZ55B" aria-label="מתאריך" title="מתאריך">
       <input type="date" id="waLogToZ55B" aria-label="עד תאריך" title="עד תאריך">
       <button type="button" id="waLogClearFiltersZ55B" class="guest-clear-filters-v180" aria-label="נקה סינון" title="נקה את כל הסינונים והחיפוש"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16l-6 7v5l-4 2v-7z"/><path d="m16 17 5 5m0-5-5 5"/></svg><span>נקה סינון</span></button>
@@ -1307,7 +1308,37 @@ body.light #loginOverlay .login-field input{color-scheme:light}
     </tr></thead><tbody id="waLogBodyZ55B"><tr><td colspan="9">טוען…</td></tr></tbody></table></div>
   </section>
 
-  <section id="page-activity" class="page"><h1>יומן פעילות</h1><div id="activityList" class="list"></div></section>
+
+  <section id="page-eventCosts" class="page cost-page-z58d4">
+    <div class="cost-hero-z58d4"><div><h1>עלויות אירוע</h1><p>ניהול וריכוז כל הוצאות האירוע, כולל עלויות WhatsApp בפועל.</p></div><div class="cost-hero-actions-z58d4"><button class="ui-btn-z58d4 secondary" id="eventCostsRefreshZ58" type="button"><span class="btn-icon">↻</span><span>רענון</span></button><button class="ui-btn-z58d4 primary" id="eventCostAddZ58" type="button"><span class="btn-icon">＋</span><span>הוספת הוצאה</span></button></div></div>
+    <div class="cost-summary-z58d4"><div class="cost-card-z58d4 total"><span class="cost-card-icon-z58d5" aria-hidden="true">₪</span><div><span>סה״כ אירוע</span><strong id="eventCostsTotalZ58">₪0.00</strong></div></div><div class="cost-card-z58d4 actual"><span class="cost-card-icon-z58d5" aria-hidden="true">✓</span><div><span>בפועל</span><strong id="eventCostsActualZ58C">₪0.00</strong></div></div><div class="cost-card-z58d4 expected"><span class="cost-card-icon-z58d5" aria-hidden="true">◷</span><div><span>צפוי</span><strong id="eventCostsExpectedZ58C">₪0.00</strong></div></div><div class="cost-card-z58d4 whatsapp"><span class="cost-card-icon-z58d5" aria-hidden="true">◉</span><div><span>WhatsApp</span><strong id="eventCostsWaZ58">₪0.00</strong></div></div></div>
+    <div class="cost-panel-z58d4 filters-panel-z58d4"><div class="cost-panel-title-z58d4"><strong>סינון עלויות</strong><button type="button" id="eventCostsFiltersToggleZ58C" class="ui-btn-z58d4 ghost compact" aria-controls="eventCostsFiltersZ58C" aria-expanded="true"><span>סינון</span><span>▴</span></button></div><div class="cost-filterbar-z58d4 filters-open-a5" id="eventCostsFiltersZ58C"><div class="cost-search-z58d4"><span>⌕</span><input id="eventCostsSearchZ58C" placeholder="חיפוש לפי תיאור, קטגוריה או תבנית"></div><select id="eventCostsEventZ58"><option value="">כל האירועים</option></select><select id="eventCostsCategoryZ58C"><option value="">כל הקטגוריות</option></select><select id="eventCostsTypeZ58C"><option value="">כל המצבים</option><option value="ACTUAL">בפועל</option><option value="EXPECTED">צפויה</option><option value="WHATSAPP">WhatsApp</option></select><input type="date" id="eventCostsFromZ58C" title="מתאריך"><input type="date" id="eventCostsToZ58C" title="עד תאריך"><button type="button" id="eventCostsClearZ58C" class="ui-btn-z58d4 filter"><span>⌫</span><span>נקה סינון</span></button></div></div>
+    <div class="cost-panel-z58d4 table-panel-z58d4"><div class="cost-table-toolbar-z58d4"><strong>פירוט עלויות</strong><div id="eventCostsNoticeZ58C" class="cost-count-z58d4" role="status"></div></div><div class="table-wrap"><table class="cost-table-z58d4"><thead><tr><th class="sortable" data-cost-sort="date">תאריך <span>↕</span></th><th class="sortable" data-cost-sort="category">קטגוריה <span>↕</span></th><th class="sortable" data-cost-sort="description">תיאור <span>↕</span></th><th class="sortable" data-cost-sort="amount">סכום <span>↕</span></th><th class="sortable" data-cost-sort="costType">מצב <span>↕</span></th><th class="event-cost-admin-tech-z58a sortable" data-cost-sort="source">מקור <span>↕</span></th><th>הערות</th><th>פעולות</th></tr></thead><tbody id="eventCostsBodyZ58"><tr><td colspan="8">טוען…</td></tr></tbody></table></div></div>
+    <div id="eventCostsByEventWrapZ58" class="cost-panel-z58d4" hidden><div class="cost-table-toolbar-z58d4"><strong>סיכום לפי אירוע</strong></div><div class="table-wrap"><table class="cost-table-z58d4"><thead><tr><th>אירוע</th><th>הוצאות</th><th>WhatsApp</th><th>סה״כ</th></tr></thead><tbody id="eventCostsByEventZ58"></tbody></table></div></div>
+  </section>
+
+  <section id="page-activity" class="page">
+    <div class="page-head"><div><h1>יומן פעילות</h1><p class="muted">מעקב אחר פעולות שבוצעו במערכת.</p></div><div class="actions activity-log-actions-z57"><button type="button" id="activityRefreshZ57" class="wa-log-action-btn-z55c refresh">↻ רענון</button><button type="button" id="activityPurgeZ57" class="wa-log-action-btn-z55c purge">🗑 ניקוי לוג</button></div></div>
+    <button type="button" id="activityFiltersToggleZ57" class="guest-filters-toggle-a5 guest-area-a19" aria-controls="activityFiltersZ57" aria-expanded="false">⚲ <span>הצג סינון</span> <span aria-hidden="true">▾</span></button>
+    <div class="filters" id="activityFiltersZ57">
+      <div class="search-field"><span class="search-icon" aria-hidden="true">⌕</span><input id="activitySearchZ57" placeholder="חיפוש בתיאור, פעולה או מזהה"></div>
+      <select id="activityUserZ57"><option value="">כל המשתמשים</option></select>
+      <select id="activityActionZ57"><option value="">כל הפעולות</option></select>
+      <select id="activityTypeZ57"><option value="">כל סוגי הרשומות</option></select>
+      <input type="date" id="activityFromZ57" aria-label="מתאריך" title="מתאריך">
+      <input type="date" id="activityToZ57" aria-label="עד תאריך" title="עד תאריך">
+      <button type="button" id="activityClearFiltersZ57" class="guest-clear-filters-v180" aria-label="נקה סינון" title="נקה את כל הסינונים והחיפוש"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16l-6 7v5l-4 2v-7z"/><path d="m16 17 5 5m0-5-5 5"/></svg><span>נקה סינון</span></button>
+    </div>
+    <div id="activityNoticeZ57" class="guest-count-status-v178" role="status" aria-live="polite"></div>
+    <div class="table-wrap guest-table-area-a19"><table class="guests-table activity-log-table-z57"><thead><tr>
+      <th class="sortable" data-activity-sort="at" tabindex="0">זמן <span class="sort-icon">↓</span></th>
+      <th class="sortable" data-activity-sort="userName" tabindex="0">משתמש <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-activity-sort="action" tabindex="0">פעולה <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-activity-sort="entityType" tabindex="0">סוג רשומה <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-activity-sort="entityId" tabindex="0">מזהה <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-activity-sort="details" tabindex="0">פרטים <span class="sort-icon">↕</span></th>
+    </tr></thead><tbody id="activityBodyZ57"><tr><td colspan="6">טוען…</td></tr></tbody></table></div>
+  </section>
   <section id="page-admin" class="page">
     <div class="page-head"><h1>ניהול והגדרות</h1></div>
     <div class="admin-tabs" id="adminTabs">
@@ -1364,11 +1395,11 @@ body.light #loginOverlay .login-field input{color-scheme:light}
   </div>
 </div>
 
-<script src="js/config.js?v=1.1.90A19P2F14Z52"></script>
-<script src="js/version.js?v=V1.1.90A19P2F14Z56"></script>
-<script src="js/session.js?v=1.1.90A19P2F14Z52"></script>
-<script src="js/api.js?v=1.1.90A19P2F14Z52"></script>
-<script src="js/app.js?v=V1.1.90A19P2F14Z56"></script>
-<script src="js/templates.js?v=1.1.90A19P2F14Z52"></script>
+<script src="js/config.js?v=V1.1.90A19P2F14Z58D5C"></script>
+<script src="js/version.js?v=V1.1.90A19P2F14Z58D5C"></script>
+<script src="js/session.js?v=V1.1.90A19P2F14Z58D5C"></script>
+<script src="js/api.js?v=V1.1.90A19P2F14Z58D5C"></script>
+<script src="js/app.js?v=V1.1.90A19P2F14Z58D5C"></script>
+<script src="js/templates.js?v=V1.1.90A19P2F14Z58D5C"></script>
 </body>
 </html>

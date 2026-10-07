@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z52 */
+/* V1.1.90A19P2F14Z58D5C */
 const API = {
   async request(action, payload={}) {
     const body={action, ...payload};
@@ -74,11 +74,11 @@ const MockAPI = {
   async request(action,p={}) {
     const ok=(data={})=>Promise.resolve({ok:true,...data});
     if(action==="login"){
-      if(p.email==="admin@family.local" && p.password==="admin123") return ok({session:{token:"demo",id:"USR-1",name:"Admin",email:p.email,role:"Admin",expiresAt:Date.now()+8*3600e3},serverVersion:APP_VERSION.REQUIRED_SERVER_VERSION});
+      if(p.email==="admin@family.local" && p.password==="admin123") return ok({session:{token:"demo",id:"USR-1",name:"Admin",email:p.email,role:"Admin",expiresAt:Date.now()+8*3600e3},serverVersion:APP_VERSION.FRONTEND_VERSION});
       throw new Error("שם משתמש או סיסמה שגויים");
     }
     if(action==="bootstrap") return ok({
-      serverVersion:APP_VERSION.REQUIRED_SERVER_VERSION,
+      serverVersion:APP_VERSION.FRONTEND_VERSION,
       events:this.events,guests:this.guests,tables:this.tables,activity:this.activity,lookups:this.lookups,
       adminData:{users:this.users,roles:this.roles,permissions:this.permissions,whatsapp:this.whatsapp}
     });
