@@ -4,7 +4,8 @@
  let theme='dark';try{const x=localStorage.getItem('events_navigation_theme');if(x==='light'||x==='dark')theme=x}catch(_){}
  function applyTheme(){document.documentElement.dataset.theme=theme;toggle.textContent=theme==='dark'?'☀️ מצב בהיר':'🌙 מצב כהה'}
  toggle.onclick=()=>{theme=theme==='dark'?'light':'dark';applyTheme();try{localStorage.setItem('events_navigation_theme',theme)}catch(_){}};applyTheme();
- const eventId=new URLSearchParams(location.search).get('eventId');
+ const urlParams=new URLSearchParams(location.search);
+ const eventId=urlParams.get('eventId')||urlParams.get('event');
  const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n};
  const svgLogo=(kind)=>{
   const wrap=el('span',undefined,'nav-logo');
