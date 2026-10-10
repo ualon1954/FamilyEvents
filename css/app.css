@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5C */
+/* V1.1.90A19P2F14Z58D5D53 */
 /* F14Z53B — Meta pricing watch */
 .pricing-watch-status-z53b{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);line-height:1.6}
 .pricing-watch-actions-z53b{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-start;align-items:center}.pricing-watch-actions-z53b button{white-space:nowrap}
@@ -20,3 +20,86 @@
 button[aria-busy="true"]{cursor:wait;opacity:.82}
 @keyframes admin-spin-z53b6{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.admin-spinner-z53b6{animation-duration:1.5s}}
+
+/* F14Z58D5D2 — template mapping admin */
+.system-section-title-d5d2{margin:28px 0 10px}.wa-mapping-card-d5d2 code{direction:ltr;display:inline-block}.wa-map-row-d5d2{display:grid;grid-template-columns:minmax(110px,.7fr) minmax(180px,1.3fr);gap:12px;align-items:center;margin:10px 0}.wa-map-row-d5d2 select{width:100%}@media(max-width:650px){.wa-map-row-d5d2{grid-template-columns:1fr}}
+
+/* F14Z58D5D4 — Meta-context template mapping */
+.wa-map-token-d5d4{display:flex;flex-direction:column;gap:5px}.wa-map-token-d5d4 small{font-weight:400;line-height:1.45;opacity:.8;white-space:normal}.wa-map-token-d5d4 b{direction:ltr;display:inline-block}
+/* V1.1.90A19P2F14Z58D5D8 — compact template-local variable mapping */
+.tpl-mapping-d5d5{margin:16px 0;padding:14px;border:1px solid var(--border,#3b4353);border-radius:12px}
+.tpl-mapping-d5d5 h3{margin-top:0}.tpl-map-row-d5d5{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,280px);gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(128,128,128,.2)}
+.tpl-map-row-d5d5 span{display:flex;flex-direction:column;gap:4px}.tpl-map-row-d5d5 small{opacity:.78;line-height:1.35}.tpl-map-row-d5d5 select{width:100%}
+@media(max-width:700px){.tpl-map-row-d5d5{grid-template-columns:1fr}}
+
+/* F14Z58D5D6 — compact template mapping editor */
+#page-messages .tpl-dialog{width:min(1180px,92vw);max-height:90vh;overflow-y:auto;overflow-x:hidden}
+#page-messages .tpl-shade{overflow:hidden}
+.tpl-mapping-d5d5{margin:14px 0;padding:12px}
+.tpl-map-row-d5d5{display:grid;grid-template-columns:72px minmax(220px,1fr) minmax(220px,320px);gap:12px;align-items:center;padding:7px 0;margin:0;border-bottom:1px solid rgba(128,128,128,.2)}
+.tpl-map-row-d5d5 small{opacity:.8;line-height:1.3;white-space:normal}.tpl-map-row-d5d5 select{width:100%;margin:0!important}
+.tpl-preview-details-d5d6{margin-top:14px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.tpl-preview-details-d5d6 summary{cursor:pointer;font-weight:700}.tpl-preview-details-d5d6 .tpl-preview{margin-top:10px}
+@media(max-width:700px){#page-messages .tpl-dialog{width:96vw;max-height:92vh;padding:14px}.tpl-map-row-d5d5{grid-template-columns:1fr;gap:6px}}
+
+/* F14Z58D5D8 — wide two-column template editor, one vertical scrollbar */
+@media(min-width:901px){
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27){width:min(1420px,86vw)!important;max-width:none!important;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(340px,.65fr);gap:0 24px;align-items:start;max-height:90vh;overflow-y:auto!important;overflow-x:hidden!important;scrollbar-gutter:stable}
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>h2,
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>#tplEditorNotice,
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>.grid,
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>.tpl-v3-note-f14e{grid-column:1/-1}
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>label:has(#tplBody),
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>#tplMappingD5D5,
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>.actions{grid-column:1}
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>#tplImageArea,
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>.tpl-preview-details-d5d6{grid-column:2}
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>#tplImageArea{grid-row:5/span 2;margin-top:0}
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>.tpl-preview-details-d5d6{grid-row:7;margin-top:14px}
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>label:has(#tplBody){grid-row:5}
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>#tplMappingD5D5{grid-row:6}
+ #page-messages .tpl-dialog:not(.tpl-manager-mode-f14z27)>.actions{grid-row:7}
+}
+#page-messages #tplBody{overflow:hidden!important;resize:none;min-height:0}
+#page-messages #tplImageArea{overflow:visible!important;max-height:none!important}
+#page-messages .tpl-preview-details-d5d6{overflow:visible!important;max-height:none!important}
+@media(max-width:900px){#page-messages .tpl-dialog{width:96vw!important;display:block!important;overflow-y:auto!important;overflow-x:hidden!important}#page-messages #tplBody{overflow:hidden!important}}
+
+/* D5D23: accessible close control in template modal, including mobile and admin layouts. */
+#page-messages #tplEditor{position:relative;padding-top:48px!important}
+#page-messages #tplCloseX.tpl-close-x{position:sticky;top:0;float:left;z-index:15;display:grid;place-items:center;width:36px;height:36px;margin:-35px 0 0 -4px;border:1px solid var(--line);border-radius:50%;background:var(--card2);color:var(--text);font-size:27px;line-height:1;cursor:pointer}
+#page-messages #tplCloseX.tpl-close-x:hover,#page-messages #tplCloseX.tpl-close-x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* D5D24: left aligned, theme-aware template modal close control. */
+#page-messages #tplEditor{position:relative!important}
+#page-messages #tplCloseX.tpl-close-x{position:absolute!important;left:12px!important;right:auto!important;top:10px!important;float:none!important;margin:0!important;background:var(--card2)!important;color:var(--text)!important;border:1px solid var(--line)!important;box-shadow:none!important}
+
+/* D5D26: modal X is a sibling of the scrollable dialog, never clipped by its overflow. */
+#page-messages #tplShade{position:fixed!important;isolation:isolate}
+#page-messages #tplShade > #tplCloseX.tpl-close-x{
+ position:fixed!important;top:max(12px,calc(5vh + 10px))!important;
+ left:max(12px,calc((100vw - min(1180px,92vw))/2 + 12px))!important;
+ right:auto!important;margin:0!important;float:none!important;
+ display:grid!important;visibility:visible!important;opacity:1!important;
+ place-items:center!important;width:38px!important;height:38px!important;
+ z-index:10002!important;border-radius:50%!important;
+ background:var(--card2,var(--card))!important;color:var(--text)!important;
+ border:1px solid var(--line)!important;box-shadow:0 2px 10px #0003!important;
+ cursor:pointer!important;font-size:26px!important;line-height:1!important;
+}
+@media(max-width:700px){#page-messages #tplShade > #tplCloseX.tpl-close-x{left:16px!important;top:16px!important}}
+
+/* D5D28: modal close is anchored to its own header, never to viewport. */
+#page-messages #tplShade[hidden]{display:none!important}
+#page-messages #tplEditor .tpl-modal-header-d28{display:flex!important;direction:ltr!important;align-items:center!important;gap:12px!important;position:sticky!important;top:0!important;z-index:60!important;background:var(--card2,var(--card))!important;color:var(--text)!important;padding:8px 10px!important;margin:-8px -8px 12px!important;border-bottom:1px solid var(--line)!important;grid-column:1/-1!important}
+#page-messages #tplEditor .tpl-modal-header-d28 #tplEditorTitle{flex:1!important;text-align:right!important;direction:rtl!important;margin:0!important}
+#page-messages #tplEditor .tpl-modal-header-d28 #tplCloseX.tpl-close-x{position:static!important;inset:auto!important;top:auto!important;left:auto!important;right:auto!important;float:none!important;margin:0!important;flex:0 0 38px!important;display:grid!important;place-items:center!important;width:38px!important;height:38px!important;border-radius:50%!important;background:var(--card2,var(--card))!important;color:var(--text)!important;border:1px solid var(--line)!important;box-shadow:none!important;cursor:pointer!important;font-size:26px!important;line-height:1!important}
+#page-messages #tplEditor .tpl-modal-header-d28 #tplCloseX:hover{outline:2px solid var(--accent)!important}
+
+/* D5D30: RTL template modal header and right-aligned close */
+#page-messages #tplEditor .tpl-modal-header-d28{direction:rtl!important}
+
+/* D5D30: close control is the first item on the RIGHT in RTL flex layout. */
+#page-messages #tplEditor .tpl-modal-header-d28{direction:rtl!important;flex-direction:row!important}
+#page-messages #tplEditor .tpl-modal-header-d28 #tplCloseX.tpl-close-x{order:-1!important;flex-shrink:0!important}
+#page-messages #tplEditor .tpl-modal-header-d28 #tplEditorTitle{order:0!important;text-align:right!important}
+#page-messages #tplPreviewEventWrapD5D17{display:none!important}

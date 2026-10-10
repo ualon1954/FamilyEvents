@@ -1,4 +1,4 @@
-<!-- V1.1.90A19P2F14Z58D5C -->
+<!-- V1.1.90A19P2F14Z58D5D53 -->
 <!doctype html>
 <html lang="he" dir="rtl">
 <head>
@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ניהול אירועים</title>
   <link rel="icon" href="./favicon.ico" sizes="any">
-  <link rel="stylesheet" href="./css/styles.css?v=V1.1.90A19P2F14Z58D5C">
+  <link rel="stylesheet" href="./css/styles.css?v=V1.1.90A19P2F14Z58D5D53">
   <!-- V1.1.5: embedded CSS fallback. Keeps the UI styled even if hosting/path setup blocks the external CSS file. -->
   <style id="embeddedStylesV1112">
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
@@ -1254,7 +1254,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       <div id="seatingWorkspaceV170"></div>
     </div>
   </section>
-  <section id="page-messages" class="page"><div class="page-head"><h1 id="tplPageTitle">ניהול תבניות WhatsApp</h1><div class="tpl-page-actions"><select id="tplSyncEnvironment" aria-label="סביבת Meta"><option value="PRODUCTION">PRODUCTION</option><option value="TEST">TEST</option></select><button class="primary" id="tplSyncMeta">🔄 סנכרון תבניות מ־Meta</button></div></div><p class="tpl-note" id="tplAdminNote">Meta היא מקור האמת לתוכן ולסטטוס התבניות. כאן מנהלים את שם התצוגה, מטרת השימוש והאם התבנית פעילה במערכת.</p><p class="tpl-note" id="tplManagerNote" hidden>התבניות מוצגות לקריאה בלבד. ניתן להחליף את תמונת ההזמנה בתבנית הכוללת תמונה.</p><div id="tplNotice" role="status"></div><div class="panel"><div id="tplList">טוען תבניות…</div></div><div class="tpl-shade" id="tplShade" hidden><div class="panel tpl-dialog" id="tplEditor" role="dialog" aria-modal="true"><h2 id="tplEditorTitle">עריכת תבנית</h2><div id="tplEditorNotice" role="status"></div><div class="grid"><label>שם תבנית <span class="tpl-required">*</span><input id="tplName" maxlength="120" required></label><label>סוג אירוע<select id="tplEventType"><option value="">כל סוגי האירועים</option></select></label><label>מטרה<select id="tplPurpose"><option value="invitation">הזמנה לאירוע</option><option value="rsvp_update">תזכורת לאישור הגעה</option><option value="table_update">שיוך שולחנות וניווט</option><option value="table_payment_update">שיוך שולחנות, ניווט ותשלום</option><option value="thank_you">תודה למשתתפים</option></select></label><label>פעילה במערכת<select id="tplActive"><option value="true">כן</option><option value="false">לא</option></select></label><label>שם תבנית ב־Meta<input id="tplMetaName" readonly></label><label>סטטוס Meta<input id="tplMetaStatus" readonly></label><label>קטגוריית Meta<input id="tplMetaCategory" readonly></label></div><p class="tpl-v3-note-f14e">V3: גוף ההודעה נקרא אוטומטית מתבנית Meta ואינו נערך במערכת. תמונת Header נשארת בשליטת מנהל האירוע; Body {{1}} הוא הפנייה האישית וכפתור ״אישור הגעה״ משתמש במפתח RSVP.</p><label>נוסח ההודעה מ־Meta<textarea id="tplBody" rows="7" maxlength="3500" readonly></textarea></label><div class="actions"><button class="primary" id="tplSave">שמור הגדרות</button><button class="secondary" id="tplCancel">ביטול</button></div><div id="tplImageArea" hidden><label>תמונת תבנית (PNG/JPG/WEBP, עד 4MB)<input type="file" id="tplImage" accept="image/png,image/jpeg,image/webp"></label><div id="tplImageInfo"></div><img id="tplImagePreview" class="tpl-image-preview" alt="תמונת התבנית" hidden><button type="button" class="secondary" id="tplReplaceImage">החלף תמונה</button><button type="button" class="secondary" id="tplRemoveImage">הסר תמונה</button></div><h3>תצוגה מקדימה — דוגמה בלבד</h3><div class="tpl-preview" id="tplPreview"><div id="tplPreviewText"></div><img id="tplImageView" class="tpl-image-preview" alt="תמונת ההודעה" hidden></div></div></div></section>
+  <section id="page-messages" class="page"><div class="page-head"><h1 id="tplPageTitle">ניהול תבניות WhatsApp</h1><div class="tpl-page-actions"><select id="tplSyncEnvironment" aria-label="סביבת Meta"><option value="PRODUCTION">PRODUCTION</option><option value="TEST">TEST</option></select><button class="primary" id="tplSyncMeta">🔄 סנכרון תבניות מ־Meta</button></div></div><p class="tpl-note" id="tplAdminNote">Meta היא מקור האמת לתוכן ולסטטוס התבניות. כאן מנהלים את שם התצוגה, מטרת השימוש והאם התבנית פעילה במערכת.</p><p class="tpl-note" id="tplManagerNote" hidden>מוצגות רק תבניות PROD פעילות. תמונת ההזמנה מנוהלת במסך האירוע.</p><div id="tplNotice" role="status"></div><div class="panel"><div id="tplList">טוען תבניות…</div></div><div class="tpl-shade" id="tplShade" hidden><div class="panel tpl-dialog" id="tplEditor" role="dialog" aria-modal="true"><div class="tpl-modal-header-d28"><button type="button" id="tplCloseX" class="tpl-close-x" aria-label="סגירת חלון התבנית" title="סגור">×</button><h2 id="tplEditorTitle">עריכת תבנית</h2></div><div id="tplEditorNotice" role="status"></div><div class="grid"><label>שם תבנית <span class="tpl-required">*</span><input id="tplName" maxlength="120" required></label><label>מטרה<select id="tplPurpose"><option value="invitation">הזמנה לאירוע</option><option value="rsvp_update">תזכורת לאישור הגעה</option><option value="table_update">שיוך שולחנות וניווט</option><option value="table_payment_update">שיוך שולחנות, ניווט ותשלום</option><option value="thank_you">תודה למשתתפים</option></select></label><label>פעילה במערכת<select id="tplActive"><option value="true">כן</option><option value="false">לא</option></select></label><label>שם תבנית ב־Meta<input id="tplMetaName" readonly></label><label>סטטוס Meta<input id="tplMetaStatus" readonly></label><label>קטגוריית Meta<input id="tplMetaCategory" readonly></label></div><p class="tpl-v3-note-f14e">V3: גוף ההודעה נקרא אוטומטית מתבנית Meta ואינו נערך במערכת. תמונת Header מוגדרת בנפרד לכל אירוע; Body {{1}} הוא הפנייה האישית וכפתור ״אישור הגעה״ משתמש במפתח RSVP.</p><label>נוסח ההודעה מ־Meta<textarea id="tplBody" rows="7" maxlength="3500" readonly></textarea></label><div class="actions"><button class="primary" id="tplSave">שמור הגדרות</button><button class="secondary" id="tplCancel">ביטול</button></div><div id="tplImageArea" hidden><label>תמונת תבנית (PNG/JPG/WEBP, עד 4MB)<input type="file" id="tplImage" accept="image/png,image/jpeg,image/webp"></label><div id="tplImageInfo"></div><img id="tplImagePreview" class="tpl-image-preview" alt="תמונת התבנית" hidden><button type="button" class="secondary" id="tplReplaceImage">החלף תמונה</button><button type="button" class="secondary" id="tplRemoveImage">הסר תמונה</button></div></div></div></section>
 
   <section id="page-about" class="page">
     <div class="about-hero">
@@ -1303,9 +1303,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       <th class="sortable" data-wa-sort="templateName" tabindex="0">תבנית <span class="sort-icon">↕</span></th>
       <th class="sortable" data-wa-sort="environment" tabindex="0">סביבה <span class="sort-icon">↕</span></th>
       <th class="sortable" data-wa-sort="status" tabindex="0">סטטוס <span class="sort-icon">↕</span></th>
-      <th class="sortable" data-wa-sort="wamid" tabindex="0">wamid <span class="sort-icon">↕</span></th>
-      <th class="sortable" data-wa-sort="errorMessage" tabindex="0">שגיאה <span class="sort-icon">↕</span></th>
-    </tr></thead><tbody id="waLogBodyZ55B"><tr><td colspan="9">טוען…</td></tr></tbody></table></div>
+    </tr></thead><tbody id="waLogBodyZ55B"><tr><td colspan="7">טוען…</td></tr></tbody></table></div>
   </section>
 
 
@@ -1395,11 +1393,11 @@ body.light #loginOverlay .login-field input{color-scheme:light}
   </div>
 </div>
 
-<script src="js/config.js?v=V1.1.90A19P2F14Z58D5C"></script>
-<script src="js/version.js?v=V1.1.90A19P2F14Z58D5C"></script>
-<script src="js/session.js?v=V1.1.90A19P2F14Z58D5C"></script>
-<script src="js/api.js?v=V1.1.90A19P2F14Z58D5C"></script>
-<script src="js/app.js?v=V1.1.90A19P2F14Z58D5C"></script>
-<script src="js/templates.js?v=V1.1.90A19P2F14Z58D5C"></script>
+<script src="js/config.js?v=V1.1.90A19P2F14Z58D5D53"></script>
+<script src="js/version.js?v=V1.1.90A19P2F14Z58D5D53"></script>
+<script src="js/session.js?v=V1.1.90A19P2F14Z58D5D53"></script>
+<script src="js/api.js?v=V1.1.90A19P2F14Z58D5D53"></script>
+<script src="js/app.js?v=V1.1.90A19P2F14Z58D5D53"></script>
+<script src="js/templates.js?v=V1.1.90A19P2F14Z58D5D53"></script>
 </body>
 </html>

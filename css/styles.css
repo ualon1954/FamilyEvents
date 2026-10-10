@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5C */
+/* V1.1.90A19P2F14Z58D5D53 */
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Hebrew",sans-serif;background:var(--bg);color:var(--text)}
 body.light{--bg:#f5f7fa;--card:#fff;--card2:#eef2f6;--text:#18212b;--muted:#65727e;--line:#d8dee4}
@@ -1483,3 +1483,33 @@ button[aria-busy="true"]{cursor:wait;opacity:.82}
 .event-cost-modal-z58d4 .modal-x{left:14px;top:14px;width:40px;height:40px;border:1px solid rgba(72,149,237,.38);border-radius:11px;background:rgba(35,136,245,.14);color:#eaf4ff;font-size:0;display:grid;place-items:center;transition:.16s;z-index:4}.event-cost-modal-z58d4 .modal-x:before{content:'×';font-size:28px;line-height:1}.event-cost-modal-z58d4 .modal-x:hover{background:rgba(35,136,245,.28);border-color:#4b9ff1;transform:translateY(-1px);box-shadow:0 7px 18px rgba(0,0,0,.2)}.event-cost-modal-z58d4 .modal-x:focus-visible{outline:3px solid rgba(35,136,245,.3);outline-offset:2px}
 .event-cost-modal-z58d4{max-height:calc(100dvh - 32px)!important;overflow-y:auto!important;scrollbar-gutter:stable}.cost-actions-z58d4 .ui-btn-z58d4{min-width:112px}.cost-pricing-z58d4:empty{display:none}
 @media(max-width:760px){.cost-card-z58d4{gap:10px}.cost-card-icon-z58d5{width:38px;height:38px;flex-basis:38px;border-radius:11px}.cost-card-z58d4 strong{font-size:1.28rem}}
+
+/* D5D — WhatsApp log diagnostics */
+#page-whatsappLog #waLogSummaryZ55B .guest-stat-card-v178{cursor:pointer;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+#page-whatsappLog #waLogSummaryZ55B .guest-stat-card-v178:hover{transform:translateY(-2px)}
+#page-whatsappLog #waLogSummaryZ55B .wa-card-active-d5d{outline:2px solid currentColor;box-shadow:0 0 0 3px color-mix(in srgb,currentColor 18%,transparent)}
+#waLogBodyZ55B tr[data-wa-row]{cursor:pointer}
+.wa-detail-modal-d5d{min-width:min(760px,92vw)}.wa-detail-modal-d5d h2{margin-top:0}.wa-detail-grid-d5d{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px}.wa-detail-item-d5d{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}.wa-detail-item-d5d span,.wa-detail-error-d5d span{display:block;font-size:.82rem;color:var(--muted);margin-bottom:4px}.wa-detail-item-d5d strong{overflow-wrap:anywhere}.wa-detail-error-d5d{margin-top:14px;padding:12px;border:1px solid var(--danger,#b42318);border-radius:10px}.wa-detail-error-d5d pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;direction:ltr;text-align:left}@media(max-width:650px){.wa-detail-grid-d5d{grid-template-columns:1fr}}
+
+/* F14Z58D5D2 — template mapping admin */
+.system-section-title-d5d2{margin:28px 0 10px}.wa-mapping-card-d5d2 code{direction:ltr;display:inline-block}.wa-map-row-d5d2{display:grid;grid-template-columns:minmax(110px,.7fr) minmax(180px,1.3fr);gap:12px;align-items:center;margin:10px 0}.wa-map-row-d5d2 select{width:100%}@media(max-width:650px){.wa-map-row-d5d2{grid-template-columns:1fr}}
+
+/* F14Z58D5D4 — Meta-context template mapping */
+.wa-map-token-d5d4{display:flex;flex-direction:column;gap:5px}.wa-map-token-d5d4 small{font-weight:400;line-height:1.45;opacity:.8;white-space:normal}.wa-map-token-d5d4 b{direction:ltr;display:inline-block}
+
+/* D5D14 — Event Manager preview: no empty generic preview/header containers. */
+.tpl-manager-mode-f14z27 > .tpl-preview-details-d5d6{display:none!important}
+.tpl-manager-preview-f14z27 .wa-preview-card-f14g:not(:has(.wa-preview-image-wrap-f14g)){padding-top:0}
+
+/* D5D25: event editor must scroll inside the viewport, including on desktop. */
+#modal.show:has(#eventForm){display:flex!important;align-items:center;justify-content:center;padding:8px;overflow:hidden}
+#modal .modal.event-editor-d5d25{width:min(760px,calc(100vw - 16px));max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;scrollbar-gutter:stable;min-height:0;display:block;position:relative}
+#modal .modal.event-editor-d5d25 .modal-x{position:sticky;top:0;float:left;z-index:15;background:var(--card2);color:var(--text);border:1px solid var(--line);border-radius:9px;min-width:38px;min-height:38px;line-height:1}
+#modal .modal.event-editor-d5d25 #eventForm{clear:both;min-width:0}
+#modal .modal.event-editor-d5d25 #eventForm>*{min-width:0}
+#modal .modal.event-editor-d5d25 #eventForm .actions{position:sticky;bottom:-24px;z-index:10;background:var(--card);padding:12px 0;border-top:1px solid var(--line)}
+@media(max-width:650px){#modal .modal.event-editor-d5d25 #eventForm{grid-template-columns:minmax(0,1fr)}#modal .modal.event-editor-d5d25 #eventForm .actions{bottom:-18px}}
+
+/* D5D31 - navigation test buttons in event editor */
+.event-navigation-tests-d31{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+.event-navigation-tests-d31 button{width:auto;max-width:100%;padding:8px 12px;cursor:pointer}

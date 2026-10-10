@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5C */
+/* V1.1.90A19P2F14Z58D5D53 */
 (async function(){
  const out=document.getElementById('content'),toggle=document.getElementById('themeToggle');
  let theme='dark';try{const x=localStorage.getItem('events_navigation_theme');if(x==='light'||x==='dark')theme=x}catch(_){}
