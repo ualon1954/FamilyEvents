@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q58 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q59 */
 // Only use a candidate returned by the current, event-scoped inspection.
 function waQuarantineCandidateFromInspectionQ9_(result,eventId){
   const c=result&&result.quarantineCandidate;
@@ -2112,7 +2112,7 @@ async function waReadSettledAfterLossQ33_(id,eventId,total,expectedAttempted,bas
   }
   return null;
 }
-function waBulkProgressWindowZ22_(sourceBox, sourceStop, sourceJournal, title, total=0,environmentOverrideQ37=null){
+function waBulkProgressWindowZ22_(sourceBox, sourceStop, sourceJournal, title, total=0,environmentOverrideQ37=null,allowStopQ59=true){
   if(!['Admin','EventManager'].includes(state.session?.role))return {finish(){},dispose(){}};
   document.querySelectorAll('.wa-bulk-overlay-z22').forEach(el=>el.remove());
   const root=document.createElement('section');
@@ -2275,15 +2275,15 @@ function waBulkProgressWindowZ22_(sourceBox, sourceStop, sourceJournal, title, t
   const observer=new MutationObserver(refresh);
   if(sourceBox)observer.observe(sourceBox,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['value']});
   const timer=setInterval(()=>{if(!finished)refresh();},1000);
-  if(!sourceStop)stop.hidden=true;
+  if(!sourceStop||!allowStopQ59)stop.hidden=true;
   if(!sourceJournal)journal.hidden=true;
-  stop.onclick=()=>{if(!sourceStop||sourceStop.disabled||stop.disabled)return;if(isTestProgressF23){paintStopQ26('pending');sourceStop.click();refresh();return;}refresh();$('[data-confirm-text]').textContent=`טופלו ${done} מתוך ${total}; נותרו ${Math.max(0,total-done)} הודעות.`;confirmBox.hidden=false;};
+  stop.onclick=()=>{if(!allowStopQ59||!sourceStop||sourceStop.disabled||stop.disabled)return;if(isTestProgressF23){paintStopQ26('pending');sourceStop.click();refresh();return;}refresh();$('[data-confirm-text]').textContent=`טופלו ${done} מתוך ${total}; נותרו ${Math.max(0,total-done)} הודעות.`;confirmBox.hidden=false;};
   $('[data-cancel]').onclick=()=>{confirmBox.hidden=true;};
   $('[data-confirm]').onclick=()=>{confirmBox.hidden=true;if(sourceStop){sourceStop.dataset.waBulkConfirmed='1';sourceStop.click();delete sourceStop.dataset.waBulkConfirmed;}refresh();};
   const dispose=()=>{disposedFIX49=true;deliveryPollGenerationQ6++;if(deliveryPollFIX49)clearTimeout(deliveryPollFIX49);deliveryPollFIX49=null;observer.disconnect();clearInterval(timer);root.remove();if(sourceBox){sourceBox.hidden=true;sourceBox.classList.remove('wa-progress-delegated-z15');}};
   journal.onclick=()=>{dispose();sourceJournal?.click();};close.onclick=dispose;
   refresh();
-  return {setRecoveryReaderQ48(fn){recoveryReaderQ48=fn;recoveryButtonQ48.hidden=!fn;},setStopStateQ25(phase,message){stopMessageQ25=message;$('[data-left-label]').textContent='לא טופלו';paintStopQ26(phase);if(finished)stop.hidden=phase!=='failed';refresh();},addMessageId(id){if(id&&!deliveryIdsFIX24.includes(String(id))&&deliveryIdsFIX24.length<total){deliveryIdsFIX24.push(String(id));if(!deliveryPollStartedQ6)deliveryPollStartedQ6=Date.now();if(deliveryBusyFIX24)deliveryRescanQ54=true;else{if(deliveryPollFIX49!==null)clearTimeout(deliveryPollFIX49);deliveryPollFIX49=setTimeout(()=>{deliveryPollFIX49=null;refreshDeliveryFIX24();},1000);}paintCountsQ37();}},finish(message,failed=false,allowStopRetryQ25=false,optionsQ37={}){refresh();finished=true;finishWarningQ37=!!failed;if(optionsQ37.canceled===true&&!sourceBox?.waProgressQ33?.uncertain)canceledQ37=Math.max(0,total-done);paintCountsQ37();observer.disconnect();clearInterval(timer);stop.hidden=!allowStopRetryQ25;journal.hidden=!sourceJournal;close.hidden=false;if(deliveryIdsFIX24.length){$('.wa-bulk-delivery-stats-fix44').hidden=false;deliveryPanelFIX24.hidden=false;deliveryButtonFIX24.hidden=false;// Q6: keep polling delivery independently after send completion, for up to 3 minutes.
+  return {setRecoveryReaderQ48(fn){recoveryReaderQ48=fn;recoveryButtonQ48.hidden=!fn;},setStopStateQ25(phase,message){stopMessageQ25=message;$('[data-left-label]').textContent='לא טופלו';paintStopQ26(phase);if(finished)stop.hidden=!allowStopQ59||phase!=='failed';refresh();},addMessageId(id){if(id&&!deliveryIdsFIX24.includes(String(id))&&deliveryIdsFIX24.length<total){deliveryIdsFIX24.push(String(id));if(!deliveryPollStartedQ6)deliveryPollStartedQ6=Date.now();if(deliveryBusyFIX24)deliveryRescanQ54=true;else{if(deliveryPollFIX49!==null)clearTimeout(deliveryPollFIX49);deliveryPollFIX49=setTimeout(()=>{deliveryPollFIX49=null;refreshDeliveryFIX24();},1000);}paintCountsQ37();}},finish(message,failed=false,allowStopRetryQ25=false,optionsQ37={}){refresh();finished=true;finishWarningQ37=!!failed;if(optionsQ37.canceled===true&&!sourceBox?.waProgressQ33?.uncertain)canceledQ37=Math.max(0,total-done);paintCountsQ37();observer.disconnect();clearInterval(timer);stop.hidden=!allowStopQ59||!allowStopRetryQ25;journal.hidden=!sourceJournal;close.hidden=false;if(deliveryIdsFIX24.length){$('.wa-bulk-delivery-stats-fix44').hidden=false;deliveryPanelFIX24.hidden=false;deliveryButtonFIX24.hidden=false;// Q6: keep polling delivery independently after send completion, for up to 3 minutes.
     // The first request starts immediately; each next poll is scheduled on completion.
     deliveryPollStartedQ6=Date.now();if(deliveryBusyFIX24)deliveryRescanQ54=true;refreshDeliveryFIX24();
     }root.classList.toggle('wa-bulk-failed-z22',!!failed);},dispose};
@@ -2318,13 +2318,13 @@ async function waResumePairQueueQ51_(detail){
   const controller=waStopControllerQ25_(()=>detail.id,eventId,(phase,error)=>{stop.disabled=phase!=='failed';progress?.setStopStateQ25(phase,error||'העצירה מטופלת בשרת');});
   stop.onclick=()=>{stopped=true;stop.disabled=true;void controller.request()};
   box.waProgressQ33=waProgressStateQ33_(detail.total,detail.accepted+detail.failed,detail.accepted,detail.failed);
-  progress=waBulkProgressWindowZ22_(box,stop,null,'המשך שליחת WhatsApp לבדיקה',detail.total,'TEST');
+  progress=waBulkProgressWindowZ22_(box,stop,null,'המשך שליחת WhatsApp לבדיקה',detail.total,'TEST',false);
   const current=()=>!stopped&&state.session?.token===token&&String(state.activeEventId)===eventId;
   try{
     const reply=await waDrainPairQ51_(detail.id,eventId,current,r=>{
       const x=r.summary;box.waProgressQ33=waProgressStateQ33_(x.total,x.accepted+x.failed,x.accepted,x.failed,r.unknown>0);
       box.querySelector('progress').value=Math.round((x.accepted+x.failed)*100/x.total);
-      box.querySelector('span').textContent=`טופלו ${x.accepted+x.failed}/${x.total} · ${r.pending} הודעות ממתינות לניסיון חוזר${r.waitRemainingQ51?` — עוד כ־${r.waitRemainingQ51} שניות`:''}; ניתן לעצור`;
+      box.querySelector('span').textContent=`טופלו ${x.accepted+x.failed}/${x.total} · ${r.pending} הודעות ממתינות לניסיון חוזר${r.waitRemainingQ51?` — עוד כ־${r.waitRemainingQ51} שניות`:''}`;
       for(const messageId of r.messageIds||[])progress.addMessageId(messageId);
     });
     if(stopped){await controller.ready();await controller.wait();progress.finish('השליחה נעצרה לבקשתך',true,!!controller.error,{canceled:!controller.error});return;}
@@ -2377,7 +2377,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
       resumePreparingQ27?.setStopStateQ25(phase,phase==='failed'?'לא אומתה עצירה בשרת. '+error:phase==='accepted'?'העצירה התקבלה; ההודעות שלא נשלחו בוטלו.':'מבקש עצירה מהשרת…');
     });
     stop.onclick=()=>{resumeCanceledQ27=true;stop.disabled=true;void resumeStopControllerQ27.request();};
-    resumePreparingQ27=waBulkProgressWindowZ22_(box,stop,null,'המשך שליחת WhatsApp לבדיקה',resumeIdsQ22.length);
+    resumePreparingQ27=waBulkProgressWindowZ22_(box,stop,null,'המשך שליחת WhatsApp לבדיקה',resumeIdsQ22.length,null,false);
   }
   // D5D55I: The TEST count, preview and send all use one template-qualified list.
   // Never fall back to the first five guests while qualification is pending.
@@ -2534,7 +2534,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
         if(progressTextD48)progressTextD48.textContent='מבקש עצירה מהשרת…';
         void stopControllerQ25.request();
       };
-      const genericProgressD14=waBulkProgressWindowZ22_(progressBoxD48,genericStopD14,null,'התקדמות שליחת WhatsApp לבדיקה',testRows.length,environment);
+      const genericProgressD14=waBulkProgressWindowZ22_(progressBoxD48,genericStopD14,null,'התקדמות שליחת WhatsApp לבדיקה',testRows.length,environment,!resumeQ22);
       try{
         // use the server-side prepared batch path. FIX64 mistakenly 
         // called the legacy single-send API 20 times, bypassing fetchAll entirely.
@@ -2574,7 +2574,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
               lastPollFIX66=n;lastSnapshotQ33={n,a,f};
               if(progressBoxD48)progressBoxD48.waProgressQ33=waProgressStateQ33_(testRows.length,processedCount+n,acceptedCount+a,failedCount+f);
               if(progressBarD48)progressBarD48.value=Math.round((processedCount+n)*100/testRows.length);
-              const stageFIX67=snapshot.phase==='RETRY_WAIT_Q50'?` · ${Number(snapshot.retryPendingQ50)||0} הודעות ממתינות לניסיון חוזר לאחר דחיית קצב; ניתן לעצור`:snapshot.phase==='WAITING_TEST_RATE'?' · ממתין לקצב הבדיקה לאותו טלפון — זו המתנה מתוכננת; ניתן לעצור':snapshot.phase==='JOURNALING'?' · השליחה הסתיימה, מסנכרן יומן':snapshot.phase==='RECOVERY_ERROR'?' · שגיאת מעקב התאוששות':snapshot.phase==='JOURNAL_ERROR'?' · שגיאת יומן':snapshot.phase==='PREPARING'?' · מכין הודעות':'';
+              const stageFIX67=snapshot.phase==='RETRY_WAIT_Q50'?` · ${Number(snapshot.retryPendingQ50)||0} הודעות ממתינות לניסיון חוזר לאחר דחיית קצב${resumeQ22?'':'; ניתן לעצור'}`:snapshot.phase==='WAITING_TEST_RATE'?(' · ממתין לקצב הבדיקה לאותו טלפון — זו המתנה מתוכננת'+(resumeQ22?'':'; ניתן לעצור')):snapshot.phase==='JOURNALING'?' · השליחה הסתיימה, מסנכרן יומן':snapshot.phase==='RECOVERY_ERROR'?' · שגיאת מעקב התאוששות':snapshot.phase==='JOURNAL_ERROR'?' · שגיאת יומן':snapshot.phase==='PREPARING'?' · מכין הודעות':'';
               const label=`טופלו ${processedCount+n}/${testRows.length} · התקבלו ב-Meta ${acceptedCount+a} · נדחו ${failedCount+f} · בטיפול ${group.length-n}${stageFIX67}`;
               if(progressTextD48)progressTextD48.textContent=label;
               summary.textContent='שולח בדיקה · '+label;
@@ -2596,7 +2596,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
             if(batch.sent!==0||batch.recoveryIdQ22!==recoveryIdQ22||batch.eventId!==sendEventQ22||batch.expectedNextQ48!==(Number(resumeQ22?.attempted)||0)+offset)throw new Error('לא אומתה דחיית מנה ללא שליחה');
             const keepGoing=()=>!stopGenericTestD14&&state.session?.token===sendTokenQ33&&String(state.activeEventId)===sendEventQ22;
             const rateWaitStartedQ48=performance.now();
-            const waited=await waWaitTestPaceQ48_(batch.waitMs,keepGoing,seconds=>{if(progressTextD48)progressTextD48.textContent=`ממתין לקצב הבדיקה — עוד כ־${seconds} שניות. טופלו ${processedCount}/${testRows.length}. ניתן לעצור.`;});
+            const waited=await waWaitTestPaceQ48_(batch.waitMs,keepGoing,seconds=>{if(progressTextD48)progressTextD48.textContent=`ממתין לקצב הבדיקה — עוד כ־${seconds} שניות. טופלו ${processedCount}/${testRows.length}.${resumeQ22?'':' ניתן לעצור.'}`;});
             testRateBrowserWaitQ48+=performance.now()-rateWaitStartedQ48;
             if(!waited){if(!stopGenericTestD14)throw new Error('המשתמש או האירוע השתנו בזמן ההמתנה');batch={intentionalStopQ25:true,stopped:true,processed:0,accepted:0,failed:0,unknown:0,results:[],canceledQ25:group.length,whatsAppLogSaved:true,recoveryMarkerSaved:true};break;}
             }
@@ -2645,7 +2645,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
               for(const item of known)if(item.accepted&&item.result?.messageId)genericProgressD14.addMessageId(item.result.messageId);
               progressBoxD48.waProgressQ33=waProgressStateQ33_(testRows.length,processedCount+known.length,acceptedCount+a,failedCount+f,reply.unknown>0);
               if(progressBarD48)progressBarD48.value=Math.round((processedCount+known.length)*100/testRows.length);
-              if(progressTextD48)progressTextD48.textContent=`טופלו ${processedCount+known.length}/${testRows.length} · ${reply.pending} הודעות ממתינות לניסיון חוזר${reply.waitRemainingQ51?` — עוד כ־${reply.waitRemainingQ51} שניות`:''}; ניתן לעצור`;
+              if(progressTextD48)progressTextD48.textContent=`טופלו ${processedCount+known.length}/${testRows.length} · ${reply.pending} הודעות ממתינות לניסיון חוזר${reply.waitRemainingQ51?` — עוד כ־${reply.waitRemainingQ51} שניות`:''}`;
               batch.retryPendingQ51=reply.pending;batch.stopped=reply.pending>0||reply.unknown>0||reply.finalRetryFailures>0||reply.canceled;
               if(reply.canceled)batch.intentionalStopQ25=true;
             };
@@ -2705,7 +2705,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
         const fix20ApiTotal=fix20Samples.reduce((n,x)=>n+x.apiMs,0);
         const fix20WaitTotal=fix20Waits.reduce((n,x)=>n+x,0);
         const fix20Rows=dispatchPhaseRowsFIX67+waPreparationRowsQ10_(fix20Samples)+waRsvpRowsQ11_(fix20Samples)+waMediaRowsQ12_(fix20Samples)+waChunkTimingRowsQ16_(fix20Samples)+'<dt>שמירת אבחון מרוכזת לאחר הפניות</dt><dd>'+waFormatElapsedF14V_(fix20Samples.reduce((n,x)=>n+(Number(x.diagnosticsMs)||0),0))+'</dd>'+Object.entries(fix20Keys).map(([key,label])=>`<dt>${esc(label)}</dt><dd>${fix20Samples.some(x=>typeof x.server?.[key]==='number')?waFormatElapsedF14V_(fix20Sum(key)):'לא נמדד בנפרד'}</dd>`).join('');
-        const fix20TimingHtml=`<div class="wa-timing-d37"><h3>FIX67Q58 — מדידת בקשות אצווה</h3><dl><dt>אצוות עם פירוט מדידה פרטני</dt><dd>${fix20Samples.filter(x=>x.server).length}/${fix20Samples.length}</dd><dt>טיפול בתור הניסיונות החוזרים, כולל המתנות ותקשורת</dt><dd>${waFormatElapsedF14V_(retryQueueMsQ51)}</dd><dt>קריאות API של המנות, כולל תקשורת</dt><dd>${waFormatElapsedF14V_(fix20RoundTrip)}</dd><dt>זמן פונקציית השליחה בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ServerTotal)}</dd><dt>זמן טיפול API בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ApiTotal)}</dd><dt>זמן מחוץ לטיפול API (הערכה)</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא ניתן לחשב ללא תשובת שרת':waFormatElapsedF14V_(Math.max(0,fix20RoundTrip-fix20ApiTotal))}</dd><dt>המתנה להגדרות לאחר אישור השליחה</dt><dd>${waFormatElapsedF14V_(settingsWaitMsQ10)}</dd><dt>השהיות בין מנות</dt><dd>${waFormatElapsedF14V_(fix20WaitTotal)}</dd><dt>המתנה מתוכננת לקצב טלפון הבדיקה בדפדפן</dt><dd>${waFormatElapsedF14V_(testRateBrowserWaitQ48)}</dd>${fix20Rows}</dl><p class="muted">רכיבי משנה עשויים לחפוף; אין לסכום אותם. נתוני שרת מתקבלים רק מהודעות שהחזירו תשובה.</p></div>`;
+        const fix20TimingHtml=`<div class="wa-timing-d37"><h3>FIX67Q59 — מדידת בקשות אצווה</h3><dl><dt>אצוות עם פירוט מדידה פרטני</dt><dd>${fix20Samples.filter(x=>x.server).length}/${fix20Samples.length}</dd><dt>טיפול בתור הניסיונות החוזרים, כולל המתנות ותקשורת</dt><dd>${waFormatElapsedF14V_(retryQueueMsQ51)}</dd><dt>קריאות API של המנות, כולל תקשורת</dt><dd>${waFormatElapsedF14V_(fix20RoundTrip)}</dd><dt>זמן פונקציית השליחה בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ServerTotal)}</dd><dt>זמן טיפול API בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ApiTotal)}</dd><dt>זמן מחוץ לטיפול API (הערכה)</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא ניתן לחשב ללא תשובת שרת':waFormatElapsedF14V_(Math.max(0,fix20RoundTrip-fix20ApiTotal))}</dd><dt>המתנה להגדרות לאחר אישור השליחה</dt><dd>${waFormatElapsedF14V_(settingsWaitMsQ10)}</dd><dt>השהיות בין מנות</dt><dd>${waFormatElapsedF14V_(fix20WaitTotal)}</dd><dt>המתנה מתוכננת לקצב טלפון הבדיקה בדפדפן</dt><dd>${waFormatElapsedF14V_(testRateBrowserWaitQ48)}</dd>${fix20Rows}</dl><p class="muted">רכיבי משנה עשויים לחפוף; אין לסכום אותם. נתוני שרת מתקבלים רק מהודעות שהחזירו תשובה.</p></div>`;
         console.info('[WA FIX20 PERF]',{samples:fix20Samples.length,roundTripMs:Math.round(fix20RoundTrip),serverMs:Math.round(fix20ServerTotal),apiMs:Math.round(fix20ApiTotal),waitMs:Math.round(fix20WaitTotal),breakdown:Object.fromEntries(Object.keys(fix20Keys).map(k=>[k,fix20Sum(k)]))});
         const timingHtml=`<div class="wa-timing-d37"><h3>פירוט זמנים — TEST</h3><dl><dt>קריאת API כולל תקשורת</dt><dd>${waFormatElapsedF14V_(roundTripMs)}</dd><dt>פירוט מהשרת</dt><dd>${serverTiming?'התקבל':'לא התקבל נתון'}</dd>${serverTiming}</dl><p class="muted">זמן קריאת API כולל זמן שרת, תקשורת והמתנה; אין לחבר אותו לזמני השרת.</p></div>`;
         console.info('[WA PERF] sendAnyTemplateToTestNumber',{roundTripMs:Math.round(roundTripMs),serverPerfAvailable:!!serverTiming});

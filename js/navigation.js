@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q58 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q59 */
 (async function(){
  const out=document.getElementById('content'),toggle=document.getElementById('themeToggle');
  let theme='dark';try{const x=localStorage.getItem('events_navigation_theme');if(x==='light'||x==='dark')theme=x}catch(_){}

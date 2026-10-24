@@ -1,3 +1,4 @@
+.gitattributes
 CNAME
 assets/seating-table-color.png
 css/app.css
