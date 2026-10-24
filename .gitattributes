@@ -10,3 +10,6 @@ CNAME text eol=lf
 *.bat text eol=crlf
 *.png binary
 *.ico binary
+
+# Preserve local editor settings without line-ending conversion.
+.vscode/** -text
