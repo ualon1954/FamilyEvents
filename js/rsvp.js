@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D53 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q58 */
 (async function(){
  const themeButton=document.getElementById('theme-toggle');
  const THEME_KEY='events_rsvp_theme';
@@ -38,7 +38,7 @@
  };
  try{
   let data=await call({action:'rsvpContextV1189A3',key});out.replaceChildren();
-  out.append(el('h2',data.event.name),el('p','שלום '+data.guest.name,'rsvp-greeting'));
+  out.append(el('h2',data.event.name));
   if(data.event.date){const p=el('p','תאריך: '),date=el('span',undefined,'event-date'),raw=String(data.event.date),m=raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/);date.dir='ltr';date.textContent=m?`${m[3]}/${m[2]}/${m[1]}`:raw;p.append(date);out.append(p)}
   if(data.event.venue)out.append(el('p','מקום: '+data.event.venue));
   const area=el('section',undefined,'rsvp-area');out.append(area);
@@ -62,7 +62,7 @@
   };
   if(data.closed){isClosed=true;currentView="closed";area.replaceChildren(el('h3','אישורי ההגעה נסגרו'),el('p',data.closedMessage||'מועד אישור ההגעה הסתיים. נא לפנות למנהל האירוע.','note'));if(data.contactName)area.append(el('p','איש קשר: '+data.contactName));if(data.contactPhone){const phone=displayPhone(data.contactPhone),p=el('p','טלפון: '),a=el('a',phone);a.href='tel:'+phone.replace(/[^+\d]/g,'');a.dir='ltr';p.append(a);area.append(p)}}
   else updateClock();
-  const options=[['Confirmed','מגיע/ה'],['Declined','לא מגיע/ה'],['Pending','טרם החלטתי']];
+  const options=[['Confirmed','מגיע/ה','check'],['Declined','לא מגיע/ה','cross'],['Pending','טרם החלטתי','question']];
   let selected=options.some(([s])=>s===data.guest.rsvpStatus)?data.guest.rsvpStatus:null;
   let savedCount=Number(data.guest.confirmedCount)||1;
   const resultView=(status,n)=>{
@@ -84,12 +84,12 @@
   };
   const formView=()=>{
    currentView="form";
-   const form=el('form'),choices=el('div',undefined,'choices');choices.setAttribute('role','group');choices.setAttribute('aria-label','בחירת אישור הגעה');
-   const field=el('div',undefined,'field'),label=el('label','מספר משתתפים (עד '+data.guest.invitedCount+')'),count=el('input');count.type='number';count.min='1';count.max=String(data.guest.invitedCount);count.step='1';count.inputMode='numeric';count.value=String(savedCount);count.id='rsvp-count';label.htmlFor=count.id;field.append(label,count);
+   const form=el('form'),choices=el('div',undefined,'choices');const question=el('h3','האם תגיעו לאירוע?','rsvp-question');choices.setAttribute('role','group');choices.setAttribute('aria-label','בחירת אישור הגעה');
+   const field=el('div',undefined,'field'),label=el('label','מספר משתתפים (עד '+data.guest.invitedCount+')'),count=el('input');count.type='number';count.min='1';count.max=String(data.guest.invitedCount);count.step='1';count.inputMode='numeric';count.value=String(savedCount);count.id='rsvp-count';label.htmlFor=count.id;const stepper=el('div',undefined,'rsvp-stepper');const minus=el('button','−','rsvp-stepper-btn'),plus=el('button','+','rsvp-stepper-btn');minus.type=plus.type='button';minus.setAttribute('aria-label','הפחתת משתתף');plus.setAttribute('aria-label','הוספת משתתף');const adjust=delta=>{const current=Number(count.value)||1;count.value=String(Math.min(Number(count.max),Math.max(1,current+delta)));count.dispatchEvent(new Event('input',{bubbles:true}))};minus.onclick=()=>adjust(-1);plus.onclick=()=>adjust(1);stepper.append(plus,count,minus);field.append(label,stepper);
    const save=el('button','שמירת תשובה','save');save.type='submit';const message=el('div');message.setAttribute('aria-live','polite');
    const buttons=[];const choose=status=>{selected=status;buttons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.status===status)));field.hidden=status!=='Confirmed';save.disabled=false;message.replaceChildren()};
-   options.forEach(([status,title])=>{const b=el('button',undefined,'choice');b.append(el('span','✓','choice-check'),el('span',title));b.type='button';b.dataset.status=status;b.setAttribute('aria-pressed','false');b.onclick=()=>choose(status);choices.append(b);buttons.push(b)});
-   form.append(choices,field,save,message);area.replaceChildren(form);if(selected)choose(selected);else{field.hidden=true;save.disabled=true}
+   options.forEach(([status,title,iconType])=>{const b=el('button',undefined,'choice');const icon=el('span',iconType==='check'?'✓':iconType==='cross'?'✕':'?','choice-icon');icon.setAttribute('aria-hidden','true');b.append(icon,el('span',title));b.type='button';b.dataset.status=status;b.setAttribute('aria-pressed','false');b.onclick=()=>choose(status);choices.append(b);buttons.push(b)});
+   form.append(question,choices,field,save,message);area.replaceChildren(form);if(selected)choose(selected);else{field.hidden=true;save.disabled=true}
    form.onsubmit=async e=>{e.preventDefault();if(!selected||isClosed)return;const n=selected==='Confirmed'?Number(count.value):0;
     if(selected==='Confirmed'&&(!Number.isInteger(n)||n<1||n>Number(data.guest.invitedCount))){message.replaceChildren(el('p','יש להזין מספר משתתפים תקין בין 1 ל־'+data.guest.invitedCount,'error'));count.focus();return}
     saveBusy=true;save.disabled=true;buttons.forEach(b=>b.disabled=true);message.replaceChildren(loading('שומר...'));

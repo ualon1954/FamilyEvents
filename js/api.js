@@ -1,23 +1,67 @@
-/* V1.1.90A19P2F14Z58D5D53 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q58 */
+// Compact browser-side failures only. Never store request payloads or credentials.
+function waRecordClientIssueQ17_(action,kind,httpStatus){
+  try{
+    if(typeof state==='undefined'||state.session?.role!=='Admin')return;
+    const key='wa_client_issues_q17';let rows=[];
+    try{const value=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(value))rows=value;}catch(ignore){}
+    rows.push({at:new Date().toISOString(),eventId:String(state.activeEventId||''),action:String(action||'').slice(0,80),kind:String(kind||'').slice(0,40),httpStatus:Number(httpStatus)||0});
+    localStorage.setItem(key,JSON.stringify(rows.slice(-20)));
+  }catch(ignore){}
+}
 const API = {
-  async request(action, payload={}) {
+  async request(action, payload={}, options={}) {
+    const traceQ35=action==='sendAnyTemplateTestBatchD5D49'&&options?.traceQ35&&typeof options.traceQ35==='object'?options.traceQ35:null;
+    const markQ35=key=>{if(traceQ35)try{traceQ35[key]=performance.now();}catch(ignore){}};
+    markQ35('apiEnteredAt');
+    if(action!=='login'&&action!=='touchSessionActivityQ31'&&!options.skipActivityQ31&&typeof sessionActivityFlushQ31_==='function')await sessionActivityFlushQ31_().catch(()=>{});
     const body={action, ...payload};
     if(state?.session?.token && !body.token) body.token=state.session.token;
     if (!APP_CONFIG.API_URL || APP_CONFIG.API_URL.includes("PASTE_")) {
       throw new Error("כתובת ה-API אינה מוגדרת ב-config.js. יש להכניס את כתובת ה-Web App של Apps Script.");
     }
-    const res = await fetch(APP_CONFIG.API_URL, {
-      method:"POST",
-      headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify(body)
-    });
-    const raw = await res.text();
+    const isSendAction = action === "sendOneInvitationV1190A14" || action === "sendInvitationBatchF14U" || action === "sendAnyTemplateTestBatchD5D49" || action === "sendAnyTemplateToGuest" || action === "sendOneInvitationToTestNumberA19P2F8";
+    let res;
+    const timeoutMs=Number(options?.timeoutMs)||0;
+    const controller=timeoutMs>0?new AbortController():null;
+    const timeoutId=controller?setTimeout(()=>controller.abort(),timeoutMs):null;
+    try {
+      const serializedQ35=JSON.stringify(body);markQ35('fetchStartedAt');
+      res = await fetch(APP_CONFIG.API_URL, {
+        method:"POST",
+        headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body:serializedQ35,
+        ...(controller?{signal:controller.signal}:{})
+      });
+      markQ35('headersReceivedAt');
+    } catch (cause) {
+      markQ35('failedAt');
+      waRecordClientIssueQ17_(action,'NETWORK',0);
+      if(timeoutId!==null)clearTimeout(timeoutId);
+      if(controller?.signal.aborted && !isSendAction)
+        throw new Error(`השרת לא השיב בתוך ${Math.round(timeoutMs/1000)} שניות`);
+      if (!isSendAction) throw cause;
+      const error = new Error("לא התקבל אישור מהשרת. ייתכן שההודעות כבר נשלחו; יש לבדוק את יומן WhatsApp לפני ניסיון נוסף.");
+      error.deliveryUncertain = true;
+      error.cause = cause;
+      throw error;
+    }
+    let raw;
+    try { raw=await res.text();markQ35('bodyReceivedAt'); }
+    catch(cause) {
+      markQ35('failedAt');
+      waRecordClientIssueQ17_(action,'RESPONSE_BODY',res.status);
+      const error=new Error(isSendAction?'קריאת תשובת השליחה נכשלה. מצב השליחה אינו ידוע; יש לבדוק יומן והתאוששות לפני ניסיון נוסף.':String(cause?.message||cause));
+      error.deliveryUncertain=isSendAction;error.cause=cause;throw error;
+    }
+    finally { if(timeoutId!==null)clearTimeout(timeoutId); }
     let data;
-    try { data = JSON.parse(raw); }
+    try { data = JSON.parse(raw);markQ35('parsedAt');if(traceQ35){traceQ35.apiTiming=data.apiTiming;traceQ35.dispatchStages=data.dispatchStagesQ35;} }
     catch (err) {
+      waRecordClientIssueQ17_(action,'NON_JSON',res.status);
       // A Google Apps Script redirect/login/error page can arrive as HTML even
       // after Meta accepted the message. Never imply that retrying is safe.
-      const ambiguous = action === "sendOneInvitationV1190A14";
+      const ambiguous = isSendAction;
       const message = ambiguous
         ? "לא התקבל אישור JSON מהשרת. ייתכן שההזמנה כבר נשלחה; בדוק ב-WhatsApp לפני ניסיון נוסף. בדוק גם את כתובת פריסת Apps Script והרשאות הגישה שלה."
         : "השרת החזיר תשובה שאינה JSON. בדוק את כתובת פריסת Apps Script והרשאות הגישה שלה.";
@@ -25,7 +69,7 @@ const API = {
       error.deliveryUncertain = ambiguous;
       throw error;
     }
-    if (!data.ok) throw new Error(data.error || data.message || "שגיאת API לא ידועה");
+    if (!data.ok){waRecordClientIssueQ17_(action,'API_ERROR',res.status);throw new Error(data.error || data.message || "שגיאת API לא ידועה");}
     return data;
   }
 };

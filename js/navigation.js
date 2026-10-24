@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D53 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q58 */
 (async function(){
  const out=document.getElementById('content'),toggle=document.getElementById('themeToggle');
  let theme='dark';try{const x=localStorage.getItem('events_navigation_theme');if(x==='light'||x==='dark')theme=x}catch(_){}
@@ -17,11 +17,9 @@
   }
   return wrap;
  };
- const navCard=(kind,title,subtitle,href)=>{
-  const a=el('a',undefined,'navcard '+kind);a.href=href;a.target='_blank';a.rel='noopener';a.setAttribute('aria-label',subtitle);
-  const arrow=el('span','‹','nav-arrow');
-  const copy=el('span',undefined,'nav-copy');copy.append(el('span',title,'nav-title'),el('span',subtitle,'nav-sub'));
-  a.append(arrow,copy,svgLogo(kind));return a;
+ const navCard=(kind,title,href)=>{
+  const a=el('a',undefined,'navcard '+kind);a.href=href;a.target='_blank';a.rel='noopener noreferrer';a.setAttribute('aria-label','נווט באמצעות '+title);a.title='נווט באמצעות '+title;
+  a.append(svgLogo(kind),el('span',title,'nav-title'));return a;
  };
  const fmtDate=raw=>{const m=String(raw||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?`${m[3]}/${m[2]}/${m[1]}`:String(raw||'')};
  const call=async body=>{const r=await fetch(APP_CONFIG.API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)}),d=await r.json();if(!d.ok)throw Error(d.error||'הפעולה נכשלה');return d};
@@ -33,8 +31,8 @@
   if(ev.navigationAddress)details.append(el('p','כתובת: '+ev.navigationAddress,'muted'));out.append(details);
   const address=String(ev.navigationAddress||'').trim();if(!address){out.append(el('div','לא הוגדרה כתובת לניווט עבור האירוע.','error'));return}
   const q=encodeURIComponent(address),actions=el('div',undefined,'actions');
-  const waze=navCard('waze','Waze','נווט ב-Waze','https://waze.com/ul?q='+q+'&navigate=yes');
-  const google=navCard('google','Google Maps','נווט ב-Google Maps','https://www.google.com/maps/dir/?api=1&destination='+q);
+  const waze=navCard('waze','Waze','https://waze.com/ul?q='+q+'&navigate=yes');
+  const google=navCard('google','Google Maps','https://www.google.com/maps/dir/?api=1&destination='+q);
   actions.append(waze,google);out.append(actions);
  }catch(e){out.replaceChildren(el('div',e.message||'לא ניתן לטעון את פרטי האירוע','error'))}
 })();

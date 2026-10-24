@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D53 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q58 */
 // A19P2F3 — Admin draft templates only; no Meta changes or sending.
 let tplRowsA19P2=[],tplEditingA19P2=null,tplBusyA19P2=false,tplViewA19P2=false,tplSystemSettingsD5D5=[];
 // D5D14 — client cache: navigation back to Templates must not refetch unchanged data.
@@ -47,7 +47,24 @@ function tplWhatsAppPreviewHtmlD5D10(text){
 }
 function tplAutoGrowBodyD5D7(){const e=tplEl('tplBody');if(!e)return;e.style.height='auto';e.style.height=Math.max(92,e.scrollHeight+2)+'px';}
 function tplCurrentMappingD5D6(){const body={};tplEl('tplMappingD5D5')?.querySelectorAll('[data-tpl-map-token-d5d5]').forEach(x=>body[x.dataset.tplMapTokenD5d5]=x.value);return {body,buttons:{}};}
-function tplRenderMappingD5D5(t){let box=tplEl('tplMappingD5D5');if(!box){box=document.createElement('section');box.id='tplMappingD5D5';box.className='tpl-mapping-d5d5';tplEl('tplBody').closest('label').insertAdjacentElement('afterend',box);}const admin=state.session?.role==='Admin';if(!admin){box.hidden=true;return;}box.hidden=false;const tokens=tplMappingTokensD5D5(t),m=tplMappingReadD5D5(t),opts=Object.entries(tplMappingSourcesD5D5);box.innerHTML=`<h3>מיפוי משתנים</h3><p class="muted">בחר מקור נתון לכל משתנה. השמירה מתבצעת יחד עם הגדרות התבנית.</p>${tokens.length?tokens.map(tok=>`<label class="tpl-map-row-d5d5"><b>{{${esc(tok)}}}</b><small>${esc(tplMappingContextD5D6(t.body,tok))}</small><select data-tpl-map-token-d5d5="${esc(tok)}" ${tplViewA19P2?'disabled':''}><option value="">לא מופה — נדרשת בחירה</option>${opts.map(([v,l])=>`<option value="${esc(v)}" ${String(m.body?.[tok]||'')===v?'selected':''}>${esc(l)}</option>`).join('')}</select></label>`).join(''):'<p class="muted">אין משתני BODY בתבנית זו.</p>'}`;box.querySelectorAll('select').forEach(x=>x.addEventListener('change',tplPreviewA19P2));}
+function tplRenderMappingD5D5(t){
+ let box=tplEl('tplMappingD5D5');
+ if(!box){box=document.createElement('section');box.id='tplMappingD5D5';box.className='tpl-mapping-d5d5';tplEl('tplBody').closest('label').insertAdjacentElement('afterend',box);}
+ const admin=state.session?.role==='Admin';if(!admin){box.hidden=true;return;}
+ box.hidden=false;
+ const tokens=[...new Set(tplMappingTokensD5D5(t))],m=tplMappingReadD5D5(t),opts=Object.entries(tplMappingSourcesD5D5);
+ const rows=tokens.map(tok=>{
+   const value=String(m.body?.[tok]||'');
+   const description=tplMappingContextD5D6(t.body,tok);
+   const chosen=opts.find(([v])=>v===value);
+   const control=tplViewA19P2
+     ?`<span class="tpl-map-readonly-d5d55z3">${esc(chosen?.[1]||(value?'מקור לא מוכר: '+value:'לא מופה'))}</span><input type="hidden" data-tpl-map-token-d5d5="${esc(tok)}" value="${esc(value)}">`
+     :`<select aria-label="מקור נתון למשתנה ${esc(tok)}" data-tpl-map-token-d5d5="${esc(tok)}"><option value="">לא מופה — נדרשת בחירה</option>${opts.map(([v,l])=>`<option value="${esc(v)}" ${value===v?'selected':''}>${esc(l)}</option>`).join('')}${value&&!chosen?`<option value="${esc(value)}" selected>${esc(value)} (ערך שמור)</option>`:''}</select>`;
+   return `<tr><td class="tpl-map-token-cell-d5d55z3"><b dir="ltr">{{${esc(tok)}}}</b></td><td class="tpl-map-context-cell-d5d55z3" title="${esc(description)}">${esc(description||'—')}</td><td class="tpl-map-source-cell-d5d55z3">${control}</td></tr>`;
+ }).join('');
+ box.innerHTML=`<div class="tpl-map-heading-d5d55z3"><h3>מיפוי משתנים</h3><span class="tpl-map-count-d5d55z3">${tokens.length} משתנים</span></div><p class="muted">${tplViewA19P2?'מקורות הנתונים המוגדרים לתבנית.':'בחר מקור נתון לכל משתנה. השמירה מתבצעת יחד עם הגדרות התבנית.'}</p>${tokens.length?`<div class="tpl-map-scroll-d5d55z3" role="region" aria-label="טבלת מיפוי משתנים" tabindex="0"><table class="tpl-map-table-d5d55z3"><thead><tr><th scope="col">משתנה</th><th scope="col">תיאור בהודעה</th><th scope="col">מקור נתון</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<p class="muted">אין משתני BODY בתבנית זו.</p>'}`;
+ box.querySelectorAll('select').forEach(x=>x.addEventListener('change',tplPreviewA19P2));
+}
 function tplManagerPreviewF14Z32_(t){
  const ev=tplPreviewEventD5D17(),kind=ev?eventTypeName(ev):'אירוע';
  const name=String(ev?.name||kind),date=String(ev?.date||ev?.eventDate||'תאריך האירוע'),time=String(ev?.eventTime||'שעת האירוע'),venue=String(ev?.venue||'מקום האירוע'),address=String(ev?.navigationAddress||'').trim();
@@ -56,7 +73,7 @@ function tplManagerPreviewF14Z32_(t){
  const body=String(t?.body||'').replace(/\{\{\s*([^{}]+?)\s*\}\}/g,(match,token)=>{const key=String(token).trim();return sources[mapping[key]]??match;});
  let box=tplEl('tplManagerPreviewF14Z32');if(!box){box=document.createElement('div');box.id='tplManagerPreviewF14Z32';box.className='tpl-manager-preview-f14z27';tplEl('tplEditor')?.querySelector('.tpl-modal-header-d28')?.insertAdjacentElement('afterend',box);}
  const imageHeader=tplHasImageHeaderD5D8(t);
- box.innerHTML=`<p class="muted"><b>אירוע:</b> ${esc(name)} · <b>סוג האירוע:</b> ${esc(kind)} · <b>תמונת הזמנה:</b> <span id="tplPreviewImageStatusD5D27">${ev?.invitationImageFileId?'מצורפת':'לא צורפה'}</span></p><div class="wa-preview-card-f14g">${imageHeader?'<div class="wa-preview-image-wrap-f14g"><img id="tplManagerImageF14Z32" alt="תמונת הזמנה" hidden></div>':''}<div class="wa-preview-body-f14g">${tplWhatsAppPreviewHtmlD5D10(body)}</div><div class="wa-preview-button-f14g">אישור הגעה</div></div>`;
+ box.innerHTML=`<p class="muted"><b>אירוע:</b> ${esc(name)} · <b>סוג האירוע:</b> ${esc(kind)} · <b>תמונת התבנית באירוע:</b> <span id="tplPreviewImageStatusD5D27">טוען…</span></p><div class="wa-preview-card-f14g">${imageHeader?'<div class="wa-preview-image-wrap-f14g"><img id="tplManagerImageF14Z32" alt="תמונת התבנית" hidden></div>':''}<div class="wa-preview-body-f14g">${tplWhatsAppPreviewHtmlD5D10(body)}</div><div class="wa-preview-button-f14g">אישור הגעה</div></div>`;
 }
 // D5D17: event selection controls preview data only, never global template settings.
 let tplPreviewEventIdD5D17='';
@@ -75,14 +92,12 @@ function tplRefreshEventPreviewD5D19_(){
  if(tplHasImageHeaderD5D8(tplEditingA19P2))void tplShowImageA19P2(tplEditingA19P2);
  else tplSetImageA19P2('');
 }
-function tplEditA19P2(id,view=false){tplEditingA19P2=tplRowsA19P2.find(x=>String(x.id)===String(id))||null;if(!tplEditingA19P2)return;const admin=state.session?.role==='Admin',imageHeader=tplHasImageHeaderD5D8(tplEditingA19P2);if(!admin)view=true;tplViewA19P2=view;const t=tplEditingA19P2;for(const [field,key] of [['tplName','name'],['tplBody','body'],['tplMetaName','metaName'],['tplMetaStatus','metaStatus'],['tplMetaCategory','metaCategory'],['tplPurpose','purpose']])tplEl(field).value=t[key]||'';tplEl('tplActive').value=String(t.active).toLowerCase()==='true'?'true':'false';tplEl('tplEditorTitle').textContent=admin?(view?'תצוגת תבנית':'עריכת הגדרות תבנית'):(imageHeader?'תמונת התבנית':'תצוגת תבנית');tplNoticeA19P2('',false,true);tplEl('tplShade').hidden=false;tplPreviewEventIdD5D17=String(activeEvent()?eventKey_(activeEvent()):'');tplPreviewSelectorD5D17();tplEl('tplImageArea').hidden=true;tplEl('tplImageInfo').textContent='';tplSetImageA19P2('');tplEl('tplSave').hidden=!admin||view;tplEl('tplCancel').textContent=view||!admin?'סגור':'ביטול';const canImage=false;tplEl('tplRemoveImage').hidden=!canImage;tplEl('tplReplaceImage').hidden=!canImage;tplEl('tplImage').disabled=!canImage;for(const fid of ['tplName','tplPurpose','tplActive'])tplEl(fid).disabled=!admin||view;for(const fid of ['tplBody','tplMetaName','tplMetaStatus','tplMetaCategory'])tplEl(fid).disabled=true;tplAutoGrowBodyD5D7();tplRenderMappingD5D5(t);const manager=!admin;tplRefreshEventPreviewD5D19_();if(manager){tplEl('tplEditor')?.classList.add('tpl-manager-mode-f14z27');}else{tplEl('tplEditor')?.classList.remove('tpl-manager-mode-f14z27');}}
+function tplEditA19P2(id,view=false){tplEditingA19P2=tplRowsA19P2.find(x=>String(x.id)===String(id))||null;if(!tplEditingA19P2)return;const admin=state.session?.role==='Admin',imageHeader=tplHasImageHeaderD5D8(tplEditingA19P2);if(!admin)view=true;tplViewA19P2=view;const t=tplEditingA19P2;for(const [field,key] of [['tplName','name'],['tplBody','body'],['tplMetaName','metaName'],['tplMetaStatus','metaStatus'],['tplMetaCategory','metaCategory'],['tplPurpose','purpose']])tplEl(field).value=t[key]||'';tplEl('tplActive').value=String(t.active).toLowerCase()==='true'?'true':'false';tplEl('tplEditorTitle').textContent=admin?(view?'תצוגת תבנית':'עריכת הגדרות תבנית'):(imageHeader?'תמונת התבנית':'תצוגת תבנית');tplNoticeA19P2('',false,true);tplEl('tplShade').hidden=false;tplPreviewEventIdD5D17=String(activeEvent()?eventKey_(activeEvent()):'');tplPreviewSelectorD5D17();tplEl('tplImageArea').hidden=true;tplEl('tplImageInfo').textContent='';tplSetImageA19P2('');tplEl('tplSave').hidden=!admin||view;tplEl('tplEditViewD55Z').hidden=!admin||!view;tplEl('tplCancel').textContent=view||!admin?'סגור':'ביטול';const canImage=false;tplEl('tplRemoveImage').hidden=!canImage;tplEl('tplReplaceImage').hidden=!canImage;tplEl('tplImage').disabled=!canImage;for(const fid of ['tplName','tplPurpose','tplActive'])tplEl(fid).disabled=!admin||view;for(const fid of ['tplBody','tplMetaName','tplMetaStatus','tplMetaCategory'])tplEl(fid).disabled=true;tplAutoGrowBodyD5D7();tplRenderMappingD5D5(t);const manager=!admin;tplRefreshEventPreviewD5D19_();if(manager){tplEl('tplEditor')?.classList.add('tpl-manager-mode-f14z27');}else{tplEl('tplEditor')?.classList.remove('tpl-manager-mode-f14z27');}}
 function tplCloseA19P2(){++tplImageSeqA19P2;tplSetImageA19P2('');tplEl('tplShade').hidden=true;tplEditingA19P2=null;}
 // D5D22: the upper WhatsApp card is the only preview; mapping changes refresh it.
 function tplPreviewA19P2(){
  if(!tplEditingA19P2||tplEl('tplShade')?.hidden)return;
- tplManagerPreviewF14Z32_(tplEditingA19P2);
- const cached=tplEventImageCacheD29.get(String(tplPreviewEventIdD5D17));
- if(cached?.src&&tplHasImageHeaderD5D8(tplEditingA19P2))tplSetImageA19P2(cached.src);
+ tplRefreshEventPreviewD5D19_();
 }
 
 async function tplSaveA19P2(){if(tplBusyA19P2||tplViewA19P2||!tplEditingA19P2)return;const name=tplEl('tplName').value.trim();if(!name){tplNoticeA19P2('שם תצוגה הוא שדה חובה',true,true);return;}if(tplRowsA19P2.some(x=>String(x.id)!==String(tplEditingA19P2.id)&&String(x.name||'').trim().toLocaleLowerCase()===name.toLocaleLowerCase())){tplNoticeA19P2('כבר קיימת תבנית בשם זה',true,true);return;}const mapping=tplCurrentMappingD5D6(),missing=Object.entries(mapping.body).filter(([,v])=>!v).map(([k])=>'{{'+k+'}}');if(missing.length){tplNoticeA19P2('יש להשלים מיפוי עבור '+missing.join(', '),true,true);return;}tplBusyA19P2=true;const b=tplEl('tplSave');b.disabled=true;b.innerHTML='<span class="tpl-spinner" aria-hidden="true"></span>שומר…';try{const t={id:tplEditingA19P2.id,name,purpose:tplEl('tplPurpose').value,active:tplEl('tplActive').value==='true'};const sr=await API.request('saveMessageTemplateSettingsD5D14',{template:t,mapping:Object.keys(mapping.body).length?{metaName:tplEditingA19P2.metaName,mapping}:null});if(Object.keys(mapping.body).length&&(!sr?.mapping||JSON.stringify(sr.mapping.body||{})!==JSON.stringify(mapping.body||{})))throw new Error('המיפוי לא נשמר באופן קבוע. השמירה בוטלה.');tplInvalidateWaSendCacheF14G_();const i=tplRowsA19P2.findIndex(x=>String(x.id)===String(sr.template?.id||t.id));if(i>=0)tplRowsA19P2[i]=Object.assign({},tplRowsA19P2[i],sr.template||{},sr.mapping?{mapping:sr.mapping}:{});tplPatchCachedTemplateD5D14_(Object.assign({},sr.template||t,sr.mapping?{mapping:sr.mapping}:{}));tplCloseA19P2();tplRenderA19P2();tplNoticeA19P2('הגדרות התבנית והמיפוי נשמרו בהצלחה');}catch(e){tplNoticeA19P2(e.message,true,true);}finally{tplBusyA19P2=false;b.disabled=false;b.textContent='שמור הגדרות';}}
@@ -92,40 +107,44 @@ let tplImageSeqA19P2=0;
 const tplImageCacheA19P2=new Map();
 const tplEventImageCacheD29=new Map();
 const tplImageInflightD29=new Map();
-function tplInvalidateEventImageD29(eventId){if(eventId)tplEventImageCacheD29.delete(String(eventId));else tplEventImageCacheD29.clear();}
+function tplInvalidateEventImageD29(eventId){
+ if(!eventId){tplEventImageCacheD29.clear();return;}
+ for(const key of tplEventImageCacheD29.keys())if(key.startsWith(String(eventId)+'|'))tplEventImageCacheD29.delete(key);
+}
+
 function tplSetImageA19P2(src){const managerImg=tplEl('tplManagerImageF14Z32');if(managerImg){managerImg.hidden=!src;if(src){managerImg.src=src;managerImg.style.display='block';}else {managerImg.style.display='none';managerImg.removeAttribute('src');}}for(const id of ['tplImagePreview']){const el=tplEl(id);if(!el)continue;el.hidden=!src;if(src)el.src=src;else el.removeAttribute('src');}}
 // D5D27: The server event record is authoritative for the image.  The client
 // event list may be stale after uploading or removing an image in another view.
+// D5D55R: template editor preview uses the selected event AND selected template.
 async function tplShowImageA19P2(template){
  const seq=++tplImageSeqA19P2;
- const selectedEventId=String(tplPreviewEventIdD5D17||'');
+ const eventId=String(tplPreviewEventIdD5D17||'');
+ const info=tplEl('tplImageInfo'),status=tplEl('tplPreviewImageStatusD5D27');
  tplSetImageA19P2('');
- const info=tplEl('tplImageInfo');
- if(!selectedEventId){if(info)info.textContent='לא נבחר אירוע';return;}
- const cached=tplEventImageCacheD29.get(selectedEventId);
- if(cached){tplSetImageA19P2(cached.src);if(info)info.textContent='תמונת האירוע';const st=tplEl('tplPreviewImageStatusD5D27');if(st)st.textContent='מצורפת';return;}
- if(info)info.textContent='טוען תמונת אירוע…';const visibleStatus=tplEl('tplPreviewImageStatusD5D27');if(visibleStatus)visibleStatus.textContent='טוען תמונה…';
+ if(!eventId||!template?.id){if(status)status.textContent='לא נבחר אירוע או תבנית';return;}
+ const key=eventId+'|'+String(template.id);
+ const cached=tplEventImageCacheD29.get(key);
+ if(cached){tplSetImageA19P2(cached.src);if(status)status.textContent='מצורפת';return;}
+ if(info)info.textContent='טוען תמונת תבנית…';if(status)status.textContent='טוען תמונה…';
  try{
-  let pending=tplImageInflightD29.get(selectedEventId);if(!pending){pending=API.request('getEventInvitationImageD5D17',{eventId:selectedEventId});tplImageInflightD29.set(selectedEventId,pending);}
-  let result;try{result=await pending;}finally{if(tplImageInflightD29.get(selectedEventId)===pending)tplImageInflightD29.delete(selectedEventId);}
-  if(seq!==tplImageSeqA19P2||selectedEventId!==String(tplPreviewEventIdD5D17)||tplEl('tplShade')?.hidden)return;
-  const fileId=String(result?.imageFileId||'');
-  const ev=tplPreviewEventD5D17();
-  if(ev)ev.invitationImageFileId=fileId; // keep local list consistent with server
-  if(!fileId){if(info)info.textContent='לאירוע הנבחר אין תמונת הזמנה';const status=tplEl('tplPreviewImageStatusD5D27');if(status)status.textContent='לא צורפה';return;}
-  if(!/^image\/(png|jpeg|webp)$/.test(result.mime||'')||!/^[A-Za-z0-9+/=]+$/.test(result.base64||''))throw new Error('תמונה לא תקינה');
-  const src='data:'+result.mime+';base64,'+result.base64;
-  tplImageCacheA19P2.set(fileId,src);
-  tplEventImageCacheD29.set(selectedEventId,{fileId,src});
-  tplSetImageA19P2(src);
-  if(info)info.textContent='תמונת האירוע';
-  // Update the status without rebuilding the image node we just populated.
-  const status=tplEl('tplPreviewImageStatusD5D27');
-  if(status)status.textContent='מצורפת';
+   let result;
+   if(String(template.environment||'TEST').toUpperCase()==='TEST'){
+     result=await eventViewImageDataLoadD55Q(eventId,template.id);
+     if(!result?.base64&&String(template.purpose||'')==='invitation')result=await API.request('getEventInvitationImageD5D17',{eventId});
+   }else{
+     result=await API.request('getMessageTemplateImageA19P2',{id:template.id});
+   }
+   if(seq!==tplImageSeqA19P2||eventId!==String(tplPreviewEventIdD5D17)||tplEl('tplShade')?.hidden)return;
+   if(!result?.base64||!result?.mime){if(info)info.textContent='לא הוגדרה תמונה לתבנית זו באירוע';if(status)status.textContent='לא צורפה';return;}
+   if(!/^image\/(png|jpeg|webp)$/.test(result.mime)||!/^[A-Za-z0-9+/=]+$/.test(result.base64))throw new Error('תמונה לא תקינה');
+   const src='data:'+result.mime+';base64,'+result.base64;
+   tplEventImageCacheD29.set(key,{src,fileId:String(result.imageFileId||'')});
+   tplSetImageA19P2(src);
+   if(info)info.textContent='תמונת התבנית באירוע';if(status)status.textContent='מצורפת';
  }catch(err){
-  if(seq!==tplImageSeqA19P2||selectedEventId!==String(tplPreviewEventIdD5D17))return;
-  tplSetImageA19P2('');
-  if(info)info.textContent='לא ניתן להציג תמונה: '+(err.message||err);const status=tplEl('tplPreviewImageStatusD5D27');if(status)status.textContent='שגיאת טעינה: '+(err.message||err);
+   if(seq!==tplImageSeqA19P2)return;
+   tplSetImageA19P2('');if(info)info.textContent='שגיאת טעינת תמונה: '+(err.message||err);
+   if(status)status.textContent='שגיאת טעינה';
  }
 }
 
@@ -134,5 +153,5 @@ tplEl('tplSyncEnvironment')?.addEventListener('change',()=>{tplNoticeA19P2('');t
 tplEl('tplSyncMeta').addEventListener('click',async()=>{if(tplBusyA19P2)return;tplBusyA19P2=true;const b=tplEl('tplSyncMeta');b.disabled=true;b.innerHTML='<span class="tpl-spinner"></span>מסנכרן…';tplNoticeA19P2('מסנכרן תבניות מ־Meta…');try{const r=await tplSyncAllFromMetaF14Z32_();tplInvalidateWaSendCacheF14G_();await tplLoadA19P2(true);tplNoticeA19P2(`${r.environment}: סונכרנו ${r.found}/${r.total} תבניות · ${r.changed} עודכנו`);}catch(e){tplNoticeA19P2('הסנכרון נכשל: '+e.message,true);}finally{tplBusyA19P2=false;b.disabled=false;b.textContent='🔄 סנכרון תבניות מ־Meta';}});
 tplEl('tplList').addEventListener('click',e=>{const edit=e.target.closest('[data-tpl-edit]');if(edit)tplEditA19P2(edit.dataset.tplEdit);});
 tplEl('tplList').addEventListener('dblclick',e=>{if(e.target.closest('button'))return;const row=e.target.closest('[data-tpl-row]');if(row)tplEditA19P2(row.dataset.tplRow,true);});
-tplEl('tplCloseX').addEventListener('click',()=>{if(tplBusyA19P2)return;tplCloseA19P2();});tplEl('tplSave').addEventListener('click',tplSaveA19P2);tplEl('tplCancel').addEventListener('click',tplCloseA19P2);tplEl('tplImage').addEventListener('change',e=>{const file=e.target.files[0];e.target.value='';tplImageA19P2(file);});tplEl('tplReplaceImage').addEventListener('click',()=>tplEl('tplImage').click());
+tplEl('tplEditViewD55Z').addEventListener('click',()=>{if(tplEditingA19P2&&state.session?.role==='Admin')tplEditA19P2(tplEditingA19P2.id,false);});tplEl('tplCloseX').addEventListener('click',()=>{if(tplBusyA19P2)return;tplCloseA19P2();});tplEl('tplSave').addEventListener('click',tplSaveA19P2);tplEl('tplCancel').addEventListener('click',tplCloseA19P2);tplEl('tplImage').addEventListener('change',e=>{const file=e.target.files[0];e.target.value='';tplImageA19P2(file);});tplEl('tplReplaceImage').addEventListener('click',()=>tplEl('tplImage').click());
 tplEl('tplRemoveImage').addEventListener('click',async()=>{if(!tplEditingA19P2?.id||!confirm('להסיר את התמונה מהתבנית?'))return;try{const oldId=tplEditingA19P2.imageFileId;const r=await API.request('removeMessageTemplateImageA19P2',{id:tplEditingA19P2.id});tplInvalidateWaSendCacheF14G_();if(oldId)tplImageCacheA19P2.delete(String(oldId));await tplLoadA19P2();tplEditA19P2(r.template.id);tplNoticeA19P2('התמונה הוסרה מהתבנית',false,true);}catch(e){tplNoticeA19P2(e.message,true,true);}});

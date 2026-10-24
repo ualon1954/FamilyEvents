@@ -1,4 +1,4 @@
-<!-- V1.1.90A19P2F14Z58D5D53 -->
+<!-- V1.1.90A19P2F14Z58D5D55Z41FIX67Q58 -->
 <!doctype html>
 <html lang="he" dir="rtl">
 <head>
@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ניהול אירועים</title>
   <link rel="icon" href="./favicon.ico" sizes="any">
-  <link rel="stylesheet" href="./css/styles.css?v=V1.1.90A19P2F14Z58D5D53">
-  <!-- V1.1.5: embedded CSS fallback. Keeps the UI styled even if hosting/path setup blocks the external CSS file. -->
+  <link rel="stylesheet" href="./css/styles.css?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q58">
+  <!-- embedded CSS fallback. Keeps the UI styled even if hosting/path setup blocks the external CSS file. -->
   <style id="embeddedStylesV1112">
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Hebrew",sans-serif;background:var(--bg);color:var(--text)}
@@ -27,7 +27,7 @@ button.danger{background:var(--danger);color:#fff}.page{display:none;max-width:1
 @media(max-width:850px){.topbar{align-items:flex-start;flex-wrap:wrap}.topbar nav{order:3;width:100%;overflow:auto;flex-wrap:nowrap}.brand span{display:none}.cards{grid-template-columns:1fr 1fr}.filters{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}}
 @media(max-width:520px){.cards,.filters{grid-template-columns:1fr}.user-area #userName{display:none}.page{padding:20px 12px}}
 
-/* V1.0.2 — Home/About, guest search, sortable columns, responsive mobile */
+/* Home/About, guest search, sortable columns, responsive mobile */
 .secondary{background:var(--card2)!important;color:var(--text)!important;border:1px solid var(--line)!important;border-radius:10px;padding:10px 16px;cursor:pointer}
 .brand{display:flex;align-items:center;gap:8px;border:0;background:transparent;color:var(--text);cursor:pointer}
 .hero,.about-hero{display:flex;justify-content:space-between;align-items:center;gap:28px;background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:22px;padding:32px;margin-bottom:20px}
@@ -92,7 +92,7 @@ button.danger{background:var(--danger);color:#fff}.page{display:none;max-width:1
 }
 
 
-/* V1.0.3 — full responsive navigation across intermediate widths */
+/* full responsive navigation across intermediate widths */
 .topbar.mobile-nav-mode{
   position:sticky;
   top:0;
@@ -201,7 +201,7 @@ button.danger{background:var(--danger);color:#fff}.page{display:none;max-width:1
 }
 
 
-/* V1.0.4 — About mobile, RTL guest cards, Family-Albums-style mobile menu */
+/* About mobile, RTL guest cards, Family-Albums-style mobile menu */
 
 /* About hero: prevent overflow and force full-width stacked mobile layout */
 .about-hero{
@@ -379,7 +379,7 @@ button.danger{background:var(--danger);color:#fff}.page{display:none;max-width:1
 }
 
 
-/* V1.0.5 — authoritative mobile header/navigation copied structurally from Family Albums R16V7 */
+/* authoritative mobile header/navigation copied structurally from Family Albums R16V7 */
 .mobile-menu-btn{display:none;border:1px solid var(--line)!important;background:var(--card2)!important;border-radius:12px!important;width:44px;height:42px;padding:0!important;font-size:24px!important;line-height:1;align-items:center;justify-content:center;flex:0 0 auto}
 .mobile-menu-btn.open{font-size:30px!important;position:relative;z-index:650;background:var(--card)!important;color:var(--text)!important;border-color:var(--line)!important}
 .menu-close-text{display:block;font:400 34px/1 Arial,sans-serif;color:currentColor;transform:translateY(-1px)}
@@ -467,7 +467,7 @@ button.danger{background:var(--danger);color:#fff}.page{display:none;max-width:1
   .actions .header-logout{padding-inline:7px!important}
 }
 
-/* V1.0.6 — exact Family Albums R16V7 mobile header/navigation behavior */
+/* exact Family Albums R16V7 mobile header/navigation behavior */
 
 /* Signed-in identity: same compact pill treatment as Family Albums. */
 .header-user{
@@ -604,7 +604,7 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 }
 
 
-/* V1.0.7 — FINAL Family Albums R16V7 mobile-header parity. */
+/* FINAL Family Albums R16V7 mobile-header parity. */
 @media (max-width:850px){
   .topbar{min-height:68px!important;height:68px!important;position:sticky!important;top:0!important;z-index:500!important;display:flex!important;align-items:center!important;flex-wrap:nowrap!important;direction:rtl!important;padding:7px 10px!important;gap:7px!important;overflow:visible!important;background:var(--card)!important}
   .mobile-menu-btn{display:inline-flex!important;order:0!important;flex:0 0 48px!important;width:48px!important;height:48px!important;min-width:48px!important;border-radius:14px!important;border:1px solid var(--line)!important;background:var(--card2)!important;color:var(--text)!important;align-items:center!important;justify-content:center!important;padding:0!important;margin:0!important;font-size:24px!important;line-height:1!important}
@@ -650,7 +650,7 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 }
 
 
-/* V1.0.8 — desktop signed-in user vertical alignment */
+/* desktop signed-in user vertical alignment */
 @media (min-width:851px){
   .topbar > .header-user{
     align-self:center!important;
@@ -666,7 +666,7 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
   }
 }
 
-/* V1.0.9 — desktop vertical alignment for user + theme + logout */
+/* desktop vertical alignment for user + theme + logout */
 @media (min-width:851px){
   .topbar > .header-user,
   .topbar > .actions{
@@ -689,7 +689,7 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 }
 
 
-/* V1.1.0 — data-management controls (functional styling; visual redesign later) */
+/* data-management controls (functional styling; visual redesign later) */
 .send-cell{text-align:center!important}
 .guest-send-toggle{width:20px;height:20px;cursor:pointer;accent-color:var(--accent)}
 .check-label{display:flex!important;flex-direction:row!important;align-items:center!important;gap:9px!important}
@@ -716,7 +716,7 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 }
 
 
-/* V1.1.1 — Tables management */
+/* Tables management */
 .table-summary{
   display:flex;
   flex-wrap:wrap;
@@ -752,7 +752,7 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 }
 
 
-/* V1.1.7 — save result notification */
+/* save result notification */
 .app-toast{
   position:fixed;
   z-index:500;
@@ -778,7 +778,7 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 .app-toast.error{border-color:rgba(220,70,70,.75)}
 
 
-/* V1.1.9 — event save status */
+/* event save status */
 .event-save-status{
   grid-column:1/-1;
   min-height:24px;
@@ -792,7 +792,7 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 .build-mark{font-size:12px;color:var(--muted);font-weight:700;margin-inline-start:8px}
 
   
-/* V1.1.36 — current-event selector visibility + native option contrast */
+/* current-event selector visibility + native option contrast */
 .current-event-bar select{
   color:var(--text)!important;
   background-color:var(--card)!important;
@@ -807,11 +807,11 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 .current-event-bar select:disabled{opacity:.75!important;color:var(--muted)!important;-webkit-text-fill-color:var(--muted)!important}
 
 
-/* V1.1.60 — Stage 4 Excel preview exceptions-first */
+/* Stage 4 Excel preview exceptions-first */
 .guest-page-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .import-summary{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
 .import-summary span{padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card2)}
-/* V1.1.61 — align summary error badge and emphasize invalid rows */
+/* align summary error badge and emphasize invalid rows */
 .import-summary span.error{margin-top:0;display:inline-flex;align-items:center}
 .import-preview-table tr.import-error td{background:rgba(255,0,0,.30)!important}
 .ok-text{color:var(--ok)}.warning-text{color:#ffd700}
@@ -822,7 +822,7 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 #commitGuestImportBtn:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:650px){.guest-page-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.guest-page-actions button{width:100%}}
 
-/* V1.1.64 — exact semantic Preview colors */
+/* exact semantic Preview colors */
 .import-preview-table tr.import-ok td{background:rgba(0,200,83,.22)!important}
 .import-preview-table tr.import-warning td{background:rgba(255,215,0,.30)!important}
 .import-preview-table tr.import-error td{background:rgba(255,0,0,.30)!important}
@@ -837,7 +837,7 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 @keyframes guest-import-progress-slide{0%{transform:translateX(180%)}50%{transform:translateX(55%)}100%{transform:translateX(-180%)}}
 
 
-/* V1.1.66 — refined Preview colors: clear but not saturated */
+/* refined Preview colors: clear but not saturated */
 .import-preview-table tr.import-ok td{background:rgba(34,197,94,.13)!important;color:var(--text)!important;border-color:rgba(34,197,94,.42)!important}
 .import-preview-table tr.import-warning td{background:rgba(250,204,21,.17)!important;color:var(--text)!important;border-color:rgba(250,204,21,.55)!important}
 .import-preview-table tr.import-error td{background:rgba(239,68,68,.16)!important;color:var(--text)!important;border-color:rgba(239,68,68,.52)!important}
@@ -853,7 +853,7 @@ body.light .header-user{background:#fff;border-color:rgba(24,33,43,.10);color:va
 body.light .import-summary .warning-text{color:#8a6d00!important}
 
 
-/* V1.1.67 — final high-contrast Preview status colors */
+/* final high-contrast Preview status colors */
 .import-preview-table tr.import-ok td{background:rgba(34,197,94,.30)!important;color:var(--text)!important;border-color:rgba(34,197,94,.78)!important}
 .import-preview-table tr.import-warning td{background:rgba(255,235,59,.38)!important;color:var(--text)!important;border-color:rgba(255,235,59,.92)!important}
 .import-preview-table tr.import-error td{background:rgba(239,68,68,.32)!important;color:var(--text)!important;border-color:rgba(239,68,68,.82)!important}
@@ -873,7 +873,7 @@ body.light .import-summary .ok-text{background:#d9f8e3!important;color:#147a32!i
 body.light .import-summary .warning-text{background:#fff2a8!important;color:#6f5900!important}
 body.light .import-summary .error{background:#ffd6d6!important;color:#b42318!important}
 
-/* V1.1.73 — seating confirmation and busy states */
+/* seating confirmation and busy states */
 .seating-spinner-v171{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-.16em;animation:seating-spin-v171 .7s linear infinite;margin-inline-end:.3em}
 @keyframes seating-spin-v171{to{transform:rotate(360deg)}}
 .seating-confirm-shade-v171{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:rgba(0,0,0,.66);padding:16px;backdrop-filter:blur(4px)}
@@ -883,7 +883,7 @@ body.light .import-summary .error{background:#ffd6d6!important;color:#b42318!imp
 
  .guest-seating-v174{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:190px}.guest-seating-v174 button{white-space:nowrap}#tableForm [readonly]{opacity:.7;cursor:not-allowed}
 
-/* V1.1.84 — Login modal: isolated from CRUD modals. */
+/* Login modal: isolated from CRUD modals. */
 #loginOverlay{background:rgba(5,12,24,.79);backdrop-filter:blur(15px)}
 #loginOverlay .login-card{position:relative;width:min(430px,calc(100vw - 28px));max-height:calc(100dvh - 24px);overflow:auto;padding:32px 32px 26px;border-radius:25px;border:1px solid rgba(116,170,238,.3);background:linear-gradient(155deg,var(--card),var(--card2));box-shadow:0 28px 95px #0009,0 0 0 1px #ffffff08;text-align:right}
 #loginOverlay .login-brand{width:56px;height:56px;display:grid;place-items:center;border-radius:17px;background:linear-gradient(135deg,#3176e9,#6d4edb);box-shadow:0 10px 24px #3176e94a;color:white;font-size:29px;margin:0 auto 16px}
@@ -915,7 +915,7 @@ body.light #loginOverlay .login-feedback-success{color:#176d3c}
 @media(prefers-reduced-motion:reduce){#loginOverlay .login-btn-spinner{animation-duration:1.8s}}
 
 
-/* V1.1.85 — login validation and theme control */
+/* login validation and theme control */
 #loginOverlay .login-field.is-invalid,#loginOverlay .login-field.is-invalid:focus-within{border-color:#f06472!important;box-shadow:0 0 0 2px rgba(240,100,114,.22)!important}
 #loginOverlay .login-field-error{color:#ff9ba7;font-size:13px;font-weight:650;margin:5px 2px 0;line-height:1.5}
 #loginOverlay .login-field-error[hidden]{display:none!important}
@@ -926,7 +926,7 @@ body.light #loginOverlay .login-field-error{color:#b42335}
 #loginOverlay .login-password-field button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
 
-/* V1.1.87 — login appearance restoration, required markers and autofill */
+/* login appearance restoration, required markers and autofill */
 #loginOverlay .login-required{color:#ff657b;font-weight:900;margin-inline-start:3px}
 #loginOverlay .login-field{overflow:hidden}
 #loginOverlay .login-field input,
@@ -968,11 +968,11 @@ body.light #loginOverlay .login-field input{color-scheme:light}
 @media(prefers-reduced-motion:reduce){#loginOverlay .login-submit{transition:none}}
 
 
-/* V1.1.90A5 — one login loading indicator */
+/* one login loading indicator */
 #loginOverlay #loginBtn.is-loading::before,#loginOverlay #loginBtn.is-loading::after{content:none!important;display:none!important;animation:none!important}
 #loginOverlay #loginBtn.is-loading .login-btn-spinner{display:block!important;flex:0 0 19px}
 
-/* V1.1.90A5 — switch before desktop navigation wraps */
+/* switch before desktop navigation wraps */
 @media(max-width:1250px){
   .topbar{
     position:sticky!important;top:0;z-index:500!important;
@@ -1033,7 +1033,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
 
 
 
-/* V1.1.90A5 — compact collapsible guest filters */
+/* compact collapsible guest filters */
 .guest-filters-toggle-a5{display:none}
 @media(max-width:1100px){
  #page-guests .guest-filters-toggle-a5{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:12px 0 0;padding:12px 15px;border:1px solid var(--line);border-radius:13px;background:var(--card2);color:var(--text);font-weight:800;cursor:pointer;text-align:right}
@@ -1045,7 +1045,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
 @media(max-width:560px){#page-guests #guestFiltersA5{grid-template-columns:1fr!important}}
 
 
-/* V1.1.90A8 — Hebrew wordmark: desktop only; keep compact mobile header. */
+/* Hebrew wordmark: desktop only; keep compact mobile header. */
 @media (min-width:1251px){
   .topbar .brand .brand-name{
     display:inline-block!important;
@@ -1059,7 +1059,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
   .topbar .brand:hover .brand-name{color:var(--accent);}
 }
 
-/* V1.1.90A9 — festive Hebrew gradient wordmark; desktop only. */
+/* festive Hebrew gradient wordmark; desktop only. */
 @media (min-width:1251px){
  .topbar .brand .brand-name{position:relative;display:inline-flex!important;align-items:center;gap:.28em;padding:0 .02em .25em;font-family:"Noto Sans Hebrew","Segoe UI",Arial,sans-serif;font-weight:900;letter-spacing:-.045em;line-height:1.25;color:var(--text);isolation:isolate}
  .topbar .brand .brand-name::after{content:"";position:absolute;inset-inline:2% 2%;bottom:.08em;height:2px;border-radius:100%;background:linear-gradient(90deg,#f5a83b,#ef65a2,#6889f6,#27c4dd);opacity:.85;transform:scaleX(.96);pointer-events:none}
@@ -1095,6 +1095,22 @@ body.light #loginOverlay .login-field input{color-scheme:light}
 @media(max-width:850px){#page-guests #guestStatsV178 .guest-stat-grid-v178{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){#page-guests #guestStatsV178{gap:14px;margin:18px 0 22px}#page-guests #guestStatsV178 .guest-stat-section-v178{padding:13px}#page-guests #guestStatsV178 .guest-stat-grid-v178{gap:8px}#page-guests #guestStatsV178 .guest-stat-card-v178{padding:10px;min-height:62px}#page-guests #guestStatsV178 .guest-stat-card-v178 strong{font-size:1.35rem}}
 </style>
+
+<style id="eventEditorD55OStyles">
+#modal .modal.event-editor-d5d25{width:min(96vw,1040px);max-width:1040px;max-height:94vh;overflow-y:auto}
+.event-editor-heading-d55o{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 2px 18px;direction:rtl}
+.event-editor-icon-d55o{font-size:27px;color:#d4af37}
+.event-editor-name-d55o{font-size:clamp(21px,3vw,30px);font-weight:800;overflow-wrap:anywhere}
+.event-editor-status-d55o{border:1px solid var(--line);border-radius:100px;padding:4px 11px;color:var(--muted);font-size:13px}
+.event-editor-tabs-d55o{display:flex;gap:6px;flex-wrap:wrap;grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:10px}
+.event-editor-tab-d55o{border:1px solid var(--line);border-radius:9px;background:var(--card2);color:var(--text);padding:9px 14px;cursor:pointer}
+.event-editor-tab-d55o.active{border-color:#d4af37;color:#d4af37;font-weight:700}
+.event-editor-pane-d55o{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px;align-content:start;padding:16px 0}
+.event-editor-pane-d55o[hidden]{display:none!important}
+.event-editor-pane-d55o>section{grid-column:1/-1}
+#eventForm>.actions,#eventForm>#eventSaveStatus{grid-column:1/-1}
+@media(max-width:650px){.event-editor-tabs-d55o{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.event-editor-tab-d55o{padding:9px 3px;font-size:13px}}
+</style>
 </head>
 <body>
 <header class="topbar">
@@ -1108,6 +1124,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
     <button data-page="guests">מוזמנים</button>
     <button data-page="seating">ניהול שולחנות</button>
     <button data-page="messages" data-roles="Admin,EventManager">תבניות WhatsApp</button>
+    <button data-page="whatsappMonitor" data-role="Admin">מרכז ניטור WhatsApp</button>
     <button data-page="whatsappLog" data-roles="Admin,EventManager">יומן WhatsApp</button>
     <button data-page="eventCosts" data-roles="Admin,EventManager">עלויות אירוע</button>
     <button data-page="about">אודות</button>
@@ -1217,18 +1234,18 @@ body.light #loginOverlay .login-field input{color-scheme:light}
   </section>
 
   <section id="page-seating" class="page">
-    <div class="page-head">
+    <div class="page-head seating-head-d55z8">
       <div>
         <h1>ניהול שולחנות</h1>
         <p class="muted">ניהול שולחנות לפי האירוע הנבחר</p>
       </div>
-      <button id="addTableBtn" class="primary">+ הוספת שולחן</button><button type="button" class="danger" id="deleteAllEventTablesV1190A10" hidden>מחיקת כל השולחנות</button>
+      <div class="seating-head-actions-d55z8"><button id="addTableBtn" class="primary seating-action-d55z8"><span aria-hidden="true">＋</span> הוספת שולחן</button><button type="button" class="danger seating-action-d55z8 seating-delete-all-d55z8" id="deleteAllEventTablesV1190A10" hidden><span aria-hidden="true">🗑</span> מחיקת כל השולחנות</button></div>
     </div>
 
     <div class="panel" id="tableManagementPanelV15">
       <div class="table-summary" id="tableSummary"></div>
       <div id="guestSeatingNoticeV174" class="muted" aria-live="polite"></div>
-      <div class="table-wrap">
+      <div class="table-wrap seating-scroll-d55z8" tabindex="0" aria-label="טבלת שולחנות — ניתן לגלול אופקית">
         <table class="admin-table seating-table">
           <thead>
             <tr>
@@ -1244,9 +1261,9 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       </div>
     </div>
 
-    <div class="panel" id="tableManagerLookupV15">
+    <div class="panel" id="tableManagerLookupV15" hidden>
       <h2>איתור שיוך שולחן</h2>
-      <div class="filters table-manager-filters-v15">
+      <div class="filters table-manager-filters-v15" id="seatingFiltersD55Z8">
         <label>חיפוש מוזמן<input id="tableLookupSearchV15" placeholder="שם, טלפון או מספר שולחן"></label>
         <label>צד<select id="tableLookupSideV15"><option value="">כל הצדדים</option></select></label>
         <label>קבוצה<select id="tableLookupGroupV15"><option value="">כל הקבוצות</option></select></label>
@@ -1254,7 +1271,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       <div id="seatingWorkspaceV170"></div>
     </div>
   </section>
-  <section id="page-messages" class="page"><div class="page-head"><h1 id="tplPageTitle">ניהול תבניות WhatsApp</h1><div class="tpl-page-actions"><select id="tplSyncEnvironment" aria-label="סביבת Meta"><option value="PRODUCTION">PRODUCTION</option><option value="TEST">TEST</option></select><button class="primary" id="tplSyncMeta">🔄 סנכרון תבניות מ־Meta</button></div></div><p class="tpl-note" id="tplAdminNote">Meta היא מקור האמת לתוכן ולסטטוס התבניות. כאן מנהלים את שם התצוגה, מטרת השימוש והאם התבנית פעילה במערכת.</p><p class="tpl-note" id="tplManagerNote" hidden>מוצגות רק תבניות PROD פעילות. תמונת ההזמנה מנוהלת במסך האירוע.</p><div id="tplNotice" role="status"></div><div class="panel"><div id="tplList">טוען תבניות…</div></div><div class="tpl-shade" id="tplShade" hidden><div class="panel tpl-dialog" id="tplEditor" role="dialog" aria-modal="true"><div class="tpl-modal-header-d28"><button type="button" id="tplCloseX" class="tpl-close-x" aria-label="סגירת חלון התבנית" title="סגור">×</button><h2 id="tplEditorTitle">עריכת תבנית</h2></div><div id="tplEditorNotice" role="status"></div><div class="grid"><label>שם תבנית <span class="tpl-required">*</span><input id="tplName" maxlength="120" required></label><label>מטרה<select id="tplPurpose"><option value="invitation">הזמנה לאירוע</option><option value="rsvp_update">תזכורת לאישור הגעה</option><option value="table_update">שיוך שולחנות וניווט</option><option value="table_payment_update">שיוך שולחנות, ניווט ותשלום</option><option value="thank_you">תודה למשתתפים</option></select></label><label>פעילה במערכת<select id="tplActive"><option value="true">כן</option><option value="false">לא</option></select></label><label>שם תבנית ב־Meta<input id="tplMetaName" readonly></label><label>סטטוס Meta<input id="tplMetaStatus" readonly></label><label>קטגוריית Meta<input id="tplMetaCategory" readonly></label></div><p class="tpl-v3-note-f14e">V3: גוף ההודעה נקרא אוטומטית מתבנית Meta ואינו נערך במערכת. תמונת Header מוגדרת בנפרד לכל אירוע; Body {{1}} הוא הפנייה האישית וכפתור ״אישור הגעה״ משתמש במפתח RSVP.</p><label>נוסח ההודעה מ־Meta<textarea id="tplBody" rows="7" maxlength="3500" readonly></textarea></label><div class="actions"><button class="primary" id="tplSave">שמור הגדרות</button><button class="secondary" id="tplCancel">ביטול</button></div><div id="tplImageArea" hidden><label>תמונת תבנית (PNG/JPG/WEBP, עד 4MB)<input type="file" id="tplImage" accept="image/png,image/jpeg,image/webp"></label><div id="tplImageInfo"></div><img id="tplImagePreview" class="tpl-image-preview" alt="תמונת התבנית" hidden><button type="button" class="secondary" id="tplReplaceImage">החלף תמונה</button><button type="button" class="secondary" id="tplRemoveImage">הסר תמונה</button></div></div></div></section>
+  <section id="page-messages" class="page"><div class="page-head"><h1 id="tplPageTitle">ניהול תבניות WhatsApp</h1><div class="tpl-page-actions"><select id="tplSyncEnvironment" aria-label="סביבת Meta"><option value="PRODUCTION">PRODUCTION</option><option value="TEST">TEST</option></select><button class="primary" id="tplSyncMeta">🔄 סנכרון תבניות מ־Meta</button></div></div><p class="tpl-note" id="tplAdminNote">Meta היא מקור האמת לתוכן ולסטטוס התבניות. כאן מנהלים את שם התצוגה, מטרת השימוש והאם התבנית פעילה במערכת.</p><p class="tpl-note" id="tplManagerNote" hidden>מוצגות רק תבניות PROD פעילות. תמונת ההזמנה מנוהלת במסך האירוע.</p><div id="tplNotice" role="status"></div><div class="panel"><div id="tplList">טוען תבניות…</div></div><div class="tpl-shade" id="tplShade" hidden><div class="panel tpl-dialog" id="tplEditor" role="dialog" aria-modal="true"><div class="tpl-modal-header-d28"><button type="button" id="tplCloseX" class="tpl-close-x" aria-label="סגירת חלון התבנית" title="סגור">×</button><h2 id="tplEditorTitle">עריכת תבנית</h2></div><div id="tplEditorNotice" role="status"></div><div class="grid"><label>שם תבנית <span class="tpl-required">*</span><input id="tplName" maxlength="120" required></label><label>מטרה<select id="tplPurpose"><option value="invitation">הזמנה לאירוע</option><option value="rsvp_update">תזכורת לאישור הגעה</option><option value="table_update">שיוך שולחנות וניווט</option><option value="table_payment_update">שיוך שולחנות, ניווט ותשלום</option><option value="thank_you">תודה למשתתפים</option></select></label><label>פעילה במערכת<select id="tplActive"><option value="true">כן</option><option value="false">לא</option></select></label><label>שם תבנית ב־Meta<input id="tplMetaName" readonly></label><label>סטטוס Meta<input id="tplMetaStatus" readonly></label><label>קטגוריית Meta<input id="tplMetaCategory" readonly></label></div><p class="tpl-v3-note-f14e">V3: גוף ההודעה נקרא אוטומטית מתבנית Meta ואינו נערך במערכת. תמונת Header מוגדרת בנפרד לכל אירוע; Body {{1}} הוא הפנייה האישית וכפתור ״אישור הגעה״ משתמש במפתח RSVP.</p><label>נוסח ההודעה מ־Meta<textarea id="tplBody" rows="7" maxlength="3500" readonly></textarea></label><div class="actions"><button type="button" class="primary" id="tplEditViewD55Z" hidden>✎ עריכה</button><button class="primary" id="tplSave">שמור הגדרות</button><button class="secondary" id="tplCancel">ביטול</button></div><div id="tplImageArea" hidden><label>תמונת תבנית (PNG/JPG/WEBP, עד 4MB)<input type="file" id="tplImage" accept="image/png,image/jpeg,image/webp"></label><div id="tplImageInfo"></div><img id="tplImagePreview" class="tpl-image-preview" alt="תמונת התבנית" hidden><button type="button" class="secondary" id="tplReplaceImage">החלף תמונה</button><button type="button" class="secondary" id="tplRemoveImage">הסר תמונה</button></div></div></div></section>
 
   <section id="page-about" class="page">
     <div class="about-hero">
@@ -1275,6 +1292,12 @@ body.light #loginOverlay .login-field input{color-scheme:light}
   </section>
 
 
+  <section id="page-whatsappMonitor" class="page" dir="rtl">
+    <h1>מרכז ניטור WhatsApp</h1>
+    <p>אצוות, שגיאות, חסימות וזמנים עבור האירוע הנבחר. הנתונים מתעדכנים בלחיצה על רענון; אין פעולת שליחה במסך זה.</p>
+    <div class="actions"><button type="button" id="waMonitorRefreshQ17">רענן ניטור</button><button type="button" id="waMonitorReportQ17" class="secondary">הצג דוח להעתקה</button><button type="button" id="waMonitorTestQ17" class="secondary">מסך בדיקות והתאוששות</button></div>
+    <div id="waMonitorOutputQ17" role="status" aria-live="polite"></div>
+  </section>
   <section id="page-whatsappLog" class="page">
     <div class="page-head"><h1>יומן WhatsApp</h1><div class="guest-page-actions wa-log-actions-z55c">
       <button class="wa-log-action-btn-z55c refresh" id="waLogRefreshZ55B" type="button" title="רענון היומן"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"/></svg><span>רענון</span></button>
@@ -1301,15 +1324,16 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       <th class="sortable" data-wa-sort="guestName" tabindex="0">מוזמן <span class="sort-icon">↕</span></th>
       <th class="sortable" data-wa-sort="phone" tabindex="0">טלפון <span class="sort-icon">↕</span></th>
       <th class="sortable" data-wa-sort="templateName" tabindex="0">תבנית <span class="sort-icon">↕</span></th>
+      <th class="sortable" data-wa-sort="category" tabindex="0">סיווג תבנית <span class="sort-icon">↕</span></th>
       <th class="sortable" data-wa-sort="environment" tabindex="0">סביבה <span class="sort-icon">↕</span></th>
       <th class="sortable" data-wa-sort="status" tabindex="0">סטטוס <span class="sort-icon">↕</span></th>
-    </tr></thead><tbody id="waLogBodyZ55B"><tr><td colspan="7">טוען…</td></tr></tbody></table></div>
+    </tr></thead><tbody id="waLogBodyZ55B"><tr><td colspan="8">טוען…</td></tr></tbody></table></div>
   </section>
 
 
   <section id="page-eventCosts" class="page cost-page-z58d4">
     <div class="cost-hero-z58d4"><div><h1>עלויות אירוע</h1><p>ניהול וריכוז כל הוצאות האירוע, כולל עלויות WhatsApp בפועל.</p></div><div class="cost-hero-actions-z58d4"><button class="ui-btn-z58d4 secondary" id="eventCostsRefreshZ58" type="button"><span class="btn-icon">↻</span><span>רענון</span></button><button class="ui-btn-z58d4 primary" id="eventCostAddZ58" type="button"><span class="btn-icon">＋</span><span>הוספת הוצאה</span></button></div></div>
-    <div class="cost-summary-z58d4"><div class="cost-card-z58d4 total"><span class="cost-card-icon-z58d5" aria-hidden="true">₪</span><div><span>סה״כ אירוע</span><strong id="eventCostsTotalZ58">₪0.00</strong></div></div><div class="cost-card-z58d4 actual"><span class="cost-card-icon-z58d5" aria-hidden="true">✓</span><div><span>בפועל</span><strong id="eventCostsActualZ58C">₪0.00</strong></div></div><div class="cost-card-z58d4 expected"><span class="cost-card-icon-z58d5" aria-hidden="true">◷</span><div><span>צפוי</span><strong id="eventCostsExpectedZ58C">₪0.00</strong></div></div><div class="cost-card-z58d4 whatsapp"><span class="cost-card-icon-z58d5" aria-hidden="true">◉</span><div><span>WhatsApp</span><strong id="eventCostsWaZ58">₪0.00</strong></div></div></div>
+    <div class="cost-summary-z58d4"><div class="cost-card-z58d4 total"><span class="cost-card-icon-z58d5" aria-hidden="true">₪</span><div><span>סה״כ אירוע</span><strong id="eventCostsTotalZ58">₪0.00</strong></div></div><div class="cost-card-z58d4 actual"><span class="cost-card-icon-z58d5" aria-hidden="true">✓</span><div><span>בפועל</span><strong id="eventCostsActualZ58C">₪0.00</strong></div></div><div class="cost-card-z58d4 expected"><span class="cost-card-icon-z58d5" aria-hidden="true">◷</span><div><span>צפוי</span><strong id="eventCostsExpectedZ58C">₪0.00</strong></div></div><div class="cost-card-z58d4 whatsapp"><span class="cost-card-icon-z58d5" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.2A13.7 13.7 0 0 0 4.2 23L2 30l7.2-2.1A13.8 13.8 0 1 0 16 2.2Zm0 25.1a11.3 11.3 0 0 1-5.8-1.6l-.4-.2-4.2 1.2 1.3-4.1-.3-.4a11.4 11.4 0 1 1 9.4 5.1Zm6.3-8.5c-.3-.2-2-1-2.3-1.1-.3-.1-.5-.2-.7.2-.2.3-.9 1.1-1.1 1.3-.2.2-.4.2-.7.1-.3-.2-1.4-.5-2.6-1.6-1-.9-1.7-2-1.9-2.3-.2-.3 0-.5.1-.7l.5-.6.3-.5c.1-.2 0-.4 0-.6l-1-2.5c-.3-.7-.6-.6-.8-.6h-.7c-.3 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.5c.2.2 2.4 3.7 5.8 5.2 2.9 1.3 3.5 1.1 4.1 1 .6-.1 2-.8 2.3-1.6.3-.8.3-1.5.2-1.6-.1-.2-.3-.3-.6-.5Z"/></svg></span><div><span>WhatsApp</span><strong id="eventCostsWaZ58">₪0.00</strong></div></div></div>
     <div class="cost-panel-z58d4 filters-panel-z58d4"><div class="cost-panel-title-z58d4"><strong>סינון עלויות</strong><button type="button" id="eventCostsFiltersToggleZ58C" class="ui-btn-z58d4 ghost compact" aria-controls="eventCostsFiltersZ58C" aria-expanded="true"><span>סינון</span><span>▴</span></button></div><div class="cost-filterbar-z58d4 filters-open-a5" id="eventCostsFiltersZ58C"><div class="cost-search-z58d4"><span>⌕</span><input id="eventCostsSearchZ58C" placeholder="חיפוש לפי תיאור, קטגוריה או תבנית"></div><select id="eventCostsEventZ58"><option value="">כל האירועים</option></select><select id="eventCostsCategoryZ58C"><option value="">כל הקטגוריות</option></select><select id="eventCostsTypeZ58C"><option value="">כל המצבים</option><option value="ACTUAL">בפועל</option><option value="EXPECTED">צפויה</option><option value="WHATSAPP">WhatsApp</option></select><input type="date" id="eventCostsFromZ58C" title="מתאריך"><input type="date" id="eventCostsToZ58C" title="עד תאריך"><button type="button" id="eventCostsClearZ58C" class="ui-btn-z58d4 filter"><span>⌫</span><span>נקה סינון</span></button></div></div>
     <div class="cost-panel-z58d4 table-panel-z58d4"><div class="cost-table-toolbar-z58d4"><strong>פירוט עלויות</strong><div id="eventCostsNoticeZ58C" class="cost-count-z58d4" role="status"></div></div><div class="table-wrap"><table class="cost-table-z58d4"><thead><tr><th class="sortable" data-cost-sort="date">תאריך <span>↕</span></th><th class="sortable" data-cost-sort="category">קטגוריה <span>↕</span></th><th class="sortable" data-cost-sort="description">תיאור <span>↕</span></th><th class="sortable" data-cost-sort="amount">סכום <span>↕</span></th><th class="sortable" data-cost-sort="costType">מצב <span>↕</span></th><th class="event-cost-admin-tech-z58a sortable" data-cost-sort="source">מקור <span>↕</span></th><th>הערות</th><th>פעולות</th></tr></thead><tbody id="eventCostsBodyZ58"><tr><td colspan="8">טוען…</td></tr></tbody></table></div></div>
     <div id="eventCostsByEventWrapZ58" class="cost-panel-z58d4" hidden><div class="cost-table-toolbar-z58d4"><strong>סיכום לפי אירוע</strong></div><div class="table-wrap"><table class="cost-table-z58d4"><thead><tr><th>אירוע</th><th>הוצאות</th><th>WhatsApp</th><th>סה״כ</th></tr></thead><tbody id="eventCostsByEventZ58"></tbody></table></div></div>
@@ -1348,7 +1372,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       <button data-admin-tab="roles">תפקידים</button>
       <button data-admin-tab="permissions">ניהול הרשאות</button>
       <button data-admin-tab="whatsapp">חיבור ל-WhatsApp</button>
-      <button data-admin-tab="systemValues">ערכי מערכת</button>
+      <button data-admin-tab="systemValues">הגדרות מערכת</button>
       <button data-admin-tab="whatsappCosts">עלויות WhatsApp</button>
       <button data-admin-tab="versions">גרסאות</button>
     </div>
@@ -1393,11 +1417,12 @@ body.light #loginOverlay .login-field input{color-scheme:light}
   </div>
 </div>
 
-<script src="js/config.js?v=V1.1.90A19P2F14Z58D5D53"></script>
-<script src="js/version.js?v=V1.1.90A19P2F14Z58D5D53"></script>
-<script src="js/session.js?v=V1.1.90A19P2F14Z58D5D53"></script>
-<script src="js/api.js?v=V1.1.90A19P2F14Z58D5D53"></script>
-<script src="js/app.js?v=V1.1.90A19P2F14Z58D5D53"></script>
-<script src="js/templates.js?v=V1.1.90A19P2F14Z58D5D53"></script>
+<script src="js/config.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q58"></script>
+<script src="js/version.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q58"></script>
+<script src="js/session.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q58"></script>
+<script src="js/api.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q58"></script>
+<script src="js/app.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q58-JOURNALUI1"></script>
+<script src="js/templates.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q58"></script>
+<script src="js/whatsapp-simulation-q42.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q58"></script>
 </body>
 </html>
