@@ -1,4 +1,4 @@
-/* FIX67Q64 — Synthetic load UI, based on Q40. No real-send API is used here. */
+/* FIX67Q65 — Synthetic load UI, based on Q40. No real-send API is used here. */
 async function waSimulationOpenQ42_(){
   if(state.session?.role!=='Admin'||!state.activeEventId)return;
   const eventId=String(state.activeEventId),token=state.session.token,ownerId=String(state.session.id);

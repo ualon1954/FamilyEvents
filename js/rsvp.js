@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q64 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q65 */
 (async function(){
  const themeButton=document.getElementById('theme-toggle');
  const THEME_KEY='events_rsvp_theme';
