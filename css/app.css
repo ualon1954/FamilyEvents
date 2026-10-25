@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q62 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q64 */
 /* F14Z53B — Meta pricing watch */
 .pricing-watch-status-z53b{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);line-height:1.6}
 .pricing-watch-actions-z53b{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-start;align-items:center}.pricing-watch-actions-z53b button{white-space:nowrap}
@@ -206,3 +206,5 @@ body.light #modal .wa-template-picker-fix7>select option:checked{background-colo
 #waSimPanelQ42 dl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px}
 #waSimPanelQ42 dd{margin:0;text-align:left;white-space:nowrap}
 #waSimPanelQ42 [hidden]{display:none!important}
+
+.rsvp-seating-notice-q64{display:block;max-width:240px;margin-top:6px;font-size:.75rem;line-height:1.5;color:inherit;opacity:.85;white-space:normal}

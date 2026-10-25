@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q62 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q64 */
 // Only use a candidate returned by the current, event-scoped inspection.
 function waQuarantineCandidateFromInspectionQ9_(result,eventId){
   const c=result&&result.quarantineCandidate;
@@ -950,7 +950,7 @@ function renderGuests(){
   $("#guestsBody").innerHTML=visibleGuestsV178.map(g=>{const status=g.rsvpStatus||g.status||"Pending";return `<tr data-guest="${g.guestId||g.id}">
     <td data-col="name" title="${esc(g.name)}">${esc(g.name)}</td><td data-col="phone">${esc(g.phone)}</td>
     <td data-col="side" ${showSides?"":"hidden"}>${esc(labelFor("sides",g.sideId||g.side,activeEvent()?.eventTypeId))}</td><td data-col="group" title="${esc(labelFor("groups",g.groupId||g.group,activeEvent()?.eventTypeId))}" ${showGroups?"":"hidden"}>${esc(labelFor("groups",g.groupId||g.group,activeEvent()?.eventTypeId))}</td>
-    <td data-col="invitedCount">${g.invitedCount||g.partySize||1}</td><td data-col="confirmedCount">${g.confirmedCount||0}</td><td data-col="rsvpStatus"><span class="badge ${esc(status)}">${esc(statusText(status))}</span></td>
+    <td data-col="invitedCount">${g.invitedCount||g.partySize||1}</td><td data-col="confirmedCount">${g.confirmedCount||0}</td><td data-col="rsvpStatus"><span class="badge ${esc(status)}">${esc(statusText(status))}</span>${g.rsvpSeatingNoticeQ64?'<small class="rsvp-seating-notice-q64">'+esc(g.rsvpSeatingNoticeQ64)+'</small>':''}</td>
     <td data-col="seating">${guestSeatingCellV174_(g)}</td>
     <td class="send-cell"><input class="guest-send-toggle" data-send-guest="${g.guestId||g.id}" type="checkbox" ${guestSendChecked(g)?"checked":""} aria-label="שליחה ב-WhatsApp"></td>
     <td class="guest-row-actions-v179">${guestSendChecked(g)&&['Admin','EventManager'].includes(state.session?.role)?`<button type="button" class="guest-icon-action-v179" data-wa-send-row="${esc(g.guestId||g.id)}" title="שליחת WhatsApp למוזמן" aria-label="שליחת WhatsApp אל ${esc(g.name)}"><svg class="wa-guest-icon-f14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#25D366"/><path d="M8.2 6.9c.3-.3.7-.4 1-.2l1.4 2.1c.2.3.2.7 0 1l-.7.8c.7 1.5 1.9 2.7 3.4 3.4l.8-.7c.3-.2.7-.2 1 0l2.1 1.4c.3.2.4.7.2 1-1 1.7-2.6 2.2-4.5 1.6-3.3-1-5.9-3.6-6.9-6.9-.6-1.9-.1-3.5 1.6-4.5.2-.1.4-.1.6 0z" fill="white"/></svg></button>`:''}<button type="button" class="guest-icon-action-v179" data-rsvp-link="${esc(g.guestId||g.id)}" title="העתק קישור אישור הגעה" aria-label="העתק קישור אישור הגעה עבור ${esc(g.name)}">🔗</button><button type="button" class="guest-icon-action-v179 edit" data-edit-guest="${esc(g.guestId||g.id)}" title="עריכה" aria-label="עריכת ${esc(g.name)}">✎</button><button type="button" class="guest-icon-action-v179 delete" data-delete-guest="${esc(g.guestId||g.id)}" title="מחיקת מוזמן" aria-label="מחיקת ${esc(g.name)}" ${guestCanDeleteV179_(g)?"":"disabled"}>🗑</button></td></tr>`}).join("");
@@ -2732,7 +2732,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
         const fix20ApiTotal=fix20Samples.reduce((n,x)=>n+x.apiMs,0);
         const fix20WaitTotal=fix20Waits.reduce((n,x)=>n+x,0);
         const fix20Rows=dispatchPhaseRowsFIX67+waPreparationRowsQ10_(fix20Samples)+waRsvpRowsQ11_(fix20Samples)+waMediaRowsQ12_(fix20Samples)+waChunkTimingRowsQ16_(fix20Samples)+'<dt>שמירת אבחון מרוכזת לאחר הפניות</dt><dd>'+waFormatElapsedF14V_(fix20Samples.reduce((n,x)=>n+(Number(x.diagnosticsMs)||0),0))+'</dd>'+Object.entries(fix20Keys).map(([key,label])=>`<dt>${esc(label)}</dt><dd>${fix20Samples.some(x=>typeof x.server?.[key]==='number')?waFormatElapsedF14V_(fix20Sum(key)):'לא נמדד בנפרד'}</dd>`).join('');
-        const fix20TimingHtml=`<div class="wa-timing-d37"><h3>FIX67Q62 — מדידת בקשות אצווה</h3><dl><dt>אצוות עם פירוט מדידה פרטני</dt><dd>${fix20Samples.filter(x=>x.server).length}/${fix20Samples.length}</dd><dt>טיפול בתור הניסיונות החוזרים, כולל המתנות ותקשורת</dt><dd>${waFormatElapsedF14V_(retryQueueMsQ51)}</dd><dt>קריאות API של המנות, כולל תקשורת</dt><dd>${waFormatElapsedF14V_(fix20RoundTrip)}</dd><dt>זמן פונקציית השליחה בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ServerTotal)}</dd><dt>זמן טיפול API בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ApiTotal)}</dd><dt>זמן מחוץ לטיפול API (הערכה)</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא ניתן לחשב ללא תשובת שרת':waFormatElapsedF14V_(Math.max(0,fix20RoundTrip-fix20ApiTotal))}</dd><dt>המתנה להגדרות לאחר אישור השליחה</dt><dd>${waFormatElapsedF14V_(settingsWaitMsQ10)}</dd><dt>השהיות בין מנות</dt><dd>${waFormatElapsedF14V_(fix20WaitTotal)}</dd><dt>המתנה מתוכננת לקצב טלפון הבדיקה בדפדפן</dt><dd>${waFormatElapsedF14V_(testRateBrowserWaitQ48)}</dd>${fix20Rows}</dl><p class="muted">רכיבי משנה עשויים לחפוף; אין לסכום אותם. נתוני שרת מתקבלים רק מהודעות שהחזירו תשובה.</p></div>`;
+        const fix20TimingHtml=`<div class="wa-timing-d37"><h3>FIX67Q64 — מדידת בקשות אצווה</h3><dl><dt>אצוות עם פירוט מדידה פרטני</dt><dd>${fix20Samples.filter(x=>x.server).length}/${fix20Samples.length}</dd><dt>טיפול בתור הניסיונות החוזרים, כולל המתנות ותקשורת</dt><dd>${waFormatElapsedF14V_(retryQueueMsQ51)}</dd><dt>קריאות API של המנות, כולל תקשורת</dt><dd>${waFormatElapsedF14V_(fix20RoundTrip)}</dd><dt>זמן פונקציית השליחה בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ServerTotal)}</dd><dt>זמן טיפול API בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ApiTotal)}</dd><dt>זמן מחוץ לטיפול API (הערכה)</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא ניתן לחשב ללא תשובת שרת':waFormatElapsedF14V_(Math.max(0,fix20RoundTrip-fix20ApiTotal))}</dd><dt>המתנה להגדרות לאחר אישור השליחה</dt><dd>${waFormatElapsedF14V_(settingsWaitMsQ10)}</dd><dt>השהיות בין מנות</dt><dd>${waFormatElapsedF14V_(fix20WaitTotal)}</dd><dt>המתנה מתוכננת לקצב טלפון הבדיקה בדפדפן</dt><dd>${waFormatElapsedF14V_(testRateBrowserWaitQ48)}</dd>${fix20Rows}</dl><p class="muted">רכיבי משנה עשויים לחפוף; אין לסכום אותם. נתוני שרת מתקבלים רק מהודעות שהחזירו תשובה.</p></div>`;
         console.info('[WA FIX20 PERF]',{samples:fix20Samples.length,roundTripMs:Math.round(fix20RoundTrip),serverMs:Math.round(fix20ServerTotal),apiMs:Math.round(fix20ApiTotal),waitMs:Math.round(fix20WaitTotal),breakdown:Object.fromEntries(Object.keys(fix20Keys).map(k=>[k,fix20Sum(k)]))});
         const timingHtml=`<div class="wa-timing-d37"><h3>פירוט זמנים — TEST</h3><dl><dt>קריאת API כולל תקשורת</dt><dd>${waFormatElapsedF14V_(roundTripMs)}</dd><dt>פירוט מהשרת</dt><dd>${serverTiming?'התקבל':'לא התקבל נתון'}</dd>${serverTiming}</dl><p class="muted">זמן קריאת API כולל זמן שרת, תקשורת והמתנה; אין לחבר אותו לזמני השרת.</p></div>`;
         console.info('[WA PERF] sendAnyTemplateToTestNumber',{roundTripMs:Math.round(roundTripMs),serverPerfAvailable:!!serverTiming});
@@ -3780,22 +3780,37 @@ document.getElementById("guestsBody")?.addEventListener("dblclick",e=>{
 // public RSVP updates are made in another same-origin tab. 
 let rsvpRefreshBusyV1189A4_=false;
 let rsvpRefreshNeededV1189A4_=false;
+let rsvpRevisionQ64={token:'',eventId:'',revision:''};
 async function refreshGuestsAfterRsvpV1189A4_(){
- if(!state.session||rsvpRefreshBusyV1189A4_)return;
+ if(!state.session||!['Admin','EventManager'].includes(state.session.role)||!state.activeEventId||document.hidden||!['guests','dashboard','seating'].includes(currentPage)||$('#modal')?.classList.contains('show'))return;
+ if(rsvpRefreshBusyV1189A4_){rsvpRefreshNeededV1189A4_=true;return;}
+ const token=state.session.token,eventId=String(state.activeEventId);
+ const revision=rsvpRevisionQ64.token===token&&rsvpRevisionQ64.eventId===eventId?rsvpRevisionQ64.revision:'';
  rsvpRefreshBusyV1189A4_=true;
  try{
-  const base=await API.request('bootstrap',{token:state.session.token});
-  if(!state.session)return;
-  state.guests=Array.isArray(base.guests)?base.guests:state.guests;
-  renderGuests();renderDashboard();
+  const result=await API.request('getRsvpEventUpdatesQ64',{eventId,revision},{skipActivityQ31:true});
+  if(state.session?.token!==token||String(state.activeEventId)!==eventId||result?.eventId!==eventId||document.hidden)return;
+  if(result.busy)return;
+  if(typeof result.revision!=='string'||typeof result.changed!=='boolean')throw Error('תשובת עדכון אישורי ההגעה אינה תקינה');
+  // Do not replace data or close a seating editor opened while the read was running.
+  if($('#modal')?.classList.contains('show'))return;
+  if(result.changed){
+    if(!Array.isArray(result.guests)||result.guests.some(g=>String(g.eventId)!==eventId)||!result.seating||String(result.seating.eventId)!==eventId)throw Error('נתוני עדכון אישורי ההגעה אינם תואמים לאירוע');
+    state.guests=state.guests.filter(g=>String(g.eventId)!==eventId).concat(result.guests);
+    state.seating=result.seating;
+    renderGuests();renderDashboard();if(currentPage==='seating')renderTables();
+  }
+  rsvpRevisionQ64={token,eventId,revision:result.revision};
  }catch(err){console.warn('RSVP guest refresh failed',err)}
- finally{rsvpRefreshBusyV1189A4_=false;if(rsvpRefreshNeededV1189A4_){rsvpRefreshNeededV1189A4_=false;refreshGuestsAfterRsvpV1189A4_()}}
+ finally{rsvpRefreshBusyV1189A4_=false;if(rsvpRefreshNeededV1189A4_){rsvpRefreshNeededV1189A4_=false;void refreshGuestsAfterRsvpV1189A4_();}}
 }
 window.addEventListener('storage',e=>{
  if(e.key!=='events_rsvp_updated_v1189a4'||!e.newValue)return;
- if(rsvpRefreshBusyV1189A4_)rsvpRefreshNeededV1189A4_=true;else refreshGuestsAfterRsvpV1189A4_();
+ void refreshGuestsAfterRsvpV1189A4_();
 });
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.session&&currentPage==='guests')refreshGuestsAfterRsvpV1189A4_()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshGuestsAfterRsvpV1189A4_();});
+// Phone/other-device replies cannot emit this browser's localStorage events.
+setInterval(()=>{if(!rsvpRefreshBusyV1189A4_)void refreshGuestsAfterRsvpV1189A4_();},15000);
 
 /* WhatsApp log UI */
 let waLogRowsZ55=[];
