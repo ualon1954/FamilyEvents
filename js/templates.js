@@ -1,11 +1,11 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q65 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q170 */
 // A19P2F3 — Admin draft templates only; no Meta changes or sending.
 let tplRowsA19P2=[],tplEditingA19P2=null,tplBusyA19P2=false,tplViewA19P2=false,tplSystemSettingsD5D5=[];
 // D5D14 — client cache: navigation back to Templates must not refetch unchanged data.
 let tplAllRowsCacheD5D14=null,tplCacheOwnerD5D14='',tplLoadPromiseD5D14=null;
 function tplCacheOwnerKeyD5D14_(){const s=state.session||{};return [s.userId||s.email||s.name||'',s.role||''].join('|');}
 function tplInvalidateListCacheD5D14_(){tplAllRowsCacheD5D14=null;tplLoadPromiseD5D14=null;tplCacheOwnerD5D14=tplCacheOwnerKeyD5D14_();}
-function tplApplyCachedRowsD5D14_(){const admin=state.session?.role==='Admin',env=admin?String(tplEl('tplSyncEnvironment')?.value||'PRODUCTION').toUpperCase():'PRODUCTION';tplRowsA19P2=(tplAllRowsCacheD5D14||[]).filter(x=>(admin||String(x.active).toLowerCase()==='true')&&String(x.environment||'PRODUCTION').toUpperCase()===env);tplRenderA19P2();}
+function tplApplyCachedRowsD5D14_(){const admin=state.session?.role==='Admin',env=admin?String(tplEl('tplSyncEnvironment')?.value||'PRODUCTION').toUpperCase():'PRODUCTION';tplRowsA19P2=(tplAllRowsCacheD5D14||[]).filter(x=>templateAllowedBySeatingQ165_(x)).filter(x=>(admin||String(x.active).toLowerCase()==='true')&&String(x.environment||'PRODUCTION').toUpperCase()===env);tplRenderA19P2();}
 function tplPatchCachedTemplateD5D14_(t){if(!t||!Array.isArray(tplAllRowsCacheD5D14))return;const i=tplAllRowsCacheD5D14.findIndex(x=>String(x.id)===String(t.id));if(i>=0)tplAllRowsCacheD5D14[i]=Object.assign({},tplAllRowsCacheD5D14[i],t);else tplAllRowsCacheD5D14.push(t);}
 
 // F14Z18 — V3 BODY is read from Meta; there is no hard-coded local copy.
@@ -26,7 +26,7 @@ function tplInvalidateWaSendCacheF14G_(){
 }
 function tplNoticeA19P2(text,error=false,inside=false){const e=tplEl(inside?'tplEditorNotice':'tplNotice');if(e){e.textContent=text;e.style.color=error?'#ef6b72':'#45c68c';}}
 function tplLoadingA19P2(text){tplEl('tplList').innerHTML='<span class="tpl-spinner" aria-hidden="true"></span>'+esc(text);}
-async function tplLoadA19P2(force=false){const role=state.session?.role||'';if(!['Admin','EventManager'].includes(role)){tplEl('tplList').textContent='אין הרשאה לצפייה בתבניות';return;}const admin=role==='Admin';tplEl('tplSyncMeta').hidden=!admin;tplEl('tplSyncEnvironment').hidden=!admin;tplEl('tplAdminNote').hidden=!admin;tplEl('tplManagerNote').hidden=admin;tplEl('tplPageTitle').textContent=admin?'ניהול תבניות WhatsApp':'תבניות WhatsApp';const owner=tplCacheOwnerKeyD5D14_();if(owner!==tplCacheOwnerD5D14){tplAllRowsCacheD5D14=null;tplLoadPromiseD5D14=null;tplCacheOwnerD5D14=owner;}if(!force&&Array.isArray(tplAllRowsCacheD5D14)){tplApplyCachedRowsD5D14_();return;}tplLoadingA19P2('טוען תבניות…');try{if(force)tplLoadPromiseD5D14=null;if(!tplLoadPromiseD5D14)tplLoadPromiseD5D14=API.request('listMessageTemplatesA19P2');const r=await tplLoadPromiseD5D14;tplLoadPromiseD5D14=null;tplSystemSettingsD5D5=[];tplAllRowsCacheD5D14=Array.isArray(r.templates)?r.templates:[];tplApplyCachedRowsD5D14_();}catch(e){tplLoadPromiseD5D14=null;tplEl('tplList').textContent='לא ניתן לטעון תבניות';tplNoticeA19P2(e.message,true);}}
+async function tplLoadA19P2(force=false){const role=state.session?.role||'';if(!['Admin','EventManager'].includes(role)){tplEl('tplList').textContent='אין הרשאה לצפייה בתבניות';return;}const admin=role==='Admin';tplEl('tplSyncMeta').hidden=!admin;tplEl('tplSyncEnvironment').hidden=!admin;tplEl('tplAdminNote').hidden=!admin;tplEl('tplManagerNote').hidden=true;tplEl('tplPageTitle').textContent=admin?'ניהול תבניות WhatsApp':'תבניות WhatsApp';const owner=tplCacheOwnerKeyD5D14_();if(owner!==tplCacheOwnerD5D14){tplAllRowsCacheD5D14=null;tplLoadPromiseD5D14=null;tplCacheOwnerD5D14=owner;}if(!force&&Array.isArray(tplAllRowsCacheD5D14)){tplApplyCachedRowsD5D14_();return;}tplLoadingA19P2('טוען תבניות…');try{if(force)tplLoadPromiseD5D14=null;if(!tplLoadPromiseD5D14)tplLoadPromiseD5D14=API.request('listMessageTemplatesA19P2');const r=await tplLoadPromiseD5D14;tplLoadPromiseD5D14=null;tplSystemSettingsD5D5=[];tplAllRowsCacheD5D14=Array.isArray(r.templates)?r.templates:[];tplApplyCachedRowsD5D14_();}catch(e){tplLoadPromiseD5D14=null;tplEl('tplList').textContent='לא ניתן לטעון תבניות';tplNoticeA19P2(e.message,true);}}
 function tplPurposeLabelF14Z32_(p){return ({invitation:'הזמנה לאירוע',rsvp_update:'תזכורת לאישור הגעה',table_update:'שיוך שולחנות וניווט',table_payment_update:'שיוך שולחנות, ניווט ותשלום',thank_you:'תודה למשתתפים'})[String(p||'')]||String(p||'');}
 function tplRenderA19P2(){const admin=state.session?.role==='Admin';tplEl('tplList').innerHTML=tplRowsA19P2.length?tplRowsA19P2.map(x=>{const imageHeader=tplHasImageHeaderD5D8(x);const edit=admin?`<button type="button" class="guest-icon-action-v179 edit" data-tpl-edit="${esc(x.id)}" title="${admin?'עריכת הגדרות':'החלפת תמונת התבנית'}" aria-label="${admin?'עריכת':'תמונת'} ${esc(x.name)}">✎</button>`:'';const send='';return `<div class="tpl-row" data-tpl-row="${esc(x.id)}" title="לחיצה כפולה לתצוגה"><span><strong>${esc(x.name)}</strong>${admin?' · '+esc(String(x.environment||'PRODUCTION'))+' · '+(String(x.active).toLowerCase()==='true'?'פעילה':'לא פעילה'):''}</span><span class="tpl-row-actions">${send}${edit}</span></div>`}).join(''):'אין תבניות זמינות.';}
 function tplEventTypeOptionsA19P2(selected=''){const select=tplEl('tplEventType'),types=Array.isArray(state.eventTypes)?state.eventTypes:[],value=String(selected||'');const rows=types.filter(t=>isTrue(t.active,true)||String(t.name||'')===value||String(t.eventTypeId||t.id||'')===value);select.innerHTML='<option value="">כל סוגי האירועים</option>'+rows.map(t=>`<option value="${esc(String(t.name||''))}">${esc(String(t.name||''))}</option>`).join('');if(value&&!rows.some(t=>String(t.name||'')===value))select.insertAdjacentHTML('beforeend',`<option value="${esc(value)}">${esc(value)} (ערך שמור)</option>`);select.value=value;}
@@ -65,15 +65,19 @@ function tplRenderMappingD5D5(t){
  box.innerHTML=`<div class="tpl-map-heading-d5d55z3"><h3>מיפוי משתנים</h3><span class="tpl-map-count-d5d55z3">${tokens.length} משתנים</span></div><p class="muted">${tplViewA19P2?'מקורות הנתונים המוגדרים לתבנית.':'בחר מקור נתון לכל משתנה. השמירה מתבצעת יחד עם הגדרות התבנית.'}</p>${tokens.length?`<div class="tpl-map-scroll-d5d55z3" role="region" aria-label="טבלת מיפוי משתנים" tabindex="0"><table class="tpl-map-table-d5d55z3"><thead><tr><th scope="col">משתנה</th><th scope="col">תיאור בהודעה</th><th scope="col">מקור נתון</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<p class="muted">אין משתני BODY בתבנית זו.</p>'}`;
  box.querySelectorAll('select').forEach(x=>x.addEventListener('change',tplPreviewA19P2));
 }
+// View mode always uses the selected template, never stale hidden editor fields.
+function tplPreviewMappingQ117_(t){
+ return state.session?.role==='Admin'&&!tplViewA19P2?tplCurrentMappingD5D6().body:(tplMappingReadD5D5(t).body||{});
+}
 function tplManagerPreviewF14Z32_(t){
  const ev=tplPreviewEventD5D17(),kind=ev?eventTypeName(ev):'אירוע';
  const name=String(ev?.name||kind),date=String(ev?.date||ev?.eventDate||'תאריך האירוע'),time=String(ev?.eventTime||'שעת האירוע'),venue=String(ev?.venue||'מקום האירוע'),address=String(ev?.navigationAddress||'').trim();
  const sources={personalGreeting:'משפחה יקרה',guestName:'ישראל ישראלי',eventName:name,eventDetails:[kind,name,date,time,venue,address?`כתובת: ${address}`:''].filter(Boolean).join(' · '),eventDate:date,eventTime:time,eventVenue:venue,eventAddress:address,tableText:'שולחן 12',extraNotesText:'נשמח לראותכם',eventSignature:String(ev?.messageSignature||'משפחת המארחים')};
- const mapping=tplCurrentMappingD5D6().body;
- const body=String(t?.body||'').replace(/\{\{\s*([^{}]+?)\s*\}\}/g,(match,token)=>{const key=String(token).trim();return sources[mapping[key]]??match;});
+ const mapping=tplPreviewMappingQ117_(t);
+ const body=String(t?.body||'').replace(/\{\{\s*([^{}]+?)\s*\}\}/g,(match,token)=>{const key=String(token).trim();return sources[mapping[key]]??'⟦נתון חסר בתבנית⟧';});
  let box=tplEl('tplManagerPreviewF14Z32');if(!box){box=document.createElement('div');box.id='tplManagerPreviewF14Z32';box.className='tpl-manager-preview-f14z27';tplEl('tplEditor')?.querySelector('.tpl-modal-header-d28')?.insertAdjacentElement('afterend',box);}
  const imageHeader=tplHasImageHeaderD5D8(t);
- box.innerHTML=`<p class="muted"><b>אירוע:</b> ${esc(name)} · <b>סוג האירוע:</b> ${esc(kind)} · <b>תמונת התבנית באירוע:</b> <span id="tplPreviewImageStatusD5D27">טוען…</span></p><div class="wa-preview-card-f14g">${imageHeader?'<div class="wa-preview-image-wrap-f14g"><img id="tplManagerImageF14Z32" alt="תמונת התבנית" hidden></div>':''}<div class="wa-preview-body-f14g">${tplWhatsAppPreviewHtmlD5D10(body)}</div><div class="wa-preview-button-f14g">אישור הגעה</div></div>`;
+ box.innerHTML=`<p class="muted"><b>אירוע:</b> ${esc(name)} · <b>סוג האירוע:</b> ${esc(kind)} · <b>תמונת התבנית באירוע:</b> <span id="tplPreviewImageStatusD5D27">${imageHeader?'טוען…':'תבנית ללא תמונה'}</span></p><p class="muted">תצוגה מקדימה עם נתוני האירוע ופרטי מוזמן לדוגמה. כפתורי ההודעה מוצגים להמחשה בלבד.</p><div class="wa-preview-card-f14g">${imageHeader?'<div class="wa-preview-image-wrap-f14g"><img id="tplManagerImageF14Z32" alt="תמונת התבנית" hidden></div>':''}<div class="wa-preview-body-f14g">${tplWhatsAppPreviewHtmlD5D10(body)}</div>${waPreviewButtonsF14Z32_(t).map(label=>`<div class="wa-preview-button-f14g">${esc(label)}</div>`).join('')}</div>`;
 }
 // D5D17: event selection controls preview data only, never global template settings.
 let tplPreviewEventIdD5D17='';
@@ -127,13 +131,8 @@ async function tplShowImageA19P2(template){
  if(cached){tplSetImageA19P2(cached.src);if(status)status.textContent='מצורפת';return;}
  if(info)info.textContent='טוען תמונת תבנית…';if(status)status.textContent='טוען תמונה…';
  try{
-   let result;
-   if(String(template.environment||'TEST').toUpperCase()==='TEST'){
-     result=await eventViewImageDataLoadD55Q(eventId,template.id);
-     if(!result?.base64&&String(template.purpose||'')==='invitation')result=await API.request('getEventInvitationImageD5D17',{eventId});
-   }else{
-     result=await API.request('getMessageTemplateImageA19P2',{id:template.id});
-   }
+   let result=await eventViewImageDataLoadD55Q(eventId,template.id);
+   if(!result?.base64&&String(template.purpose||'')==='invitation')result=await API.request('getEventInvitationImageD5D17',{eventId});
    if(seq!==tplImageSeqA19P2||eventId!==String(tplPreviewEventIdD5D17)||tplEl('tplShade')?.hidden)return;
    if(!result?.base64||!result?.mime){if(info)info.textContent='לא הוגדרה תמונה לתבנית זו באירוע';if(status)status.textContent='לא צורפה';return;}
    if(!/^image\/(png|jpeg|webp)$/.test(result.mime)||!/^[A-Za-z0-9+/=]+$/.test(result.base64))throw new Error('תמונה לא תקינה');
@@ -150,7 +149,7 @@ async function tplShowImageA19P2(template){
 
 
 tplEl('tplSyncEnvironment')?.addEventListener('change',()=>{tplNoticeA19P2('');tplLoadA19P2();});
-tplEl('tplSyncMeta').addEventListener('click',async()=>{if(tplBusyA19P2)return;tplBusyA19P2=true;const b=tplEl('tplSyncMeta');b.disabled=true;b.innerHTML='<span class="tpl-spinner"></span>מסנכרן…';tplNoticeA19P2('מסנכרן תבניות מ־Meta…');try{const r=await tplSyncAllFromMetaF14Z32_();tplInvalidateWaSendCacheF14G_();await tplLoadA19P2(true);tplNoticeA19P2(`${r.environment}: סונכרנו ${r.found}/${r.total} תבניות · ${r.changed} עודכנו`);}catch(e){tplNoticeA19P2('הסנכרון נכשל: '+e.message,true);}finally{tplBusyA19P2=false;b.disabled=false;b.textContent='🔄 סנכרון תבניות מ־Meta';}});
+tplEl('tplSyncMeta').addEventListener('click',async()=>{if(tplBusyA19P2)return;tplBusyA19P2=true;const b=tplEl('tplSyncMeta');b.disabled=true;b.innerHTML='<span class="tpl-spinner"></span>מסנכרן…';tplNoticeA19P2('מסנכרן תבניות מ־Meta…');try{const r=await tplSyncAllFromMetaF14Z32_();tplInvalidateWaSendCacheF14G_();await tplLoadA19P2(true);tplNoticeA19P2(`${r.environment}: סונכרנו ${r.found}/${r.total} תבניות · ${r.changed} עודכנו. תבנית חדשה שאינה מוגדרת במערכת נקלטת כלא פעילה; יש להגדיר מטרה ומיפוי לפני הפעלה.`);}catch(e){tplNoticeA19P2('הסנכרון נכשל: '+e.message,true);}finally{tplBusyA19P2=false;b.disabled=false;b.textContent='🔄 סנכרון תבניות מ־Meta';}});
 tplEl('tplList').addEventListener('click',e=>{const edit=e.target.closest('[data-tpl-edit]');if(edit)tplEditA19P2(edit.dataset.tplEdit);});
 tplEl('tplList').addEventListener('dblclick',e=>{if(e.target.closest('button'))return;const row=e.target.closest('[data-tpl-row]');if(row)tplEditA19P2(row.dataset.tplRow,true);});
 tplEl('tplEditViewD55Z').addEventListener('click',()=>{if(tplEditingA19P2&&state.session?.role==='Admin')tplEditA19P2(tplEditingA19P2.id,false);});tplEl('tplCloseX').addEventListener('click',()=>{if(tplBusyA19P2)return;tplCloseA19P2();});tplEl('tplSave').addEventListener('click',tplSaveA19P2);tplEl('tplCancel').addEventListener('click',tplCloseA19P2);tplEl('tplImage').addEventListener('change',e=>{const file=e.target.files[0];e.target.value='';tplImageA19P2(file);});tplEl('tplReplaceImage').addEventListener('click',()=>tplEl('tplImage').click());

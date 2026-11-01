@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q65 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q170 */
 // Only use a candidate returned by the current, event-scoped inspection.
 function waQuarantineCandidateFromInspectionQ9_(result,eventId){
   const c=result&&result.quarantineCandidate;
@@ -23,7 +23,7 @@ function waPartialCloseFromInspectionQ15_(result,eventId){
 // Resolve failures as data to avoid an unhandled rejection on an idle screen.
 function waLoadTestDispatchSettingsQ10_(){
   const started=performance.now();
-  return Promise.resolve().then(()=>API.request('getWhatsAppDispatchSettingsFIX67',{})).then(settings=>{
+  return Promise.resolve().then(()=>API.request('getWhatsAppDispatchSettingsFIX67',{},{timeoutMs:15000})).then(settings=>{
     const n=Number(settings?.batchSize);
     if(!Number.isSafeInteger(n)||n<1||n>50)throw new Error('הגדרת גודל אצווה אינה תקינה');
     return {settings,loadMs:performance.now()-started};
@@ -159,6 +159,7 @@ function showPage(name){
     name="dashboard";
   }
   currentPage=name;
+  if(name==='dashboard'&&typeof dashboardLoadQ123_==='function')void dashboardLoadQ123_();
   $$(".page").forEach(x=>x.classList.remove("active"));
   $("#page-"+name)?.classList.add("active");
   $$("#mainNav [data-page]").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===name));
@@ -167,16 +168,18 @@ function showPage(name){
   if(name==="admin") renderAdmin();
   if(name==="messages") tplLoadA19P2();
   if(name==="whatsappLog") loadWhatsAppLogZ55_();
+  if(name==='guests')void guestMessagesLoadQ114_();
   if(name==="whatsappMonitor")loadWhatsAppMonitorQ17_();
   if(name==="eventCosts"){const sel=$('#eventCostsEventZ58');if(sel){sel.dataset.userSelected='false';sel.value=state.activeEventId||'';}loadEventCostsZ58_();}
   if(name==="activity") loadActivityLogZ57_();
   if(name==="seating") loadSeatingV170_();
-  if(name==="guests"&&canManageTables_())loadSeatingV170_();
+  // Q71: the guest snapshot refresh includes seating; avoid a duplicate seating read.
   if(name==="guests"&&state.activeEventId){
     // lookups are already loaded in bootstrap and patched locally after admin CRUD. 
     // Avoid a network round-trip every time the Guests page is opened.
     renderLookupFilters();
     renderGuests();
+    void refreshGuestsAfterRsvpV1189A4_(true,true);
   }
   closeMobileMenu();
   window.scrollTo({top:0,behavior:"smooth"});
@@ -199,7 +202,7 @@ function applyRole(){
   $$("#mainNav [data-page]").forEach(btn=>btn.classList.toggle("active",btn.dataset.page===currentPage));
 }
 function saveSession(){localStorage.setItem(SESSION_CONFIG.SESSION_KEY,JSON.stringify(state.session))}
-function clearSession(){if(typeof sessionActivityResetQ31_==='function')sessionActivityResetQ31_();waCloseInterruptedQ22_();localStorage.removeItem(SESSION_CONFIG.SESSION_KEY);state.session=null;state.waCostBaseF14=null;state.waCostPromiseF14=null;state.waCostBaseByCategoryF14=new Map();state.waCostCacheGenerationFIX59_=(state.waCostCacheGenerationFIX59_||0)+1;waCostPendingByCategoryFIX59_.clear();$("#loginOverlay").classList.add("show")}
+function clearSession(){startupMetricsRemoveQ93_();if(typeof sessionActivityResetQ31_==='function')sessionActivityResetQ31_();waCloseInterruptedQ22_();localStorage.removeItem(SESSION_CONFIG.SESSION_KEY);state.session=null;state.waCostBaseF14=null;state.waCostPromiseF14=null;state.waCostBaseByCategoryF14=new Map();state.waCostCacheGenerationFIX59_=(state.waCostCacheGenerationFIX59_||0)+1;waCostPendingByCategoryFIX59_.clear();$("#loginOverlay").classList.add("show")}
 function restoreSession(){try{const s=JSON.parse(localStorage.getItem(SESSION_CONFIG.SESSION_KEY));if(s&&s.expiresAt>Date.now())state.session=s;else clearSession()}catch{clearSession()}}
 function headerUserName_(){
   if(!state.session)return "";
@@ -380,7 +383,12 @@ function startupMetricsFinishF57(error){
 function startupMetricsHistoryF57(){
   try{const x=JSON.parse(localStorage.getItem(STARTUP_METRICS_KEY_F57)||'[]');return Array.isArray(x)?x:[];}catch{return [];}
 }
+function startupMetricsRemoveQ93_(){
+  document.getElementById('startupMetricsButtonF57')?.remove();
+  document.getElementById('startupMetricsModalF57')?.remove();
+}
 function startupMetricsButtonF57(){
+  if(state.session?.role!=='Admin'){startupMetricsRemoveQ93_();return;}
   let btn=document.getElementById('startupMetricsButtonF57');
   if(!btn){btn=document.createElement('button');btn.id='startupMetricsButtonF57';btn.type='button';
     btn.style.cssText='position:fixed;bottom:12px;left:12px;z-index:2000;padding:7px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;font:inherit;font-size:12px';
@@ -389,6 +397,7 @@ function startupMetricsButtonF57(){
   btn.textContent=latest?'זמן טעינה: '+(latest.totalMs/1000).toFixed(1)+' שנ׳ · פרטים':'ביצועי טעינה';
 }
 function startupMetricsShowF57(){
+  if(state.session?.role!=='Admin'){startupMetricsRemoveQ93_();return;}
   const items=startupMetricsHistoryF57();
   let overlay=document.getElementById('startupMetricsModalF57');
   if(!overlay){overlay=document.createElement('div');overlay.id='startupMetricsModalF57';
@@ -482,6 +491,8 @@ async function bootstrap(){
   state.events=Array.isArray(core?.events)?core.events:[];
   state.eventTypes=Array.isArray(core?.eventTypes)?core.eventTypes:[];
   state.guests=Array.isArray(guests?.guests)?guests.guests:[];
+  guestUpdatedQ67_.clear();
+  for(const ev of state.events)guestUpdatedQ67_.set(String(ev.eventId||ev.id),{token:state.session?.token,at:new Date()});
   state.tables=Array.isArray(tables?.tables)?tables.tables:[];
   state.activity=Array.isArray(core?.activity)?core.activity:[];
   state.lookups=core?.lookups||{sides:[],groups:[],statuses:[]};
@@ -594,6 +605,8 @@ function lifecycleText(s){return ({ACTIVE:"פעיל",EXPIRED:"פג תוקף",INA
 function lifecycleClass(s){return String(s||"").toLowerCase()}
 function eventKey_(e){return String((e&&(e.eventId||e.id))||"")}
 function activeEvent(){return state.events.find(e=>eventKey_(e)===String(state.activeEventId))||null}
+function templateNeedsSeatingQ165_(t){return ['table_update','table_payment_update'].includes(String(t?.purpose||'').trim().toLowerCase())||/(?:^|_)table_(?:payment_)?update(?:_|$)/i.test(String(t?.metaName||''));}
+function templateAllowedBySeatingQ165_(t,event=activeEvent()){return !event||isTrue(event.seatingEnabled,false)||!templateNeedsSeatingQ165_(t);}
 function canManageTables_(){const ev=activeEvent();return !!ev&&isTrue(ev.seatingEnabled,false)}
 function persistCurrentEvent_(){
   if(state.activeEventId)localStorage.setItem(CURRENT_EVENT_KEY,String(state.activeEventId));
@@ -640,6 +653,7 @@ function setCurrentEvent_(id){
   state.adminLookupManualOverride=false;
 
   if(currentPage==="seating"&&!canManageTables_())currentPage="dashboard";
+  waLogSyncEventQ149_(true);
   // Switch event entirely from local bootstrap data. No extra Apps Script request.
   renderAll();
   // Invalidate the local selector override, including when "all events" is chosen.
@@ -647,6 +661,7 @@ function setCurrentEvent_(id){
   if(costEventSelectorFIX61){costEventSelectorFIX61.dataset.userSelected='false';costEventSelectorFIX61.value=next||'';}
   if(currentPage==='eventCosts')void loadEventCostsZ58_();
   if(currentPage==='whatsappMonitor')void loadWhatsAppMonitorQ17_();
+  if(currentPage==='whatsappLog')void loadWhatsAppLogZ55_();
 
   // IMPORTANT: renderAll() has several render stages. Re-apply the Admin lookup
   // scope after they complete so both the internal combo AND the Side/Group rows
@@ -657,6 +672,7 @@ function setCurrentEvent_(id){
   }
 
   if(currentPage==="dashboard")showPage("dashboard");
+  void waOfferInterruptedQ22_();
 }
 function renderCurrentEventContext_(){
   const optionRows=state.events.map(e=>{const key=eventKey_(e);return `<option value="${esc(key)}" ${key===String(state.activeEventId)?"selected":""}>${esc(e.name||"ללא שם")} — ${esc(lifecycleText(e.lifecycleStatus))}</option>`}).join("");
@@ -678,9 +694,11 @@ function renderCurrentEventContext_(){
   const seatingFeature=$("#homeSeatingFeature");
   if(seatingFeature)seatingFeature.hidden=!canManageTables_();
   if(currentPage==="seating"&&!canManageTables_())showPage("dashboard");
+  if(typeof tplApplyCachedRowsD5D14_==='function'&&typeof tplAllRowsCacheD5D14!=='undefined'&&Array.isArray(tplAllRowsCacheD5D14))tplApplyCachedRowsD5D14_();
 }
 
 function renderDashboard(){
+  if(typeof dashboardRenderQ123_==='function'){dashboardRenderQ123_();if(currentPage==='dashboard')void dashboardLoadQ123_();}
   const gs=state.guests.filter(g=>g.eventId===state.activeEventId);
   $("#statEvents").textContent=state.events.length;$("#statGuests").textContent=gs.reduce((a,g)=>a+(+g.invitedCount||+g.partySize||1),0);
   $("#statConfirmed").textContent=gs.reduce((a,g)=>a+(+g.confirmedCount||0),0);
@@ -695,12 +713,21 @@ function formatRsvpDeadline_(value){
 const eventViewImageCacheD55Q=new Map();
 const eventViewImagePendingD55Q=new Map();
 const eventViewImageDataD55Q=new Map();
+function eventImageDisplayNameQ121_(t){
+ const name=String(t.name||'').trim();
+ if(state.session?.role!=='EventManager')return name||t.metaName||'תמונה';
+ if(/[א-ת]/.test(name))return name;
+ return ({invitation:'הזמנה לאירוע',rsvp_update:'תזכורת לאישור הגעה',table_update:'שיוך שולחנות וניווט',table_payment_update:'שיוך שולחנות, ניווט ותשלום',thank_you:'תודה למשתתפים'})[t.purpose]||'תמונת הודעה';
+}
+function eventImageVisibleTemplatesQ120_(templates){
+ return state.session?.role==='EventManager'?(templates||[]).filter(t=>String(t.environment||'PRODUCTION').toUpperCase()==='PRODUCTION'):(templates||[]);
+}
 function eventViewImagesD55Q(eventId){
   const key=String(eventId);
-  if(eventViewImageCacheD55Q.has(key))return Promise.resolve(eventViewImageCacheD55Q.get(key));
+  if(eventViewImageCacheD55Q.has(key))return Promise.resolve(eventImageVisibleTemplatesQ120_(eventViewImageCacheD55Q.get(key)));
   if(eventViewImagePendingD55Q.has(key))return eventViewImagePendingD55Q.get(key);
   const pending=API.request('eventImageContextD55P',{eventId}).then(ctx=>{
-    const templates=ctx.templates||[];
+    const templates=eventImageVisibleTemplatesQ120_(ctx.templates);
     eventViewImageCacheD55Q.set(key,templates);
     return templates;
   }).finally(()=>eventViewImagePendingD55Q.delete(key));
@@ -720,7 +747,7 @@ function eventViewImageDataLoadD55Q(eventId,templateId){
   if(eventViewImageDataD55Q.has(key))return Promise.resolve(eventViewImageDataD55Q.get(key));
   if(eventImageInflightD55S.has(key))return eventImageInflightD55S.get(key);
   const pending=API.request('getEventImageD55P',{eventId,templateId}).then(data=>{
-    eventViewImageDataD55Q.set(key,data);
+    if(eventImageInflightD55S.get(key)===pending)eventViewImageDataD55Q.set(key,data);
     return data;
   }).finally(()=>{if(eventImageInflightD55S.get(key)===pending)eventImageInflightD55S.delete(key);});
   eventImageInflightD55S.set(key,pending);
@@ -753,13 +780,14 @@ async function eventImagesWarmD55S_(eventId){
 function renderEventViewImagesD55Q(card,event){
   const holder=card.querySelector('.event-view-images-d55q');if(!holder)return;
   const id=String(event.id);
-  eventViewImagesD55Q(id).then(templates=>{
+  eventViewImagesD55Q(id).then(rows=>{
+    const templates=eventImageVisibleTemplatesQ120_(rows);
     if(!holder.isConnected)return;
     holder.replaceChildren();
     if(!templates.length){holder.textContent='לא נמצאו תבניות פעילות עם תמונה.';return;}
     for(const t of templates){
       const section=document.createElement('section');section.className='event-view-image-card-d55q';
-      const title=document.createElement('h4');title.textContent=t.name||t.metaName||'תמונה';section.append(title);
+      const title=document.createElement('h4');title.textContent=eventImageDisplayNameQ121_(t);section.append(title);
       const status=document.createElement('p');status.className='muted';status.textContent=t.imageFileId?'טוען תמונה…':'לא הוגדרה תמונה';section.append(status);
       if(t.imageFileId){
         const img=document.createElement('img');img.alt='תמונת '+title.textContent;img.loading='eager';img.className='event-view-preview-d55q';img.hidden=true;section.append(img);
@@ -817,13 +845,14 @@ function renderEvents(){
   });
 }
 
-function filteredGuests(){
+function filteredGuests(ignoreMessageQ114=false){
   const type=eventTypeById(activeEvent()?.eventTypeId),sideEnabled=!!type&&isTrue(type.usesSides,false),groupEnabled=!!type&&isTrue(type.usesGroups,false);
   const q=$("#guestSearch").value.trim().toLowerCase(),side=sideEnabled?$("#sideFilter").value:"",group=groupEnabled?$("#groupFilter").value:"",status=$("#statusFilter").value;
   const rows=state.guests.filter(g=>String(g.eventId)===String(state.activeEventId)&&(!q||(String(g.name||"")+" "+String(g.phone||"")).toLowerCase().includes(q))&&(!side||String(g.sideId||g.side)===String(side))&&(!group||String(g.groupId||g.group)===String(group))&&(!status||String(g.rsvpStatus||g.status)===String(status)));
-  const seatingStatus=$('#guestSeatingFilterV174')?.value||'',tableFilter=$('#guestTableFilterV174')?.value||'',sendFilter=$('#guestSendFilterA19P2F6')?.value||'';
+  const seatingOnQ165=canManageTables_(),seatingStatus=seatingOnQ165?($('#guestSeatingFilterV174')?.value||''):'',tableFilter=seatingOnQ165?($('#guestTableFilterV174')?.value||''):'',sendFilter=$('#guestSendFilterA19P2F6')?.value||'';
   const st=state.seating?.eventId===String(state.activeEventId)?state.seating:null;
   const filtered=rows.filter(g=>{
+    if(!ignoreMessageQ114&&!guestMessageMatchesQ114_(g))return false;
     if(sendFilter && guestSendChecked(g)!==(sendFilter==='yes'))return false;
     if(!seatingStatus&&!tableFilter)return true;
     const sg=st?.guests.find(x=>String(x.guestId)===String(g.guestId||g.id));
@@ -842,7 +871,7 @@ function renderGuestStatsV178_(visible){
   const all=state.guests.filter(g=>String(g.eventId)===String(state.activeEventId));
   const statusEl=$('#guestCountStatusV178');
   if(statusEl){
-    const filters=['guestSearch','sideFilter','groupFilter','statusFilter','guestSeatingFilterV174','guestTableFilterV174','guestSendFilterA19P2F6'];
+    const filters=['guestSearch','sideFilter','groupFilter','statusFilter','guestSeatingFilterV174','guestTableFilterV174','guestSendFilterA19P2F6','guestMessageStatusQ114'];
     const active=filters.some(id=>!!$('#'+id)?.value);
     const clearButton=$('#clearGuestFiltersV180');
     if(clearButton){clearButton.classList.toggle('has-active-filters-v182',active);clearButton.setAttribute('aria-pressed',String(active));clearButton.title=active?'נקה את הסינונים הפעילים והחיפוש':'אין סינונים פעילים';}
@@ -866,7 +895,7 @@ function renderGuestStatsV178_(visible){
     {label:'שויכו חלקית',color:'amber',value:'PARTIAL',count:seatEligible.filter(g=>seatState(g)?.seatingStatus==='PARTIAL').length},
     {label:'אנשים שנותרו לשיבוץ',color:'blue',value:'REMAINING',count:seatEligible.reduce((n,g)=>n+Math.max(0,Number(g.confirmedCount)-(Number(seatState(g)?.assignedCount)||0)),0)}
   ].map(x=>({...x,kind:'seating',active:seating===x.value}));
-  const paint=(id,cards)=>{const el=$('#'+id);if(!el)return;el.innerHTML=cards.map(c=>'<button type="button" class="guest-stat-card-v178 '+c.color+(c.active?' active':'')+'" data-guest-stat-kind="'+c.kind+'" data-guest-stat-value="'+c.value+'" '+(c.value==='REMAINING'?'title="סינון מוזמנים שנותרו להם מקומות לשיבוץ"':'')+'><span>'+c.label+'</span><strong>'+c.count+'</strong></button>').join('')};
+  const paint=(id,cards)=>{const el=$('#'+id);if(!el)return;el.innerHTML=cards.map(c=>'<button type="button" class="guest-stat-card-v178 '+c.color+(c.active?' active':'')+'" data-guest-stat-kind="'+c.kind+'" data-guest-stat-value="'+c.value+'" '+(Number(c.count)===0?'disabled aria-disabled="true" ':'')+(c.value==='REMAINING'?'title="סינון מוזמנים שנותרו להם מקומות לשיבוץ"':'')+'><span>'+c.label+'</span><strong>'+c.count+'</strong></button>').join('')};
   paint('guestRsvpStatsV178',rsvpCards);paint('guestSeatingStatsV178',seatCards);
 }
 function guestCanDeleteV179_(g){
@@ -882,34 +911,47 @@ async function deleteGuestV179_(g){
   catch(err){showToast(err?.message||String(err),"error")}
 }
 function guestSendChecked(g){return isTrue(g.sendWhatsApp,true)}
+function guestBulkActionDialogQ80_({title,message,confirmText,typedName=null,onConfirm,successText}){
+ return new Promise(resolve=>{
+  const shade=document.createElement('div');shade.className='seating-confirm-shade-v171';
+  shade.innerHTML='<section class="seating-confirm-v171" dir="rtl" role="alertdialog" aria-modal="true" aria-labelledby="guestBulkTitleQ80"><h3 id="guestBulkTitleQ80"></h3><p data-message></p>'+(typedName!==null?'<label class="bulk-name-q80">לאישור, הקלד את שם האירוע במדויק:<input data-name autocomplete="off"></label>':'')+'<div class="event-save-status" data-status role="status" aria-live="polite"></div><div class="actions"><button type="button" class="secondary" data-cancel>ביטול</button><button type="button" class="danger" data-confirm></button></div></section>';
+  shade.querySelector('h3').textContent=title;shade.querySelector('[data-message]').textContent=message;
+  const yes=shade.querySelector('[data-confirm]'),no=shade.querySelector('[data-cancel]'),input=shade.querySelector('[data-name]'),status=shade.querySelector('[data-status]');
+  yes.textContent=confirmText;yes.disabled=typedName!==null;
+  if(input)input.oninput=()=>yes.disabled=input.value!==typedName;
+  let busy=false,finished=false,timer=null;
+  const done=()=>{if(finished)return;finished=true;if(timer!==null)clearTimeout(timer);document.removeEventListener('keydown',onKey);shade.remove();resolve();};
+  const onKey=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();if(!busy)done();}else if(e.key==='Tab'){e.preventDefault();const nodes=[input,no,yes].filter(x=>x&&!x.disabled&&!x.hidden);if(nodes.length){const i=nodes.indexOf(document.activeElement);nodes[(i+(e.shiftKey?-1:1)+nodes.length)%nodes.length].focus();}}};
+  document.addEventListener('keydown',onKey);document.body.appendChild(shade);no.focus();
+  no.onclick=()=>{if(!busy)done();};
+  yes.onclick=async()=>{
+   if(busy||yes.disabled||(input&&input.value!==typedName))return;
+   busy=true;no.disabled=true;if(input)input.disabled=true;seatingButtonBusyV171_(yes,true,'מבצע...');
+   try{await onConfirm();status.textContent=successText;status.className='event-save-status success';yes.hidden=true;no.hidden=true;timer=setTimeout(done,2000);}
+   catch(err){status.textContent=err?.message||String(err);status.className='event-save-status error';busy=false;yes.hidden=true;no.disabled=false;no.textContent='סגירה';no.focus();}
+  };
+ });
+}
 async function resetEventGuestsV1190A10_(){
-  const ev=activeEvent();if(!ev||state.session?.role!=="Admin")return;
-  const eid=String(state.activeEventId),name=String(ev.name||'');
-  const count=state.guests.filter(g=>String(g.eventId)===eid).length;
-  const assigned=state.seating?.eventId===eid?state.seating.assignments.length:0;
-  const text=`לאפס את כל המוזמנים באירוע ״${name}״? ${count} מוזמנים יימחקו${isTrue(ev.seatingEnabled,false)?` ו-${assigned} שיוכים לשולחנות יאופסו`:''}. השולחנות עצמם יישמרו. הפעולה אינה ניתנת לביטול.`;
-  if(!await seatingConfirmV171_(text))return;
-  const btn=$('#resetEventGuestsV1190A10');seatingButtonBusyV171_(btn,true,'מאפס...');
-  try{const r=await API.request('resetEventGuestsV1190A10',{eventId:eid,eventName:name});
-    // A13: show the confirmed server result immediately, before slow bootstrap.
-    state.guests=state.guests.filter(g=>String(g.eventId)!==eid);
-    if(isTrue(ev.seatingEnabled,false)){
-      ++seatingTableRefreshSequenceV173_;
-      if(String(state.seating?.eventId)===eid)state.seating={...state.seating,guests:[],assignments:[],tables:(state.seating.tables||[]).map(t=>({...t,occupied:0,available:Number(t.seats||t.capacity||0)}))};
-      state.tables=state.tables.map(t=>String(t.eventId)===eid?{...t,occupied:0}:t);
-    }
-    renderAll();showToast(`אופסו ${r.removedGuests} מוזמנים ו-${r.removedAssignments} שיוכים באירוע ${name}`,'success');
-    // Synchronize other screens without holding back the immediate visual reset.
-    bootstrap().then(()=>{if(String(state.activeEventId)===eid&&isTrue(ev.seatingEnabled,false))return refreshSeatingAfterTableCrudV173_(eid)}).catch(err=>showToast('האיפוס הצליח, אך סנכרון הנתונים נכשל: '+(err.message||String(err)),'error'));
-  }
-  catch(err){showToast(err.message||String(err),'error')}
-  finally{seatingButtonBusyV171_(btn,false)}
+ const ev=activeEvent();if(!ev||state.session?.role!=='Admin')return;
+ const eid=String(state.activeEventId),name=String(ev.name||''),token=state.session.token;
+ const count=state.guests.filter(g=>String(g.eventId)===eid).length;
+ await guestBulkActionDialogQ80_({title:'מחיקת כל המוזמנים באירוע',message:`אירוע: ״${name}״. יימחקו כל ${count} רשומות המוזמנים וכל שיוכיהן לשולחנות. זו מחיקת מוזמנים, ולא רק איפוס שיוכים. השולחנות עצמם יישמרו. הפעולה אינה ניתנת לביטול.`,confirmText:'מחיקת כל המוזמנים',typedName:name,successText:'כל המוזמנים ושיוכיהם נמחקו. השולחנות נשמרו.',onConfirm:async()=>{
+  if(state.session?.token!==token||String(state.activeEventId)!==eid)throw Error('האירוע או ההתחברות השתנו. יש לסגור ולנסות שוב.');
+  const r=await API.request('resetEventGuestsV1190A10',{eventId:eid,eventName:name});
+  if(String(r?.eventId)!==eid||!Number.isInteger(r.removedGuests)||!Number.isInteger(r.removedAssignments))throw Error('לא התקבל אישור מחיקה תקין. יש לרענן ולבדוק לפני פעולה נוספת.');
+  if(state.session?.token!==token)return;
+  state.guests=state.guests.filter(g=>String(g.eventId)!==eid);
+  ++seatingTableRefreshSequenceV173_;++seatingLoadSequenceQ66_;
+  if(String(state.seating?.eventId)===eid)state.seating={...state.seating,guests:[],assignments:[],tables:(state.seating.tables||[]).map(t=>({...t,occupied:0,free:Number(t.seats)||0}))};
+  renderAll();void refreshSeatingAfterTableCrudV173_(eid);
+ }});
 }
 async function deleteAllEventTablesV1190A10_(){
   const ev=activeEvent();if(!ev||state.session?.role!=="Admin"||!isTrue(ev.seatingEnabled,false))return;
   const eid=String(state.activeEventId),name=String(ev.name||'');
   const tables=tablesForActiveEvent();
-  if(tables.some(t=>Number(t.occupied)>0)){showToast('יש לאפס מוזמנים ושיוכים לפני מחיקת כל השולחנות','error');return}
+  if(tables.some(t=>Number(t.occupied)>0)){await tableActionDialogQ74_('יש עדיין מוזמנים המשויכים לשולחנות. יש לאפס תחילה את כל השיוכים דרך מסך המוזמנים, ואז לחזור למחיקת השולחנות. אין צורך למחוק את המוזמנים או לשנות את אישורי ההגעה.',false,null,'לא ניתן למחוק את כל השולחנות');return}
   await eventTablesDeleteDialogV1190A13_(eid,name,tables.length);
 }
 function eventTablesDeleteDialogV1190A13_(eid,name,count){
@@ -919,6 +961,7 @@ function eventTablesDeleteDialogV1190A13_(eid,name,count){
     shade.querySelector('p').textContent=`למחוק את כל ${count} השולחנות באירוע ״${name}״? הפעולה אינה ניתנת לביטול.`;
     document.body.appendChild(shade);
     const yes=shade.querySelector('[data-delete-confirm]'),no=shade.querySelector('[data-delete-cancel]'),status=shade.querySelector('[data-delete-status]');
+    const tokenQ79=state.session?.token;
     let busy=false,closeTimer=null;
     const done=()=>{if(closeTimer)clearTimeout(closeTimer);document.removeEventListener('keydown',onKey);shade.remove();resolve()};
     const onKey=e=>{if(e.key==='Escape'&&!busy)done()};document.addEventListener('keydown',onKey);
@@ -927,13 +970,16 @@ function eventTablesDeleteDialogV1190A13_(eid,name,count){
       status.textContent='';status.className='event-save-status';
       try{
         const r=await API.request('deleteAllEventTablesV1190A10',{eventId:eid,eventName:name});
-        ++seatingTableRefreshSequenceV173_;
+        if(String(r?.eventId)!==String(eid)||!Number.isInteger(r.removedTables)||r.removedTables<0)throw Error('לא התקבל אישור מחיקה תקין. יש לרענן ולבדוק את השולחנות.');
+        if(state.session?.token!==tokenQ79){done();return;}
+        ++seatingTableRefreshSequenceV173_;++seatingLoadSequenceQ66_;
         state.tables=state.tables.filter(t=>String(t.eventId)!==eid);
         if(String(state.seating?.eventId)===eid)state.seating={...state.seating,tables:[],assignments:[]};
         renderAll();
         status.textContent=`נמחקו ${r.removedTables} שולחנות באירוע ${name}`;status.className='event-save-status success';
-        // Do not delay modal success behind a network refresh.
-        bootstrap().then(()=>{if(String(state.activeEventId)===eid)return refreshSeatingAfterTableCrudV173_(eid)}).catch(err=>showToast('המחיקה הצליחה, אך סנכרון הנתונים נכשל: '+(err.message||String(err)),'error'));
+        // Q79: mutation is already reflected locally; never invoke startup/bootstrap here.
+        // A focused read refreshes only this event's seating, without a startup overlay.
+        void refreshSeatingAfterTableCrudV173_(eid);
         closeTimer=setTimeout(done,2200);
       }catch(err){status.textContent=err?.message||String(err);status.className='event-save-status error';busy=false;no.disabled=false;seatingButtonBusyV171_(yes,false)}
     };
@@ -946,18 +992,23 @@ function rsvpSeatingNoticeHtmlQ65_(guest,status){
   return '<small class="rsvp-seating-notice-q64">'+esc(guest.rsvpSeatingNoticeQ64)+'</small>';
 }
 function renderGuests(){
+  renderGuestRefreshQ67_();
   closeGuestSeatingPopoverZ16_();
   const type=eventTypeById(activeEvent()?.eventTypeId),showSides=!!type&&isTrue(type.usesSides,false),showGroups=!!type&&isTrue(type.usesGroups,false);
   renderGuestSeatingFiltersV174_();
   const visibleGuestsV178=filteredGuests();
   renderGuestStatsV178_(visibleGuestsV178);
+  guestMessagesRenderQ114_(filteredGuests(true));
   $("#guestsBody").innerHTML=visibleGuestsV178.map(g=>{const status=g.rsvpStatus||g.status||"Pending";return `<tr data-guest="${g.guestId||g.id}">
     <td data-col="name" title="${esc(g.name)}">${esc(g.name)}</td><td data-col="phone">${esc(g.phone)}</td>
     <td data-col="side" ${showSides?"":"hidden"}>${esc(labelFor("sides",g.sideId||g.side,activeEvent()?.eventTypeId))}</td><td data-col="group" title="${esc(labelFor("groups",g.groupId||g.group,activeEvent()?.eventTypeId))}" ${showGroups?"":"hidden"}>${esc(labelFor("groups",g.groupId||g.group,activeEvent()?.eventTypeId))}</td>
     <td data-col="invitedCount">${g.invitedCount||g.partySize||1}</td><td data-col="confirmedCount">${g.confirmedCount||0}</td><td data-col="rsvpStatus"><span class="badge ${esc(status)}">${esc(statusText(status))}</span>${rsvpSeatingNoticeHtmlQ65_(g,status)}</td>
     <td data-col="seating">${guestSeatingCellV174_(g)}</td>
+    <td data-col="messageState" ${gmAllowedQ114_()?'':'hidden'}>${guestMessageCellQ114_(g)}</td>
     <td class="send-cell"><input class="guest-send-toggle" data-send-guest="${g.guestId||g.id}" type="checkbox" ${guestSendChecked(g)?"checked":""} aria-label="שליחה ב-WhatsApp"></td>
     <td class="guest-row-actions-v179">${guestSendChecked(g)&&['Admin','EventManager'].includes(state.session?.role)?`<button type="button" class="guest-icon-action-v179" data-wa-send-row="${esc(g.guestId||g.id)}" title="שליחת WhatsApp למוזמן" aria-label="שליחת WhatsApp אל ${esc(g.name)}"><svg class="wa-guest-icon-f14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#25D366"/><path d="M8.2 6.9c.3-.3.7-.4 1-.2l1.4 2.1c.2.3.2.7 0 1l-.7.8c.7 1.5 1.9 2.7 3.4 3.4l.8-.7c.3-.2.7-.2 1 0l2.1 1.4c.3.2.4.7.2 1-1 1.7-2.6 2.2-4.5 1.6-3.3-1-5.9-3.6-6.9-6.9-.6-1.9-.1-3.5 1.6-4.5.2-.1.4-.1.6 0z" fill="white"/></svg></button>`:''}<button type="button" class="guest-icon-action-v179" data-rsvp-link="${esc(g.guestId||g.id)}" title="העתק קישור אישור הגעה" aria-label="העתק קישור אישור הגעה עבור ${esc(g.name)}">🔗</button><button type="button" class="guest-icon-action-v179 edit" data-edit-guest="${esc(g.guestId||g.id)}" title="עריכה" aria-label="עריכת ${esc(g.name)}">✎</button><button type="button" class="guest-icon-action-v179 delete" data-delete-guest="${esc(g.guestId||g.id)}" title="מחיקת מוזמן" aria-label="מחיקת ${esc(g.name)}" ${guestCanDeleteV179_(g)?"":"disabled"}>🗑</button></td></tr>`}).join("");
+  const allSeatsQ80=$('#resetAllSeatingV170');
+  if(allSeatsQ80){allSeatsQ80.hidden=!['Admin','EventManager'].includes(state.session?.role)||!canManageTables_();allSeatsQ80.disabled=!state.activeEventId||!state.guests.some(g=>String(g.eventId)===String(state.activeEventId));}
   const resetBtn=$('#resetEventGuestsV1190A10');
   if(resetBtn){resetBtn.hidden=state.session?.role!=="Admin"||!state.activeEventId;resetBtn.disabled=!visibleGuestsV178.length&&!state.guests.some(g=>String(g.eventId)===String(state.activeEventId));}
   const bulkBtn=$('#guestWhatsAppBulkA19P2F6'),testBtn=$('#guestWhatsAppTestBulkF14C');const canWa=['Admin','EventManager'].includes(state.session?.role);if(bulkBtn)bulkBtn.hidden=!canWa||!state.activeEventId;if(testBtn)testBtn.hidden=!canWa||!state.activeEventId;
@@ -983,14 +1034,22 @@ function downloadBase64File_(base64,fileName,mimeType){
 }
 async function downloadGuestWorkbook_(action){
   const ev=activeEventForGuestTransfer_();if(!ev)return;
-  const label=action==="guestExportCurrentV148"?"מכין ייצוא Excel...":"מכין תבנית Excel...";
-  showToast(label,"success");
+  const exporting=action==='guestExportCurrentV148',button=$(exporting?'#guestExportBtn':'#guestTemplateBtn');
+  if(button?.dataset.excelBusyQ81==='1')return;
+  const eventId=String(ev.eventId||ev.id),payload={eventId};
+  if(exporting){
+    payload.guestIds=filteredGuests().map(g=>String(g.guestId||g.id));
+    if(!payload.guestIds.length){showToast('אין רשומות בסינון הנוכחי לייצוא','error');return;}
+  }
+  const oldHtml=button?.innerHTML;
+  if(button){button.dataset.excelBusyQ81='1';button.disabled=true;button.setAttribute('aria-busy','true');button.innerHTML='<span class="seating-spinner-v171" aria-hidden="true"></span> '+(exporting?'מייצא '+payload.guestIds.length+' רשומות...':'מכין תבנית...');}
   try{
-    const r=await API.request(action,{eventId:ev.eventId||ev.id});
-    if(!r?.base64)throw new Error("השרת לא החזיר קובץ Excel תקין");
+    const r=await API.request(action,payload);
+    if(!r?.base64)throw new Error('השרת לא החזיר קובץ Excel תקין');
+    if(exporting&&r.exportedRowsQ81!==payload.guestIds.length)throw new Error('מספר הרשומות בקובץ אינו תואם לסינון. יש לרענן ולנסות שוב.');
     downloadBase64File_(r.base64,r.fileName,r.mimeType);
-    showToast(action==="guestExportCurrentV148"?"קובץ הייצוא מוכן":"תבנית Excel מוכנה");
-  }catch(err){showToast(err?.message||String(err),"error")}
+  }catch(err){showToast(err?.message||String(err),'error');}
+  finally{if(button){button.innerHTML=oldHtml;button.disabled=false;button.setAttribute('aria-busy','false');delete button.dataset.excelBusyQ81;}}
 }
 function readFileAsBase64_(file){
   return new Promise((resolve,reject)=>{const fr=new FileReader();fr.onerror=()=>reject(new Error("קריאת הקובץ נכשלה"));fr.onload=()=>resolve(String(fr.result||"").split(",")[1]||"");fr.readAsDataURL(file)});
@@ -1016,7 +1075,7 @@ function renderGuestImportPreview_(preview,showAll=false){
     <div class="import-summary"><span>שורות: <b>${s.total||0}</b></span><span class="ok-text">תקינות: <b>${s.clean??Math.max(0,(s.valid||0)-(s.warningRows||0))}</b></span><span class="warning-text">אזהרות: <b>${s.warningRows??s.warnings??0}</b></span><span class="error">שגיאות: <b>${s.errors||0}</b></span><span>הוספה: <b>${s.inserts||0}</b></span><span>עדכון: <b>${s.updates||0}</b></span></div>
     <div class="actions import-preview-filter-actions"><button type="button" class="secondary import-rows-action-a13" id="toggleGuestImportRowsBtn">${state.guestImportShowAll?"הצג חריגים בלבד":"הצג את כל הרשומות"}</button></div>
     <p class="muted">Preview בלבד — בשלב זה לא נשמרה אף רשומה. ${state.guestImportShowAll?`מוצגות כל ${allRows.length} הרשומות.`:`מוצגות רק שגיאות ואזהרות (${exceptionRows.length}).`}</p>
-    ${noExceptions?`<div class="empty-state ok-text">✓ כל ${allRows.length} הרשומות עברו בדיקה בהצלחה. לא נמצאו שגיאות או אזהרות.</div>`:`<div class="table-wrap import-preview-wrap"><table class="admin-table import-preview-table"><thead><tr><th>שורה</th><th>פעולה</th><th>שם</th><th>טלפון</th><th>צד</th><th>קבוצה</th><th>מוזמנים</th><th>אישרו</th><th>סטטוס</th><th>בדיקה</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.valid?(r.warnings?.length?"import-warning":"import-ok"):"import-error"}"><td>${r.sourceRow}</td><td>${r.action==="UPDATE"?"עדכון":"הוספה"}</td><td>${esc(r.guest?.name||"")}</td><td>${esc(r.guest?.phone||"")}</td><td>${esc(labelFor("sides",r.guest?.sideId||"",preview.event?.eventTypeId)||"")}</td><td>${esc(labelFor("groups",r.guest?.groupId||"",preview.event?.eventTypeId)||"")}</td><td>${r.guest?.invitedCount??""}</td><td>${r.guest?.confirmedCount??""}</td><td>${esc(statusText(r.guest?.rsvpStatus||""))}</td><td class="import-check">${esc(importIssueText_(r))}</td></tr>`).join("")}</tbody></table></div>`}
+    ${noExceptions?`<div class="empty-state ok-text">✓ כל ${allRows.length} הרשומות עברו בדיקה בהצלחה. לא נמצאו שגיאות או אזהרות.</div>`:`<div class="table-wrap import-preview-wrap"><table class="admin-table import-preview-table"><thead><tr><th>שורה</th><th>פעולה</th><th>שם</th><th>טלפון</th><th>פנייה אישית</th><th>צד</th><th>קבוצה</th><th>מוזמנים</th><th>אישרו</th><th>סטטוס</th><th>בדיקה</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.valid?(r.warnings?.length?"import-warning":"import-ok"):"import-error"}"><td>${r.sourceRow}</td><td>${r.action==="UPDATE"?"עדכון":"הוספה"}</td><td>${esc(r.guest?.name||"")}</td><td>${esc(r.guest?.phone||"")}</td><td>${esc(r.guest?.invitationGreeting||"")}</td><td>${esc(labelFor("sides",r.guest?.sideId||"",preview.event?.eventTypeId)||"")}</td><td>${esc(labelFor("groups",r.guest?.groupId||"",preview.event?.eventTypeId)||"")}</td><td>${r.guest?.invitedCount??""}</td><td>${r.guest?.confirmedCount??""}</td><td>${esc(statusText(r.guest?.rsvpStatus||""))}</td><td class="import-check">${esc(importIssueText_(r))}</td></tr>`).join("")}</tbody></table></div>`}
     ${hasBlockingErrors?`<div class="empty-state error">לא ניתן לאשר את הייבוא כל עוד קיימות ${errorRowCount===1?"שורה אחת עם שגיאה":`${errorRowCount} שורות עם שגיאות`}. יש לתקן את השגיאות בקובץ ולהעלות אותו מחדש.${importableCount>0?` ${importableCount} ${importableCount===1?"שורה תקינה/עם אזהרה תהיה ניתנת":"שורות תקינות/עם אזהרות יהיו ניתנות"} לייבוא לאחר התיקון.`:""}</div>`:""}
     <div id="guestImportCommitStatus" class="event-save-status" aria-live="polite"></div>
     <div class="actions"><button type="button" class="secondary" id="cancelGuestImportBtn">ביטול</button>${!hasBlockingErrors&&importableCount>0?`<button type="button" class="primary" id="commitGuestImportBtn">אישור וייבוא ${importableCount} שורות</button>`:""}</div>`);
@@ -1081,15 +1140,24 @@ async function handleGuestImportFile_(file){
   }catch(err){stopGuestImportProgress_();closeModal();showToast(err?.message||String(err),"error")}
 }
 async function commitGuestImport_(){
-  const p=state.guestImportPreview;if(!p||p.summary?.errors)return;
+  const p=state.guestImportPreview;if(!p||p.summary?.errors||p.commitBusyQ84)return;
+  p.commitBusyQ84=true;
+  const cancel=$("#cancelGuestImportBtn"),toggle=$("#toggleGuestImportRowsBtn");
+  if(cancel)cancel.disabled=true;if(toggle)toggle.disabled=true;
   const btn=$("#commitGuestImportBtn"),status=$("#guestImportCommitStatus");if(btn)seatingButtonBusyV171_(btn,true,"מייבא ושומר...");if(status){status.textContent="מייבא ושומר את הנתונים...";status.className="event-save-status working"}
   try{
     const validRows=(p.rows||[]).filter(r=>r.valid).map(r=>r.guest);
     const r=await API.request("commitGuestImportV148",{eventId:p.event?.eventId,fileName:p.fileName,rows:validRows});
     const eid=String(p.event?.eventId||"");state.guests=state.guests.filter(g=>String(g.eventId)!==eid).concat(r.guests||[]);
-    closeModal();renderAll();showToast(`הייבוא הושלם: ${r.summary?.inserted||0} נוספו, ${r.summary?.updated||0} עודכנו`);
+    renderAll();
+    if($("#guestImportCommitStatus")===status){
+      status.textContent=`הייבוא הושלם: ${r.summary?.inserted||0} נוספו, ${r.summary?.updated||0} עודכנו`;
+      status.className="event-save-status success";
+      if(btn)btn.hidden=true;if(cancel)cancel.hidden=true;if(toggle)toggle.hidden=true;
+      setTimeout(()=>{if($("#guestImportCommitStatus")===status)closeModal()},2200);
+    }
     state.guestImportPreview=null;
-  }catch(err){if(status){status.textContent=err?.message||String(err);status.className="event-save-status error"}if(btn)seatingButtonBusyV171_(btn,false)}
+  }catch(err){if(status){status.textContent=err?.message||String(err);status.className="event-save-status error"}if(btn)seatingButtonBusyV171_(btn,false);p.commitBusyQ84=false;if(cancel)cancel.disabled=false;if(toggle)toggle.disabled=false}
 }
 
 function tablesForActiveEvent(){
@@ -1118,7 +1186,7 @@ function renderTables(){
   }
   if(addBtn){addBtn.disabled=!state.activeEventId||tableReadOnly;addBtn.hidden=tableReadOnly;}
   const headActions=$('#page-seating .seating-head-actions-d55z8');if(headActions)headActions.hidden=tableReadOnly;
-  const deleteAllBtn=$("#deleteAllEventTablesV1190A10");if(deleteAllBtn){deleteAllBtn.hidden=state.session?.role!=="Admin";deleteAllBtn.disabled=!state.activeEventId||!tablesForActiveEvent().length||tablesForActiveEvent().some(t=>Number(t.occupied)>0);}
+  const deleteAllBtn=$("#deleteAllEventTablesV1190A10");if(deleteAllBtn){deleteAllBtn.hidden=state.session?.role!=="Admin";deleteAllBtn.disabled=!state.activeEventId||!tablesForActiveEvent().length;}
   const rows=tablesForActiveEvent();
   
   $("#tableSummary").innerHTML=state.activeEventId?`<span>שולחנות: <b>${rows.length}</b></span><span>מקומות: <b>${rows.reduce((s,t)=>s+t.seats,0)}</b></span><span>תפוסים: <b>${rows.reduce((s,t)=>s+t.occupied,0)}</b></span><span>פנויים: <b>${rows.reduce((s,t)=>s+t.free,0)}</b></span>`:`<span>יש לבחור אירוע פעיל</span>`;
@@ -1126,17 +1194,59 @@ function renderTables(){
   $("#tablesBody").innerHTML=rows.map(t=>`<tr><td>${esc(t.tableNumber)}</td><td>${t.seats}</td><td>${t.occupied}</td><td>${t.free}</td><td>${tableReadOnly?"צפייה בלבד":`<button type="button" class="edit-table seating-row-btn-d55z8" data-id="${t.id}" title="עריכת שולחן" aria-label="עריכת שולחן ${esc(t.tableNumber)}"><span aria-hidden="true">✎</span> עריכה</button> <button type="button" class="danger delete-table seating-row-btn-d55z8" data-id="${t.id}" title="מחיקת שולחן" aria-label="מחיקת שולחן ${esc(t.tableNumber)}"><span aria-hidden="true">🗑</span> מחיקה</button>`}</td></tr>`).join("") || `<tr><td colspan="5" class="empty-cell">${state.activeEventId?"אין שולחנות באירוע זה":"יש לבחור אירוע"}</td></tr>`;
 }
 
+function tableActionDialogQ74_(message,confirmDelete=false,onConfirm=null,titleQ77=""){
+  return new Promise(resolve=>{
+    const previous=document.activeElement,shade=document.createElement('div');shade.className='seating-confirm-shade-v171';
+    shade.innerHTML='<section class="seating-confirm-v171 table-action-dialog-q74" dir="rtl" role="alertdialog" aria-modal="true" aria-labelledby="tableActionTitleQ74" aria-describedby="tableActionTextQ74"><div class="table-action-icon-q74" aria-hidden="true">'+(confirmDelete?'🗑':'⚠')+'</div><h3 id="tableActionTitleQ74">'+(confirmDelete?'מחיקת שולחן':'לא ניתן למחוק את השולחן')+'</h3><p id="tableActionTextQ74"></p><div class="actions"><button type="button" class="secondary" data-table-answer="no">'+(confirmDelete?'ביטול':'הבנתי')+'</button>'+(confirmDelete?'<button type="button" class="danger" data-table-answer="yes">מחיקת השולחן</button>':'')+'</div></section>';
+    if(titleQ77)shade.querySelector('h3').textContent=titleQ77;
+    shade.querySelector('p').textContent=message;document.body.appendChild(shade);
+    const buttons=[...shade.querySelectorAll('button')];let finished=false,busy=false,closeTimerQ76=null;
+    const done=answer=>{if(finished)return;finished=true;if(closeTimerQ76!==null)clearTimeout(closeTimerQ76);document.removeEventListener('keydown',onKey);shade.remove();if(previous?.isConnected)previous.focus();resolve(answer)};
+    const onKey=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();if(!busy)done(false)}else if(e.key==='Tab'){e.preventDefault();const available=buttons.filter(b=>!b.hidden&&!b.disabled);if(available.length){const i=available.indexOf(document.activeElement);available[(i+(e.shiftKey?-1:1)+available.length)%available.length].focus();}}};
+    document.addEventListener('keydown',onKey);
+    buttons.forEach(button=>button.onclick=async()=>{
+      if(busy)return;
+      if(button.dataset.tableAnswer!=='yes'||!onConfirm){done(button.dataset.tableAnswer==='yes');return;}
+      busy=true;buttons.forEach(b=>b.disabled=true);seatingButtonBusyV171_(button,true,'מוחק...');
+      const heading=shade.querySelector('h3'),text=shade.querySelector('p'),icon=shade.querySelector('.table-action-icon-q74');let successQ76=false;
+      try{
+        await onConfirm();
+        heading.textContent='השולחן נמחק בהצלחה';text.textContent='רשימת השולחנות וסך המקומות עודכנו.';icon.textContent='✓';shade.querySelector('section').classList.add('is-success-q75');successQ76=true;
+      }catch(err){heading.textContent='לא ניתן למחוק את השולחן';text.textContent=err?.message||String(err);}
+      finally{busy=false;seatingButtonBusyV171_(button,false);button.hidden=true;buttons[0].textContent='סגירה';buttons[0].disabled=false;if(successQ76){buttons[0].hidden=true;closeTimerQ76=setTimeout(()=>done(true),2000);}else buttons[0].focus();}
+    });
+    buttons[0].focus();
+  });
+}
+async function deleteTableDialogQ74_(button){
+  if(button.disabled)return;
+  const id=String(button.dataset.id),eid=String(state.activeEventId),token=state.session?.token;
+  const table=tablesForActiveEvent().find(t=>String(t.id)===id);
+  button.disabled=true;
+  try{
+    await tableActionDialogQ74_('למחוק את שולחן '+String(table?.tableNumber||'')+'? המחיקה תתאפשר רק אם אין בו מוזמנים משויכים.',true,async()=>{
+      if(state.session?.token!==token||String(state.activeEventId)!==eid)throw Error('האירוע או ההתחברות השתנו. יש לסגור ולבחור שוב את השולחן.');
+      await API.request('deleteTable',{id});
+      if(state.session?.token!==token||String(state.activeEventId)!==eid)throw Error('הפעולה הסתיימה אך התצוגה השתנתה. יש לרענן את האירוע המקורי.');
+      removeLocal_(state.tables,id);
+      if(String(state.seating?.eventId)===eid)state.seating.tables=state.seating.tables.filter(t=>String(t.id)!==id);
+      renderAll();void refreshSeatingAfterTableCrudV173_(eid);
+    });
+  }finally{button.disabled=false;}
+}
 function tableForm(t={}){
   if(!state.activeEventId){alert("יש לבחור אירוע קודם");return}
   modal(`<h2>${t.id?"עריכת":"הוספת"} שולחן</h2>
     <form id="tableForm" class="form-grid" onsubmit="return false;">
       <input type="hidden" name="id" value="${esc(t.id||"")}">
       <label>מספר שולחן <span class="required-star">*</span><input name="tableNumber" required inputmode="numeric" ${t.id?"readonly aria-readonly=\"true\"":""} value="${esc(t.tableNumber||"")}"></label>
-      <label>מספר מקומות <span class="required-star">*</span><input name="seats" required type="number" min="1" step="1" value="${t.seats||10}"></label>
+      <label>מספר מקומות <span class="required-star">*</span><input name="seats" required type="number" min="1" step="1" aria-describedby="tableFormErrorQ72" value="${t.seats||10}"><span id="tableFormErrorQ72" class="table-form-error-q72" role="alert" hidden></span></label>
       ${t.id?`<div class="table-form-status"><span>תפוסים: <b>${t.occupied||0}</b></span><span>פנויים: <b>${Math.max(0,(+t.seats||0)-(+t.occupied||0))}</b></span></div>`:""}
+      <div id="tableFormSuccessQ73" class="table-form-success-q73" role="status" aria-live="polite" hidden></div>
       <div class="actions"><button type="button" id="saveTableBtn" class="primary">שמירה</button></div>
     </form>`);
   $("#saveTableBtn").onclick=saveTableForm;
+  $("#tableForm").addEventListener("input",()=>tableFormErrorQ72_(""));
 }
 
 function renderActivity(){ if(currentPage==="activity") loadActivityLogZ57_(); }
@@ -1189,6 +1299,7 @@ document.addEventListener('input',e=>{if(e.target?.id==='activitySearchZ57')upda
 document.addEventListener('keydown',e=>{const th=e.target?.closest?.('#page-activity th[data-activity-sort]');if(th&&(e.key==='Enter'||e.key===' ')){e.preventDefault();setActivitySortZ57_(th.dataset.activitySort);return;}if(e.target?.id==='activitySearchZ57'&&e.key==='Enter')loadActivityLogZ57_();});
 
 function eventForm(e={}){
+  if(state.session?.role==='EventManager'&&!e.id)return;
   const types=activeEventTypes();
   const selectedType=e.eventTypeId||types[0]?.eventTypeId||types[0]?.id||"";
   modal(`<h2>${e.id?"עריכת":"הוספת"} אירוע </h2>
@@ -1301,10 +1412,10 @@ function eventForm(e={}){
     const messageHintD55O=document.createElement("p");
     messageHintD55O.className="muted";
     messageHintD55O.textContent="ניהול תבניות WhatsApp ושליחת הודעות נשארים במסכים הייעודיים. אין שינוי בהפרדת TEST ו־PROD.";
-    panesD55O.messages.append(messageHintD55O);
+    if(state.session?.role!=='EventManager')panesD55O.messages.append(messageHintD55O);
     const imageHintD55O=document.createElement("p");
     imageHintD55O.className="muted";
-    imageHintD55O.textContent="תמונת ההזמנה הכללית נשמרת ללא שינוי. ניתן להגדיר תמונה נפרדת לכל תבנית TEST או PROD.";
+    imageHintD55O.textContent=state.session?.role==='EventManager'?"ניתן להגדיר תמונה נפרדת לכל תבנית.":"תמונת ההזמנה הכללית נשמרת ללא שינוי. ניתן להגדיר תמונה נפרדת לכל תבנית TEST או PROD.";
     panesD55O.images.prepend(imageHintD55O);
     // D5D55Z22 FIX11: image cards for TEST and PROD, by template ID.
     if(e.id){
@@ -1314,15 +1425,15 @@ function eventForm(e={}){
       const loadDynamic=async()=>{
         try{
           const ctx=await API.request('eventImageContextD55P',{eventId:e.id});
-          const templates=ctx.templates||[];
+          const templates=eventImageVisibleTemplatesQ120_(ctx.templates);
           dynamicArea.replaceChildren();
           if(!templates.length){const p=document.createElement('p');p.textContent='לא נמצאו תבניות פעילות עם כותרת תמונה.';dynamicArea.append(p);return;}
           for(const t of templates){
             const card=document.createElement('section');card.className='event-dynamic-image-card-d55p';
-            const heading=document.createElement('h4');heading.textContent=t.name;
-            const meta=document.createElement('p');meta.className='muted';meta.textContent='סביבה: '+(t.environment==='TEST'?'TEST':'PROD')+' | תבנית: '+t.metaName;
+            const heading=document.createElement('h4');heading.textContent=eventImageDisplayNameQ121_(t);
+            const meta=document.createElement('p');meta.className='muted';meta.hidden=state.session?.role==='EventManager';meta.textContent=meta.hidden?'':'סביבה: '+(t.environment==='TEST'?'TEST':'PROD')+' | תבנית: '+t.metaName;
             const status=document.createElement('p');status.setAttribute('role','status');status.textContent=t.imageFileId?'תמונה שמורה':'לא הוגדרה תמונה';
-            const preview=document.createElement('img');preview.alt='תצוגה מקדימה: '+t.name;preview.hidden=true;preview.style.maxWidth='220px';preview.style.maxHeight='180px';
+            const preview=document.createElement('img');preview.alt='תצוגה מקדימה: '+eventImageDisplayNameQ121_(t);preview.hidden=true;preview.style.maxWidth='220px';preview.style.maxHeight='180px';
             const input=document.createElement('input');input.type='file';input.accept='image/png,image/jpeg,image/webp';
             const remove=document.createElement('button');remove.type='button';remove.textContent='הסרת תמונה';remove.disabled=!t.imageFileId;
             const show=async()=>{if(!t.imageFileId){preview.hidden=true;return;}try{const image=await eventViewImageDataLoadD55Q(e.id,t.id);if(image.base64){preview.src='data:'+image.mime+';base64,'+image.base64;preview.hidden=false;}}catch(err){status.textContent='טעינת התמונה נכשלה: '+(err.message||err);}};
@@ -1511,7 +1622,7 @@ function guestForm(g={},forcedEventId=''){
   const status=g.rsvpStatus||g.status||'Pending',invited=g.invitedCount||g.partySize||1,confirmed=(g.confirmedCount??(status==='Confirmed'?invited:0));
   modal(`<h2>${(g.guestId||g.id)?'עריכת':'הוספת'} מוזמן</h2><p class="guest-event-context"><b>אירוע:</b> ${esc(ev?.name||'—')} · <b>סוג:</b> ${esc(type?.name||'—')} <small>(${showSides?scopedSides.length:0} צדדים · ${showGroups?scopedGroups.length:0} קבוצות)</small></p><form id="guestForm" class="form-grid guest-form-z12" onsubmit="return false;">
   <input type="hidden" name="eventId" value="${esc(eventId)}">
-  <label>שם <span class="required-star">*</span><input name="name" required value="${esc(g.name||'')}"></label><label>טלפון <span class="required-star">*</span><input name="phone" required inputmode="tel" placeholder="0501234567" value="${esc(g.phone||'')}"></label><label>פנייה אישית <span class="required-star">*</span><input name="invitationGreeting" required maxlength="120" placeholder="לדוגמה: משפחת כהן היקרה" value="${esc(g.invitationGreeting||'')}"></label>
+  <label>שם <span class="required-star">*</span><input name="name" required value="${esc(g.name||'')}"></label><label>טלפון נייד <span class="required-star">*</span><input name="phone" required inputmode="tel" title="נייד ישראלי: 10 ספרות שמתחילות ב-05. ניתן להזין רווחים, מקפים או קידומת +972" placeholder="0501234567" value="${esc(g.phone||'')}"></label><label>פנייה אישית <span class="required-star">*</span><input name="invitationGreeting" required maxlength="120" placeholder="לדוגמה: משפחת כהן היקרה" value="${esc(g.invitationGreeting||'')}"></label>
   ${sideField}${groupField}
   <label>מספר מוזמנים <span class="required-star">*</span><input name="invitedCount" type="number" min="1" step="1" required value="${invited}"></label>
   <label>מספר שאישרו<input name="confirmedCount" type="number" min="0" step="1" value="${confirmed}"></label>
@@ -1547,7 +1658,7 @@ function guestDetails(g){
   modal(`<h2>${esc(g.name)}</h2><p><b>Guest ID:</b> ${esc(g.guestId||g.id)}</p><p><b>טלפון:</b> ${esc(g.phone)}</p>${parts.length?`<p>${parts.join(" | ")}</p>`:""}
   <p><b>מספר מוזמנים:</b> ${g.invitedCount||g.partySize||1} · <b>אישרו:</b> ${g.confirmedCount||0}</p><p><b>סטטוס:</b> ${esc(statusText(status))}</p>
   ${guestSeatingDetailsZ15_(g)}<p><b>פנייה אישית:</b> ${esc(g.invitationGreeting||"—")}</p><p><b>שליחה:</b> ${guestSendChecked(g)?"מסומן — יקבל הודעת WhatsApp":"לא מסומן"}</p><p><b>הערות:</b> ${esc(g.notes||"—")}</p>
-  <div class="actions"><button class="primary" id="detailEdit">עריכה</button><button class="danger" id="detailDelete">🗑</button></div>`);
+  <div class="actions">${gmAllowedQ114_()?`<button type="button" class="secondary" data-guest-message-history-q114="${esc(g.guestId||g.id)}">הודעות WhatsApp</button>`:''}<button class="primary" id="detailEdit">עריכה</button><button class="danger" id="detailDelete">🗑</button></div>`);
   $("#detailEdit").onclick=()=>guestForm(g);$("#detailDelete").onclick=async()=>{await deleteGuestV179_(g)}
 }
 
@@ -1763,8 +1874,14 @@ async function saveGuestForm(){
     guestFormErrorV182_(err?.message||String(err));
   }
 }
+function tableFormErrorQ72_(message,form=$('#tableForm')){
+  if(!form||form!==$('#tableForm'))return;
+  const feedback=form.querySelector('#tableFormErrorQ72'),seats=form.querySelector('[name="seats"]');
+  if(feedback){feedback.textContent=message;feedback.hidden=!message;}
+  if(seats){seats.setAttribute('aria-invalid',String(!!message&&/מקומות/.test(message)));if(message&&/מקומות/.test(message))seats.focus();}
+}
 async function saveTableForm(){
-  const form=$("#tableForm");if(!form||!form.reportValidity())return;const o=Object.fromEntries(new FormData(form));o.eventId=state.activeEventId;o.seats=+o.seats||0;const isEdit=!!o.id,started=performance.now();setFormBusy(form,true);
+  const form=$("#tableForm");if(!form||!form.reportValidity())return;const o=Object.fromEntries(new FormData(form));o.eventId=state.activeEventId;o.seats=+o.seats||0;const isEdit=!!o.id,started=performance.now();tableFormErrorQ72_("",form);setFormBusy(form,true);
   try{const r=await API.request("saveTable",{table:o});if(!r?.table?.id)throw new Error("השרת לא החזיר אישור שמירה תקין");upsertLocal_(state.tables,r.table,true);
     // Keep the event-scoped seating snapshot in sync with table CRUD immediately.
     // Occupancy is derived from assignments, never reset by a table save.
@@ -1775,7 +1892,13 @@ async function saveTableForm(){
       const seats=Math.max(0,Number(r.table.seats)||0);
       upsertLocal_(state.seating.tables,{...r.table,seats,occupied,free:Math.max(0,seats-occupied)});
     }
-    closeModal();renderAll();mutationDone_(isEdit?"השולחן עודכן":"השולחן נוסף",r,started);await refreshSeatingAfterTableCrudV173_(o.eventId)}catch(err){setFormBusy(form,false);showToast(err?.message||String(err),"error")}
+    renderAll();
+    if($('#tableForm')===form){
+      const feedback=form.querySelector('#tableFormSuccessQ73');
+      if(feedback){feedback.textContent=isEdit?'✓ השולחן עודכן בהצלחה':'✓ השולחן נוסף בהצלחה';feedback.hidden=false;}
+      setTimeout(()=>{if($('#tableForm')===form)closeModal();},1800);
+    }
+    await refreshSeatingAfterTableCrudV173_(o.eventId)}catch(err){setFormBusy(form,false);tableFormErrorQ72_(err?.message||String(err),form)}
 }
 function applyLookupMutationLocal_(kind,item){
   if(!item)return;
@@ -1892,7 +2015,7 @@ async function waLoadSendTemplatesF14C_(){
 function waEligibleTemplatesD5D26_(templates){
   const ev=activeEvent();
   const hasImage=!!String(ev?.invitationImageFileId||'').trim();
-  return (templates||[]).filter(t=>hasImage||!['family_event_invitation_v3','test_family_event_invitation_v3'].includes(String(t.metaName||'').trim().toLowerCase()));
+  return (templates||[]).filter(t=>templateAllowedBySeatingQ165_(t,ev)).filter(t=>hasImage||!['family_event_invitation_v3','test_family_event_invitation_v3'].includes(String(t.metaName||'').trim().toLowerCase()));
 }
 function waTemplateByIdF14G_(templates,id){return (templates||[]).find(t=>String(t.id)===String(id))||null;}
 function waGuestTableTextF14Z36_(guest){
@@ -1912,11 +2035,12 @@ function waPreviewBodyF14G_(template,guest){
   const sourceValues={personalGreeting:common.greeting,guestName:String(guest?.name||''),eventName:common.eventName,eventDetails:common.eventDetails,eventDate:common.eventDate,eventTime:common.eventTime,eventVenue:common.venue,eventAddress:common.eventAddress,tableText:common.table,extraNotesText:String(guest?.notes||''),eventSignature:String(ev?.messageSignature||'')};const mapping=template?.mapping?.body||{};return String(template?.body||'').replace(/\{\{\s*([^{}]+?)\s*\}\}/g,(m,k)=>{const x=String(k).trim(),src=mapping[x];if(src&&Object.prototype.hasOwnProperty.call(sourceValues,src))return sourceValues[src];if(/^\d+$/.test(x))return '⟦לא מופה {{'+x+'}}⟧';if(x==='פנייה_אישית'||x==='שם_המוזמן')return common.greeting;if(x==='שם_האירוע')return common.eventName;if(x==='מספר_שולחן'||x==='שולחן'||x==='שולחנות')return common.table;if(x==='תאריך_האירוע')return common.eventDate;if(x==='שעת_האירוע')return common.eventTime;if(x==='מקום_האירוע')return common.venue;if(x==='כתובת_האירוע')return common.eventAddress;return 'פרטי האירוע';});
 }
 function waPreviewButtonsF14Z32_(template){
-  const p=String(template?.purpose||'');
-  if(p==='invitation'||p==='rsvp_update')return ['אישור הגעה'];
-  if(p==='table_update')return ['ניווט לאירוע'];
-  if(p==='table_payment_update')return ['ניווט לאירוע','תשלום'];
-  return [];
+  let components;
+  try{components=typeof template?.metaComponentsJson==='string'?JSON.parse(template.metaComponentsJson):template?.metaComponentsJson;}catch(_){return [];}
+  if(!Array.isArray(components))return [];
+  return components.filter(c=>String(c?.type||'').toUpperCase()==='BUTTONS')
+    .flatMap(c=>Array.isArray(c.buttons)?c.buttons:[])
+    .map(b=>String(b?.text||'').trim()).filter(Boolean);
 }
 // D5D55R: preview resolves TEST event/template image first; no WhatsApp sending changes.
 async function waTemplateImageSrcF14G_(template){
@@ -1927,30 +2051,14 @@ async function waTemplateImageSrcF14G_(template){
   const key=environment+'|'+eventId+'|'+String(template.id);
   const cached=state.waSendTemplateImagesF14G.get(key);if(cached)return cached;
   const pending=(async()=>{
-    if(environment==='TEST'&&eventId){
-      const r=await eventViewImageDataLoadD55Q(eventId,template.id);
-      if(r?.base64&&r?.mime)return `data:${r.mime};base64,${r.base64}`;
-      // Legacy invitation image is a compatibility fallback ONLY for invitations.
-      if(String(template.purpose||'')==='invitation'){
-        const old=await API.request('getEventInvitationImageD5D17',{eventId});
-        if(old?.base64&&old?.mime)return `data:${old.mime};base64,${old.base64}`;
-      }
-      return '';
+    if(!eventId)return '';
+    const r=await eventViewImageDataLoadD55Q(eventId,template.id);
+    if(r?.base64&&r?.mime)return `data:${r.mime};base64,${r.base64}`;
+    if(String(template.purpose||'')==='invitation'){
+      const old=await API.request('getEventInvitationImageD5D17',{eventId});
+      if(old?.base64&&old?.mime)return `data:${old.mime};base64,${old.base64}`;
     }
-    // The invitation image belongs to the selected event in both environments.
-    // Keep the template image as a compatibility fallback for non-invitation templates.
-    if(eventId&&String(template.purpose||'')==='invitation'){
-      try{
-        const eventImage=await eventViewImageDataLoadD55Q(eventId,template.id);
-        if(eventImage?.base64&&eventImage?.mime)return `data:${eventImage.mime};base64,${eventImage.base64}`;
-      }catch(error){console.warn('[WA preview] event image unavailable',error);}
-      try{
-        const legacy=await API.request('getEventInvitationImageD5D17',{eventId});
-        if(legacy?.base64&&legacy?.mime)return `data:${legacy.mime};base64,${legacy.base64}`;
-      }catch(error){console.warn('[WA preview] legacy event image unavailable',error);}
-    }
-    const r=await API.request('getMessageTemplateImageA19P2',{id:template.id});
-    return r?.base64&&r?.mime?`data:${r.mime};base64,${r.base64}`:'';
+    return '';
   })().catch(e=>{state.waSendTemplateImagesF14G.delete(key);throw e;});
   state.waSendTemplateImagesF14G.set(key,pending);return pending;
 }
@@ -1963,10 +2071,10 @@ function waPreviewFormatF14Z34_(text){
   return s.replace(/\n/g,'<br>');
 }
 async function waRenderPreviewF14G_(container,template,guest){
-  if(!container)return;if(!template){container.innerHTML='<p class="muted">בחר תבנית להצגת Preview.</p>';return;}
-  if(!guest){container.innerHTML='<p class="wa-confirm-status-v1190a16 error">לא ניתן להציג Preview: אין מוזמן להצגה.</p>';return;}
+  if(!container)return;if(!template){container.innerHTML='<p class="muted">בחר תבנית להצגת ההודעה.</p>';return;}
+  if(!guest){container.innerHTML='<p class="wa-confirm-status-v1190a16 error">לא ניתן להציג את ההודעה: לא נבחר מוזמן.</p>';return;}
   const previewStartedD32=performance.now();const hasImage=!!template.hasImage,buttons=waPreviewButtonsF14Z32_(template);
-  container.innerHTML=`<div class="wa-preview-card-f14g">${hasImage?'<div class="wa-preview-image-wrap-f14g"><span>טוען תמונה…</span></div>':''}<div class="wa-preview-body-f14g">${waPreviewFormatF14Z34_(waPreviewBodyF14G_(template,guest))}</div>${buttons.map(x=>`<div class="wa-preview-button-f14g">${esc(x)}</div>`).join('')}</div><small class="muted">Preview בלבד — נתוני ${esc(guest.name||'המוזמן הראשון')}.</small>`;
+  container.innerHTML=`<div class="wa-preview-card-f14g">${hasImage?'<div class="wa-preview-image-wrap-f14g"><span>טוען תמונה…</span></div>':''}<div class="wa-preview-body-f14g">${waPreviewFormatF14Z34_(waPreviewBodyF14G_(template,guest))}</div>${buttons.map(x=>`<div class="wa-preview-button-f14g">${esc(x)}</div>`).join('')}</div><small class="muted">תצוגה מקדימה עבור ${esc(guest.name||'המוזמן הראשון')}.</small>`;
   if(!hasImage)return;
   try{const src=await waTemplateImageSrcF14G_(template),wrap=container.querySelector('.wa-preview-image-wrap-f14g');console.info('[WA PERF] preview image',Math.round(performance.now()-previewStartedD32),'ms');if(!wrap||!wrap.isConnected)return;if(src)wrap.innerHTML=`<img src="${src}" alt="תמונת התבנית">`;else wrap.remove();}catch(e){const wrap=container.querySelector('.wa-preview-image-wrap-f14g');if(wrap)wrap.remove();}
 }
@@ -2024,6 +2132,8 @@ function waPaymentGetFix6(eventId,force=false){
 // D5D55E: central payment-aware template visibility, fail closed on lookup error.
 async function waFilterTableTemplatesD5D55D_(templates,eventId,paymentSettings){
   if(!eventId)throw new Error('לא זוהה אירוע לצורך בדיקת הגדרות התשלום');
+  const eventQ165=state.events.find(e=>String(e.eventId||e.id)===String(eventId));
+  if(eventQ165&&!isTrue(eventQ165.seatingEnabled,false))return templates.filter(t=>!templateNeedsSeatingQ165_(t));
   const ps=paymentSettings||await waPaymentGetFix6(eventId);
   if(!ps||!Array.isArray(ps.methods))throw new Error('התקבלה תשובה לא תקינה עבור הגדרות התשלום');
   const active=!!ps.enabled&&ps.methods.some(m=>/^https:\/\//i.test(String(m.url||'')));
@@ -2037,7 +2147,8 @@ async function waFillTemplateSelectF14D_(select,status,sendButton,eventId){
   select.disabled=true;select.innerHTML='<option value="">טוען תבניות…</option>';if(sendButton)sendButton.disabled=true;
   try{
     // Both were previously sequential, adding their network latencies together.
-    const [rawTemplates,paymentSettings]=await Promise.all([waLoadSendTemplatesF14C_(),waPaymentGetFix6(eventId)]);
+    const eventQ165=state.events.find(e=>String(e.eventId||e.id)===String(eventId));
+    const [rawTemplates,paymentSettings]=await Promise.all([waLoadSendTemplatesF14C_(),eventQ165&&!isTrue(eventQ165.seatingEnabled,false)?Promise.resolve({enabled:false,methods:[]}):waPaymentGetFix6(eventId)]);
     const templates=await waFilterTableTemplatesD5D55D_(rawTemplates.filter(t=>String(t.environment||'PRODUCTION').toUpperCase()==='PRODUCTION'),eventId,paymentSettings);
     if(!templates.length){select.innerHTML='<option value="">אין תבנית Meta מקושרת</option>';if(status){status.textContent='לא נמצאה תבנית WhatsApp המקושרת ל־Meta עבור סוג האירוע. יש לעדכן את ״שם התבנית המאושרת ב־Meta״ במסך ניהול התבניות.';status.className='wa-confirm-status-v1190a16 error';}return []}
     select.innerHTML=waTemplateOptionsF14C_(templates);select.disabled=false;const approved=waSelectedTemplateApprovedF14E_(select);if(status){status.textContent=approved?'':'תבנית V3 מקושרת, אך עדיין אינה מאושרת ב־Meta. ניתן לבדוק את ההכנה בלבד; השליחה תיפתח לאחר APPROVED.';status.className='wa-confirm-status-v1190a16'+(approved?'':' error');}if(sendButton)sendButton.disabled=!approved;return templates;
@@ -2053,17 +2164,41 @@ function waConfirmSendF14V_({title='אישור שליחה',message='',details=''
   return new Promise(resolve=>{
     const shade=document.createElement('div');shade.className='wa-confirm-shade-f14v';
     shade.innerHTML=`<section class="wa-confirm-dialog-f14v" role="dialog" aria-modal="true" aria-labelledby="waConfirmTitleF14V"><h3 id="waConfirmTitleF14V">${esc(title)}</h3><p>${esc(message)}</p>${details?`<div class="wa-confirm-extra-f14v">${details}</div>`:''}<div class="actions"><button type="button" class="secondary" data-wa-cancel>ביטול</button><button type="button" class="primary" data-wa-ok>אישור ושליחה</button></div></section>`;
-    const finish=v=>{shade.remove();resolve(v)};
+    let finishedQ140=false;const finish=v=>{if(finishedQ140)return;finishedQ140=true;shade.querySelectorAll('button').forEach(b=>b.disabled=true);shade.remove();resolve(v)};
     shade.querySelector('[data-wa-cancel]').onclick=()=>finish(false);
     shade.querySelector('[data-wa-ok]').onclick=()=>finish(true);
     shade.addEventListener('click',e=>{if(e.target===shade)finish(false)});
     document.body.appendChild(shade);shade.querySelector('[data-wa-ok]').focus();
   });
 }
+// Q91: one confirmation and one concise result for an EventManager test send.
+async function waManagerTestConfirmQ91_(template,to,send){
+  if(send.dataset.confirmBusyQ91)return false;
+  send.dataset.confirmBusyQ91='1';send.disabled=true;
+  const token=state.session?.token,eventId=String(state.activeEventId||''),templateId=String(template?.id||'');
+  const sameContext=()=>state.session?.token===token&&String(state.activeEventId||'')===eventId&&String($('#waF14CTestTemplate')?.value||'')===templateId&&waPhonePreviewV1190A16_($('#waF7Phone')?.value||'')===to&&$('#waF8Send')===send;
+  try{
+    let cost='לא ניתן לחשב כרגע';
+    try{if(String(template?.category||'').trim()){const estimate=await getWaCostEstimateCachedF14_(1,template.category);cost=waCostTextF14Z34_(estimate,template.category);}}catch(_){/* No amount is guessed when rates are unavailable. */}
+    if(!sameContext())return false;
+    const ok=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp לבדיקה',message:'לשלוח הודעת בדיקה אחת למספר שנבחר?',details:`<dl><dt>תבנית</dt><dd>${esc(template?.displayName||template?.name||template?.metaName||'')}</dd><dt>מספר בדיקה</dt><dd dir="ltr">+${esc(to)}</dd><dt>כמות הודעות</dt><dd>1</dd><dt>עלות משוערת</dt><dd>${esc(cost)}</dd></dl>`});
+    return ok&&sameContext();
+  }finally{delete send.dataset.confirmBusyQ91;if($('#waF8Send')===send)send.disabled=false;}
+}
+function waManagerTestResultQ91_({accepted=false,recipient='',error='',uncertain=false}){
+  const title=uncertain?'לא ניתן לקבוע אם הודעת הבדיקה נשלחה':error||!accepted?'שליחת הבדיקה נכשלה':'הודעת הבדיקה התקבלה לשליחה';
+  const detail=uncertain?'יש לבדוק את יומן WhatsApp ואת הטלפון לפני ניסיון נוסף.':error?String(error):accepted?'קבלת הבקשה אינה אישור מסירה לטלפון. יש לבדוק את ההודעה בטלפון.':'ההודעה לא התקבלה לשליחה.';
+  return `<div class="wa-result-f14v ${accepted&&!error&&!uncertain?'success':'has-error'}"><strong>${esc(title)}</strong><p>מספר בדיקה: <span dir="ltr">+${esc(recipient)}</span></p><p>${esc(detail)}</p></div>`;
+}
 function waSetSendingF14V_(button,busy,label='שולח...'){
   if(!button)return;
   if(busy){if(!button.dataset.waOldHtml)button.dataset.waOldHtml=button.innerHTML;button.disabled=true;button.innerHTML=`<span class="seating-spinner-v171" aria-hidden="true"></span> ${label}`;}
   else{button.innerHTML=button.dataset.waOldHtml||button.innerHTML;delete button.dataset.waOldHtml;}
+}
+function waManagerBulkResultQ97_({done,total,failed=0,uncertain=false,stopped=false,finishUnconfirmed=false}){
+  const title=uncertain?'לא התקבלה תשובה מלאה':stopped?'השליחה נעצרה':failed?'השליחה הסתיימה עם הודעות שנכשלו':'הטיפול בשליחה הסתיים';
+  const warning=uncertain?'ייתכן שחלק מההודעות נשלחו. יש לבדוק ביומן לפני שליחה נוספת.':finishUnconfirmed?'סיום התהליך טרם אומת. יש לבדוק ביומן ובמצב השליחה לפני ניסיון נוסף.':'';
+  return `<div class="wa-result-f14v ${failed||uncertain||finishUnconfirmed?'has-error':'success'}"><strong>${esc(title)}</strong><p>טופלו ${Number(done)||0} מתוך ${Number(total)||0} הודעות.</p>${warning?`<p>${esc(warning)}</p>`:''}<p>ניתן לבדוק ביומן למי ההודעות הגיעו.</p></div>`;
 }
 function waResultHtmlF14V_({ok=0,fail=0,left=0,elapsedMs=0,test=false,perf=null,uncertain=false,blockedBeforeDispatch=false,canceled=false}){
   const total=ok+fail,serverMs=Number(perf?.totalMs||0),roundTripMs=Math.max(0,Number(elapsedMs||0)-serverMs),shownTotal=uncertain?'לא ידוע':total,shownOk=uncertain?'לא ידוע':ok,shownFail=uncertain?'לא ידוע':fail;
@@ -2103,6 +2238,46 @@ async function waWaitTestPaceQ48_(ms,keepGoing,onTick){
   while(performance.now()-began<ms){if(!keepGoing())return false;onTick(Math.max(0,Math.ceil((ms-performance.now()+began)/1000)));await new Promise(r=>setTimeout(r,Math.min(500,ms-performance.now()+began)));}
   return keepGoing();
 }
+function waValidProductionSnapshotQ106_(s,expected){
+  if(!s||s.eventId!==expected.eventId||s.campaignId!==expected.campaignId||s.progressId!==expected.progressId||s.ownerId!==expected.ownerId||s.requested!==expected.ids.length||!['PREPARING','SENDING','DONE','STOPPED','ERROR'].includes(s.phase))return false;
+  if(![s.processed,s.accepted,s.failed].every(Number.isSafeInteger)||s.processed<0||s.processed>s.requested||s.accepted<0||s.failed<0||s.accepted+s.failed!==s.processed||!Array.isArray(s.results)||s.results.length!==s.processed)return false;
+  const seen=new Set();
+  for(let i=0;i<s.results.length;i++){const r=s.results[i];if(!r||r.guestId!==expected.ids[i]||typeof r.accepted!=='boolean')return false;if(r.accepted){if(typeof r.messageId!=='string'||!r.messageId.trim()||seen.has(r.messageId))return false;seen.add(r.messageId);}}
+  if(s.results.filter(r=>r.accepted).length!==s.accepted)return false;
+  if(s.phase==='DONE'&&(s.processed!==s.requested||s.journalCommitted!==true||s.uncertain||s.stopped))return false;
+  if(s.phase==='STOPPED'&&(s.stopped!==true||s.journalCommitted!==true||s.uncertain))return false;
+  return true;
+}
+async function waRunProductionLogicalQ106_(payload,options){
+  if(!options.current())throw Error('האירוע או ההתחברות השתנו לפני השליחה');
+  const expected={eventId:payload.eventId,campaignId:payload.campaignId,progressId:payload.progressId,ownerId:options.ownerId,ids:payload.items.map(x=>x.guestId)};
+  let active=true,pollBusy=false,last=null,stopPromise=null;
+  const accept=s=>{
+    if(!waValidProductionSnapshotQ106_(s,expected))throw Error('דיווח ההתקדמות אינו תואם למנת השליחה');
+    if(last&&(s.processed<last.processed||last.results.some((r,i)=>s.results[i]?.guestId!==r.guestId||s.results[i]?.accepted!==r.accepted||(r.accepted&&s.results[i]?.messageId!==r.messageId))))throw Error('דיווח ההתקדמות אינו עקבי');
+    last=s;if(active&&options.current())options.onProgress(s);
+  };
+  const requestStop=()=>{
+    if(stopPromise)return stopPromise;
+    options.onStopState('pending','מבקש עצירה מהשרת…');
+    stopPromise=API.request('requestProductionStopQ106',{eventId:payload.eventId,campaignId:payload.campaignId},{timeoutMs:20000}).then(r=>{
+      if(r?.requested!==true||r.eventId!==payload.eventId||r.campaignId!==payload.campaignId||r.sent!==0)throw Error('בקשת העצירה לא אומתה');
+      if(active&&options.current())options.onStopState('accepted','בקשת העצירה התקבלה בשרת. הודעות שכבר הועברו עשויות להתקבל.');return true;
+    }).catch(e=>{if(active&&options.current())options.onStopState('failed','בקשת העצירה טרם אומתה. לא תתחיל מנה נוספת. '+String(e?.message||e));return false;});
+    return stopPromise;
+  };
+  const poll=async()=>{
+    if(!active||pollBusy||!options.current())return;pollBusy=true;
+    try{const s=await API.request('getProductionProgressQ106',{eventId:payload.eventId,campaignId:payload.campaignId,progressId:payload.progressId},{timeoutMs:10000});if(active&&s)accept(s);}catch(ignore){}finally{pollBusy=false;}
+  };
+  options.onStopReady(requestStop);
+  const timer=setInterval(()=>{void poll();},1500);
+  try{
+    const result=await API.request('sendProductionLogicalBatchQ106',payload);
+    if(!['DONE','STOPPED','ERROR'].includes(result?.phase))throw Error('לא התקבלה תשובת סיום למנה');
+    accept(result);if(stopPromise)await stopPromise;return result;
+  }finally{active=false;clearInterval(timer);options.onStopReady(null);}
+}
 async function waReadSettledAfterLossQ33_(id,eventId,total,expectedAttempted,baseline,token){
   const beganQ48=Date.now();
   for(let attempt=0;attempt<24&&Date.now()-beganQ48<120000;attempt++){
@@ -2130,28 +2305,30 @@ function waBulkProgressWindowZ22_(sourceBox, sourceStop, sourceJournal, title, t
   const root=document.createElement('section');
   root.className='wa-bulk-overlay-z22';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label',title);
   const isTestProgressF23=/לבדיקה/.test(title);
+  const managerProgressQ96=state.session?.role==='EventManager';
+  if(managerProgressQ96)root.classList.add('wa-manager-progress-q96');
   root.innerHTML=`<div class="wa-bulk-window-z22 wa-bulk-v13" dir="rtl">
-    <h2>${esc(title)}</h2><div class="wa-bulk-main-v13"><div><small>טופלו לשליחה — אינו אישור מסירה</small><div class="wa-bulk-big-v13" dir="ltr" style="unicode-bidi:isolate;display:inline-block"><b data-done>0</b> / <span data-total>0</span></div></div><strong data-percent>0%</strong></div>
+    <h2>${esc(title)}</h2>${typeof quotaSummaryMarkupQ161_==='function'?quotaSummaryMarkupQ161_():''}<div class="wa-bulk-main-v13"><div><small>${managerProgressQ96?'טופלו לשליחה':'טופלו לשליחה — אינו אישור מסירה'}</small><div class="wa-bulk-big-v13" dir="ltr" style="unicode-bidi:isolate;display:inline-block"><b data-done>0</b> / <span data-total>0</span></div></div><strong data-percent>0%</strong></div>
     <progress max="100" value="0" aria-label="התקדמות שליחה"></progress>
     <div hidden aria-hidden="true"><b data-ok>0</b><b data-fail>0</b><b data-left>0</b><small data-left-label></small></div>
-    <div class="wa-bulk-stats-v13 wa-bulk-delivery-stats-fix44" aria-label="תוצאות ההודעות שנבחרו"><div><b data-delivered>0</b><small>נמסרו</small></div><div><b data-delivery-failed>0</b><small>נכשלו</small></div><div><b data-delivery-pending>0</b><small>ממתינות לאישור מסירה</small></div></div>
+    <div class="wa-bulk-stats-v13 wa-bulk-delivery-stats-fix44" aria-label="תוצאות ההודעות שנבחרו"><div><b data-delivered>0</b><small>${managerProgressQ96?'התקבלו':'נמסרו'}</small></div><div><b data-delivery-failed>0</b><small>נכשלו</small></div><div><b data-delivery-pending>0</b><small>${managerProgressQ96?'ממתינות לאישור קבלה':'ממתינות לאישור מסירה'}</small></div></div>
     <div class="wa-bulk-state-v13" data-counter-update role="status" aria-live="polite" aria-atomic="true" hidden></div>
     <p data-count-note role="status" aria-live="polite"></p>
     <p><strong data-dispatch-pending>טרם נשלחו: 0</strong></p>
     <p data-dispatch-unknown role="status" hidden></p>
     <div class="wa-bulk-state-v13"><div class="wa-bulk-main-v13"><strong data-phase>מכין שליחה…</strong><span data-time>00:00</span></div><p class="wa-bulk-status-z22" role="status">מכין שליחה…</p></div>
     <button type="button" class="secondary" data-recovery-refresh hidden>רענן תוצאות שליחה מהשרת</button>
-    <p class="wa-bulk-note-z22">נמסרו: התקבל אישור הגעה לטלפון. נכשלו: התקבלה תשובת כישלון. ממתינות לאישור מסירה: התקבלו לשליחה אך טרם התקבל אישור הגעה לטלפון. טרם נשלחו: עדיין לא הועברו לשליחה. 100% בפס מציין סיום טיפול בשליחה בלבד.</p>
-    <div class="wa-delivery-fix24" hidden><strong>עדכון אישורי מסירה</strong><div data-delivery-summary role="status">טרם נבדק</div><p class="muted">הנתונים מתייחסים לשליחה הנוכחית בלבד. ניתן לרענן אישורים ללא שליחה נוספת.</p></div><div class="actions"><button type="button" class="secondary wa-bulk-refresh-fix24" hidden>רענן סטטוס מסירה</button><button type="button" class="danger wa-bulk-stop-z22">■ עצור שליחה</button><button type="button" class="secondary wa-bulk-journal-z22" hidden>צפייה ביומן WhatsApp</button><button type="button" class="secondary wa-bulk-close-z22" hidden>סגור</button></div>
-  </div><div class="wa-bulk-confirm-v13" hidden><section role="alertdialog" aria-modal="true" aria-label="אישור עצירת שליחה"><h3>אישור עצירת שליחה</h3><p data-confirm-text></p><p>הודעות שכבר טופלו יישארו בסיכום. המנה הפעילה עשויה להסתיים.</p><div class="actions"><button type="button" class="secondary" data-cancel>המשך שליחה</button><button type="button" class="danger" data-confirm>כן, עצור שליחה</button></div></section></div>`;
+    <p class="wa-bulk-note-z22">${managerProgressQ96?'אישור הקבלה מתעדכן בנפרד מהשליחה.':'נמסרו: התקבל אישור שההודעה הגיעה ל־WhatsApp. נכשלו: התקבלה תשובת כישלון. ממתינות לאישור מסירה: התקבלו לשליחה אך טרם התקבל אישור שההודעה הגיעה ל־WhatsApp. טרם נשלחו: עדיין לא הועברו לשליחה. 100% בפס מציין סיום טיפול בשליחה בלבד.'}</p>
+    <div class="wa-delivery-fix24" hidden>${managerProgressQ96?'':'<strong>עדכון אישורי מסירה</strong>'}<div data-delivery-summary role="status">טרם נבדק</div>${managerProgressQ96?'':'<p class="muted">הנתונים מתייחסים לשליחה הנוכחית בלבד. ניתן לרענן אישורים ללא שליחה נוספת.</p>'}</div><div class="actions"><button type="button" class="secondary wa-bulk-refresh-fix24" hidden>${managerProgressQ96?'בדוק שוב':'רענן סטטוס מסירה'}</button><button type="button" class="danger wa-bulk-stop-z22">■ עצור שליחה</button><button type="button" class="secondary wa-bulk-journal-z22" hidden>צפייה ביומן WhatsApp</button><button type="button" class="secondary wa-bulk-close-z22" hidden>סגור</button></div>
+  </div>`;
   document.body.appendChild(root);
   // The original progress element remains the live data source, but is not rendered twice.
   if(sourceBox)sourceBox.classList.add('wa-progress-delegated-z15');
-  const $=sel=>root.querySelector(sel),status=$('.wa-bulk-status-z22'),bar=$('progress'),stop=$('.wa-bulk-stop-z22'),journal=$('.wa-bulk-journal-z22'),close=$('.wa-bulk-close-z22'),confirmBox=$('.wa-bulk-confirm-v13');
+  const $=sel=>root.querySelector(sel),status=$('.wa-bulk-status-z22'),bar=$('progress'),stop=$('.wa-bulk-stop-z22'),journal=$('.wa-bulk-journal-z22'),close=$('.wa-bulk-close-z22');
   const started=performance.now();let finished=false,done=0,stopMessageQ25='',stopPhaseQ26='';
   const eventQ37=String(state.activeEventId||''),tokenQ37=state.session?.token,environmentQ37=environmentOverrideQ37||(isTestProgressF23?'TEST':'PRODUCTION');
   let deliveryLastPaintQ53=null,deliveryRescanQ54=false;
-  let dispatchFailedQ37=0,canceledQ37=0,finishWarningQ37=false;const deliveryStatesQ37=new Map();
+  let dispatchFailedQ37=0,canceledQ37=0,finishWarningQ37=false,finalNoticeQ95='';const deliveryStatesQ37=new Map();
   const paintCountsQ37=()=>{
     const numeric=numericQ60();
     if(numeric)dispatchFailedQ37=Math.max(0,numeric.failed-Number(sourceBox.waUnknownQ37||0));
@@ -2172,7 +2349,7 @@ function waBulkProgressWindowZ22_(sourceBox, sourceStop, sourceJournal, title, t
     $('[data-count-note]').textContent=`נבחרו ${total} הודעות`+(canceledQ37?` · ${canceledQ37} בוטלו ולא יישלחו`:'');
     if(finished){
       $('[data-phase]').textContent=canceledQ37?'השליחה נעצרה לבקשתך':unsent||unchecked?'השליחה נעצרה לפני השלמת כל ההודעות':finishWarningQ37?'הטיפול בשליחה הסתיים עם הערות':'הטיפול בשליחה הסתיים';
-      status.textContent=(stopMessageQ25?stopMessageQ25+' ':'')+`${delivered} נמסרו · ${failed} נכשלו`+(pending?` · ${pending} ממתינות לאישור מסירה`:'')+(unsent?` · ${unsent} טרם נשלחו`:'')+(unchecked?` · ${unchecked} דורשות בדיקה`:'')+(canceledQ37?` · ${canceledQ37} בוטלו`:'')+(unchecked?' — יש לבדוק ביומן לפני שליחה נוספת':'');
+      status.textContent=(stopMessageQ25?stopMessageQ25+' ':'')+(managerProgressQ96?`${delivered} התקבלו · ${failed} נכשלו`:`${delivered} נמסרו · ${failed} נכשלו`)+(pending?(managerProgressQ96?` · ${pending} ממתינות לאישור קבלה`:` · ${pending} ממתינות לאישור מסירה`):'')+(unsent?` · ${unsent} טרם נשלחו`:'')+(unchecked?` · ${unchecked} דורשות בדיקה`:'')+(canceledQ37?` · ${canceledQ37} בוטלו`:'')+(unchecked?' — יש לבדוק ביומן לפני שליחה נוספת':'')+(finalNoticeQ95?' · '+finalNoticeQ95:'');
     }
     paintCounterFeedbackQ38_();
     return pending;
@@ -2203,6 +2380,15 @@ function waBulkProgressWindowZ22_(sourceBox, sourceStop, sourceJournal, title, t
     const automatic=hasPendingIds&&deliveryPollStartedQ6&&Date.now()-deliveryPollStartedQ6<180000;
     const wrongContext=state.session?.token!==tokenQ37||String(state.activeEventId||'')!==eventQ37;
     let text='',spinning=false;
+    if(managerProgressQ96){
+      if(!wrongContext&&(deliveryBusyFIX24||priorityBusyQ62)){text='בודק אם ההודעות התקבלו…';spinning=true;}
+      else if(unresolved>0&&wrongContext)text='הבדיקה נעצרה לאחר שינוי משתמש או אירוע.';
+      else if(unresolved>0&&counterReadErrorQ38)text='לא ניתן לבדוק כרגע אם ההודעות הגיעו.'+(automatic?' הבדיקה תימשך אוטומטית.':' אפשר ללחוץ על „בדוק שוב”.');
+      else if(unresolved>0&&deliveryBlockedQ45)text='הבדיקה מתעכבת. ייתכן שההודעות כבר הגיעו; אין לשלוח אותן שוב.';
+      else if(unresolved>0&&automatic){text='עדיין אין אישור שההודעות התקבלו. הבדיקה נמשכת.';spinning=true;}
+      else if(finished&&unresolved>0&&hasPendingIds)text='עדיין אין אישור שההודעות הגיעו. אפשר ללחוץ על „בדוק שוב”.';
+      else if(finished&&unresolved>0)text='לא ניתן לוודא אם ההודעות הגיעו. יש לבדוק ביומן לפני שליחה נוספת.';
+    }else{
     if(!wrongContext&&(deliveryBusyFIX24||priorityBusyQ62)){text='מעדכן מונים לפי אישורי המסירה… ההודעות עשויות כבר להופיע בטלפון.';spinning=true;}
     else if(unresolved>0&&wrongContext)text='עדכון המונים נעצר בעקבות שינוי משתמש או אירוע.';
     else if(unresolved>0&&counterReadErrorQ38)text='עדכון המונים לא הצליח כרגע. הנתונים האחרונים נשמרו.'+(automatic?' הבדיקה תחזור אוטומטית.':' ניתן לרענן סטטוס מסירה.');
@@ -2210,10 +2396,11 @@ function waBulkProgressWindowZ22_(sourceBox, sourceStop, sourceJournal, title, t
     else if(unresolved>0&&automatic){text='ממתין לאישורי מסירה — המונים יתעדכנו אוטומטית. ייתכן שההודעות כבר הגיעו לטלפון.';spinning=true;}
     else if(finished&&unresolved>0&&hasPendingIds)text='העדכון האוטומטי הסתיים. עדיין חסרים אישורי מסירה; ניתן ללחוץ על ״רענן סטטוס מסירה״.';
     else if(finished&&unresolved>0)text='אין עדיין מידע מלא על המסירה. יש לבדוק ביומן לפני שליחה נוספת.';
+    }
     panel.hidden=!text;
     panel.innerHTML=text?`${spinning?'<span class="seating-spinner-v171" aria-hidden="true"></span> ':''}<strong>${text}</strong>`:'';
     grid.setAttribute('aria-busy',String(!wrongContext&&(deliveryBusyFIX24||priorityBusyQ62)));
-    deliveryButtonFIX24.textContent=(deliveryBusyFIX24||priorityBusyQ62)?'מעדכן מונים…':'רענן סטטוס מסירה';
+    deliveryButtonFIX24.textContent=(deliveryBusyFIX24||priorityBusyQ62)?'בודק…':managerProgressQ96?'בדוק שוב':'רענן סטטוס מסירה';
   }
   const refreshDeliveryFIX24=async(priorityQ62=false)=>{
     // DOM click events are not a priority request.
@@ -2252,7 +2439,7 @@ function waBulkProgressWindowZ22_(sourceBox, sourceStop, sourceJournal, title, t
       }
       const pending=paintCountsQ37(),failed=Number($('[data-delivery-failed]').textContent);
       const paintedQ53=performance.now();try{for(const trace of tracesQ53)waDeliveryTimingSaveQ53_({ownerId:state.session?.id,eventId:eventQ37,environment:environmentQ37,requestMs:trace.returned-trace.started,responseToCounterMs:paintedQ53-trace.returned,betweenReadsMs:deliveryLastPaintQ53===null||trace.started<deliveryLastPaintQ53?null:trace.started-deliveryLastPaintQ53,count:trace.count,pending,priorityReadQ62:priorityQ62,server:trace.server,syncReason:trace.syncReason,items:trace.items});}catch(ignore){}deliveryLastPaintQ53=paintedQ53;
-      output.textContent=pending&&deliveryBlockedQ45?'עדכון האישורים ממתין לעיבוד בשרת; הנתונים המוצגים עדיין אינם סופיים.':pending?'אישורי המסירה עודכנו; הודעות שנשלחו ללא אישור הגעה נשארות ״ממתינות לאישור מסירה״.':'אישורי המסירה של ההודעות שניתן לעקוב אחריהן עודכנו.';
+      output.textContent=managerProgressQ96?(pending&&deliveryBlockedQ45?'הבדיקה עדיין מתעדכנת.':pending?'עדיין אין אישור שההודעות התקבלו.':''):pending&&deliveryBlockedQ45?'עדכון האישורים ממתין לעיבוד בשרת; הנתונים המוצגים עדיין אינם סופיים.':pending?'אישורי המסירה עודכנו; הודעות שנשלחו ללא אישור הגעה נשארות ״ממתינות לאישור מסירה״.':'אישורי המסירה של ההודעות שניתן לעקוב אחריהן עודכנו.';
       if(pending<=0&&deliveryPollFIX49){clearTimeout(deliveryPollFIX49);deliveryPollFIX49=null;}
       output.classList.toggle('error',failed>0);
     }catch(e){if(disposedFIX49||generation!==deliveryPollGenerationQ6)return;counterReadErrorQ38=true;output.textContent='לא ניתן לעדכן כרגע את אישורי המסירה. הנתונים האחרונים נשמרו; אין לשלוח שוב על סמך הודעה זו.';output.classList.add('error');}
@@ -2304,17 +2491,16 @@ function waBulkProgressWindowZ22_(sourceBox, sourceStop, sourceJournal, title, t
   const timer=setInterval(()=>{if(!finished)refresh();},1000);
   if(!sourceStop||!allowStopQ59)stop.hidden=true;
   if(!sourceJournal)journal.hidden=true;
-  stop.onclick=()=>{if(!allowStopQ59||!sourceStop||sourceStop.disabled||stop.disabled)return;if(isTestProgressF23){paintStopQ26('pending');sourceStop.click();refresh();return;}refresh();$('[data-confirm-text]').textContent=`טופלו ${done} מתוך ${total}; נותרו ${Math.max(0,total-done)} הודעות.`;confirmBox.hidden=false;};
-  $('[data-cancel]').onclick=()=>{confirmBox.hidden=true;};
-  $('[data-confirm]').onclick=()=>{confirmBox.hidden=true;if(sourceStop){sourceStop.dataset.waBulkConfirmed='1';sourceStop.click();delete sourceStop.dataset.waBulkConfirmed;}refresh();};
+  stop.onclick=()=>{if(!allowStopQ59||!sourceStop||sourceStop.disabled||stop.disabled)return;paintStopQ26('pending');sourceStop.click();refresh();};
   const dispose=()=>{disposedFIX49=true;deliveryPollGenerationQ6++;if(deliveryPollFIX49)clearTimeout(deliveryPollFIX49);if(priorityTimerQ62!==null)clearTimeout(priorityTimerQ62);priorityTimerQ62=null;deliveryPollFIX49=null;observer.disconnect();clearInterval(timer);root.remove();if(sourceBox){sourceBox.hidden=true;sourceBox.classList.remove('wa-progress-delegated-z15');}};
   journal.onclick=()=>{dispose();sourceJournal?.click();};close.onclick=dispose;
   if(priorQ60?.messageEvidenceQ48?.available===true){
     for(const id of priorQ60.messageEvidenceQ48.messageIds||[])if(typeof id==='string'&&id&&!deliveryIdsFIX24.includes(id)&&deliveryIdsFIX24.length<total)deliveryIdsFIX24.push(id);
+    for(const id of deliveryIdsFIX24){const status=priorQ60.messageEvidenceQ48.statesQ112?.[id];if(['META_ACCEPTED','SENT','DELIVERED','READ','FAILED'].includes(status))deliveryStatesQ37.set(id,status);}
   }
   refresh();
   if(deliveryIdsFIX24.length){deliveryPollStartedQ6=Date.now();deliveryPollFIX49=setTimeout(()=>{deliveryPollFIX49=null;refreshDeliveryFIX24();},0);}
-  return {setRecoveryReaderQ48(fn){recoveryReaderQ48=fn;recoveryButtonQ48.hidden=!fn;},setStopStateQ25(phase,message){stopMessageQ25=message;$('[data-left-label]').textContent='לא טופלו';paintStopQ26(phase);if(finished)stop.hidden=!allowStopQ59||phase!=='failed';refresh();},addMessageId(id){if(id&&!deliveryIdsFIX24.includes(String(id))&&deliveryIdsFIX24.length<total){deliveryIdsFIX24.push(String(id));if(!deliveryPollStartedQ6)deliveryPollStartedQ6=Date.now();if(deliveryBusyFIX24||priorityBusyQ62){deliveryRescanQ54=true;queueNewIdsQ62();}else{if(deliveryPollFIX49!==null)clearTimeout(deliveryPollFIX49);deliveryPollFIX49=setTimeout(()=>{deliveryPollFIX49=null;refreshDeliveryFIX24();},1000);}paintCountsQ37();}},finish(message,failed=false,allowStopRetryQ25=false,optionsQ37={}){refresh();finished=true;finishWarningQ37=!!failed;if(optionsQ37.canceled===true&&!sourceBox?.waProgressQ33?.uncertain)canceledQ37=Math.max(0,total-done);paintCountsQ37();observer.disconnect();clearInterval(timer);stop.hidden=!allowStopQ59||!allowStopRetryQ25;journal.hidden=!sourceJournal;close.hidden=false;if(deliveryIdsFIX24.length){$('.wa-bulk-delivery-stats-fix44').hidden=false;deliveryPanelFIX24.hidden=false;deliveryButtonFIX24.hidden=false;// Q6: keep polling delivery independently after send completion, for up to 3 minutes.
+  return {setRecoveryReaderQ48(fn){recoveryReaderQ48=fn;recoveryButtonQ48.hidden=!fn;},setStopStateQ25(phase,message){stopMessageQ25=message;$('[data-left-label]').textContent='לא טופלו';paintStopQ26(phase);if(finished)stop.hidden=!allowStopQ59||phase!=='failed';refresh();},addMessageId(id){if(id&&!deliveryIdsFIX24.includes(String(id))&&deliveryIdsFIX24.length<total){deliveryIdsFIX24.push(String(id));if(!deliveryPollStartedQ6)deliveryPollStartedQ6=Date.now();if(deliveryBusyFIX24||priorityBusyQ62){deliveryRescanQ54=true;queueNewIdsQ62();}else{if(deliveryPollFIX49!==null)clearTimeout(deliveryPollFIX49);deliveryPollFIX49=setTimeout(()=>{deliveryPollFIX49=null;refreshDeliveryFIX24();},1000);}paintCountsQ37();}},finish(message,failed=false,allowStopRetryQ25=false,optionsQ37={}){finished=true;finishWarningQ37=!!failed;finalNoticeQ95=failed?String(message||''):'';refresh();if(optionsQ37.canceled===true&&!sourceBox?.waProgressQ33?.uncertain)canceledQ37=Math.max(0,total-done);paintCountsQ37();observer.disconnect();clearInterval(timer);stop.hidden=!allowStopQ59||!allowStopRetryQ25;journal.hidden=!sourceJournal;close.hidden=false;if(deliveryIdsFIX24.length){$('.wa-bulk-delivery-stats-fix44').hidden=false;deliveryPanelFIX24.hidden=false;deliveryButtonFIX24.hidden=false;// Q6: keep polling delivery independently after send completion, for up to 3 minutes.
     // The first request starts immediately; each next poll is scheduled on completion.
     deliveryPollStartedQ6=Date.now();if(deliveryBusyFIX24)deliveryRescanQ54=true;refreshDeliveryFIX24();
     }root.classList.toggle('wa-bulk-failed-z22',!!failed);},dispose};
@@ -2385,16 +2571,16 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
   if(resumeIdsQ22&&resumeIdsQ22.some(id=>!resumeMapQ22.has(id))){showToast('חלק מהמוזמנים אינם זמינים. המשך השליחה נחסם.','error');return;}
   const rows=resumeIdsQ22?resumeIdsQ22.map(id=>resumeMapQ22.get(id)):filteredGuests().filter(g=>guestSendChecked(g));
   const managerTest=state.session?.role==='EventManager';
-  modal(`<section class="wa-test-panel-d5d55j" ${autoResumeQ27?'hidden':''} role="dialog" aria-labelledby="waBulkTitleF14C"><h2 id="waBulkTitleF14C">${resumeQ22?'המשך שליחת WhatsApp לבדיקה':'שליחת WhatsApp לבדיקה'}</h2>${resumeQ22?'<p>ממשיכים רק עם '+resumeIdsQ22.length+' הודעות שטרם הועברו לטיפול. הודעות שכבר טופלו לא נכללות.</p>':''}
+  modal(`<section class="wa-test-panel-d5d55j ${managerTest?'wa-manager-test-q89':''}" ${autoResumeQ27?'hidden':''} role="dialog" aria-labelledby="waBulkTitleF14C"><h2 id="waBulkTitleF14C">${resumeQ22?'המשך שליחת WhatsApp לבדיקה':'שליחת WhatsApp לבדיקה'}</h2>${resumeQ22?'<p>ממשיכים רק עם '+resumeIdsQ22.length+' הודעות שטרם הועברו לטיפול. הודעות שכבר טופלו לא נכללות.</p>':''}
     ${managerTest?'':`<p>הבדיקה משתמשת ברשומות שמוצגות לפי הסינון הפעיל. כל ההודעות יישלחו למספר הבדיקה בלבד.</p><p><b>רשומות מסומנות לשליחה לפי הסינון הפעיל:</b> ${rows.length}</p>`}
     <div class="form-grid">${managerTest?'':'<label>סביבה <span class="required-star">*</span><select id="waF14CTestEnvironment"><option value="TEST" selected>TEST</option><option value="PRODUCTION">PRODUCTION</option></select></label>'}<label>תבנית WhatsApp <span class="required-star">*</span><select id="waF14CTestTemplate" disabled><option value="">טוען תבניות…</option></select></label>
     <label>מספר טלפון לבדיקה <span class="required-star">*</span><input id="waF7Phone" class="wa-test-phone-f14e" type="tel" inputmode="tel" autocomplete="tel" placeholder="05XXXXXXXX" dir="ltr"></label>
     ${managerTest?'':`<label>מספר הודעות לבדיקה <span class="required-star">*</span><input id="waTestLimitF14Z1" type="number" min="1" max="${Math.max(1,Math.min(100,rows.length))}" value="${Math.min(5,rows.length||1)}"></label>`}
     ${managerTest?`<input id="waTestGreetingF14Z1" type="hidden" value="משפחה יקרה">`:`<label>פנייה אישית כאשר השדה ריק<input id="waTestGreetingF14Z1" type="text" value="משפחה יקרה"></label></div><p class="muted">הפנייה החלופית משמשת רק לבדיקה ואינה נשמרת ברשומת המוזמן.</p>`}
-    ${managerTest?`</div><span id="waTestCountF14T" hidden></span><span id="waTestCostF14T" hidden></span><div class="wa-send-preview-f14g" id="waTestPreviewF14G"><p class="muted">התצוגה המקדימה תוצג לאחר טעינת התבנית.</p></div>`:`<dl class="wa-confirm-details-v1190a16"><dt>מוזמנים זכאים לפי התבנית</dt><dd id="waTestEligibleD5D55J">0</dd><dt>הודעות לשליחת בדיקה</dt><dd id="waTestCountF14T">0</dd><dt>עלות משוערת</dt><dd id="waTestCostF14T">טוען…</dd></dl><div class="wa-send-preview-f14g" id="waTestPreviewF14G"><p class="muted">Preview ההזמנה יוצג לאחר טעינת התבנית.</p></div>`}
+    ${managerTest?`</div><span id="waTestCountF14T" hidden></span><span id="waTestCostF14T" hidden></span><div class="wa-send-preview-f14g" id="waTestPreviewF14G"><p class="muted">התצוגה המקדימה תוצג לאחר טעינת התבנית.</p></div>`:`<dl class="wa-confirm-details-v1190a16"><dt>מוזמנים זכאים לפי התבנית</dt><dd id="waTestEligibleD5D55J">0</dd><dt>הודעות לשליחת בדיקה</dt><dd id="waTestCountF14T">0</dd><dt>עלות משוערת</dt><dd id="waTestCostF14T">טוען…</dd></dl><div class="wa-send-preview-f14g" id="waTestPreviewF14G"><p class="muted">התצוגה המקדימה תופיע לאחר טעינת התבנית.</p></div>`}
     <p id="waF7Summary" class="wa-confirm-status-v1190a16" role="status" data-template-message="1"></p>
     <div class="wa-progress-f14c" id="waTestProgressF14C" hidden><progress max="100" value="0"></progress><span></span></div>
-    <div class="wa-pending-diagnostic-fix67" dir="rtl">${managerTest?'':'<button type="button" class="secondary" id="waSimulationQ42">בדיקת עומס ללא שליחה</button>'}<button type="button" class="secondary" id="waCheckInterruptedQ22">בדיקת שליחה שלא הושלמה</button><button type="button" class="secondary" id="waPendingInspectFIX67">בדיקת מצב התאוששות (ללא שליחה)</button><button type="button" class="secondary" id="waQuarantineFIX67" hidden>בידוד אצווה תקועה (TEST בלבד)</button><button type="button" class="secondary" id="waPartialCloseQ15" hidden>סיום ניסיון TEST חלקי ללא שליחה</button><div id="waPendingInspectResultFIX67" role="status" aria-live="polite"></div></div><div class="actions"><button type="button" class="secondary" id="waF7Close">סגור</button><button type="button" class="secondary" id="waTestJournalZ22" hidden>צפייה ביומן WhatsApp</button><button type="button" class="danger" id="waTestStopZ22" hidden>■ עצור שליחה</button><button type="button" class="primary" id="waF8Send">שלח WhatsApp לבדיקה</button></div></section>`);
+    <div class="wa-pending-diagnostic-fix67" dir="rtl" ${managerTest?'hidden':''}>${managerTest?'':'<button type="button" class="secondary" id="waSimulationQ42">בדיקת עומס ללא שליחה</button>'}<button type="button" class="secondary" id="waCheckInterruptedQ22">בדיקת שליחה שלא הושלמה</button><button type="button" class="secondary" id="waPendingInspectFIX67">בדיקת מצב התאוששות (ללא שליחה)</button><button type="button" class="secondary" id="waQuarantineFIX67" hidden>בידוד אצווה תקועה (TEST בלבד)</button><button type="button" class="secondary" id="waPartialCloseQ15" hidden>סיום ניסיון TEST חלקי ללא שליחה</button><div id="waPendingInspectResultFIX67" role="status" aria-live="polite"></div></div><div class="actions"><button type="button" class="secondary" id="waF7Close">סגור</button><button type="button" class="secondary" id="waTestJournalZ22" hidden>צפייה ביומן WhatsApp</button><button type="button" class="danger" id="waTestStopZ22" hidden>■ עצור שליחה</button><button type="button" class="primary" id="waF8Send">שלח WhatsApp לבדיקה</button></div></section>`);
   const phone=$('#waF7Phone'),summary=$('#waF7Summary'),send=$('#waF8Send'),envSelect=$('#waF14CTestEnvironment'),tpl=$('#waF14CTestTemplate'),limit=$('#waTestLimitF14Z1'),fallback=$('#waTestGreetingF14Z1'),countEl=$('#waTestCountF14T'),eligibleElD5D55J=$('#waTestEligibleD5D55J'),costEl=$('#waTestCostF14T');
   // The recovery click is the explicit send intent. Show counters while read-only
   // preparation runs; dispatch still uses the existing guarded TEST batch path.
@@ -2412,6 +2598,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
   }
   // D5D55I: The TEST count, preview and send all use one template-qualified list.
   // Never fall back to the first five guests while qualification is pending.
+  let testOutcomeUncertainQ92=false;
   let selected=[],qualifiedD5D55I=[],qualificationReadyD5D55I=false,qualificationErrorD5D55I='',qualificationSerialD5D55I=0;
   const selectedRows=()=>{if(!qualificationReadyD5D55I)return [];if(resumeIdsQ22){const ids=new Set(qualifiedD5D55I.map(g=>String(g.guestId||g.id)));return resumeIdsQ22.every(id=>ids.has(id))?rows:[];}const n=managerTest?Math.min(1,qualifiedD5D55I.length):Math.max(0,Math.min(100,qualifiedD5D55I.length,Number(limit?.value)||0));return qualifiedD5D55I.slice(0,n);};
   const qualifyD5D55I=async()=>{
@@ -2430,8 +2617,8 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
     }catch(err){if(serial!==qualificationSerialD5D55I)return;qualificationErrorD5D55I=err?.message||String(err);}
     refresh();renderPreview();
   };
-  const updateCost=n=>{const env=managerTest?'PRODUCTION':String(envSelect?.value||'TEST').toUpperCase();if(env==='TEST'){if(costEl)costEl.textContent='מצב בדיקה — ללא אומדן עלות';return Promise.resolve();}const chosen=templatesF14G.find(x=>String(x.id)===String(tpl.value));return getWaCostEstimateCachedF14_(n,chosen?.category).then(e=>{if(costEl&&String(envSelect?.value||'TEST').toUpperCase()!=='TEST')costEl.textContent=waCostTextF14Z34_(e,chosen?.category);});};
-  const refresh=()=>{selected=selectedRows();const to=waPhonePreviewV1190A16_(phone.value),approved=waSelectedTemplateApprovedF14E_(tpl),fb=String(fallback.value||'').trim(),missing=selected.filter(g=>!String(g.invitationGreeting||'').trim()).length;if(eligibleElD5D55J)eligibleElD5D55J.textContent=qualificationReadyD5D55I?qualifiedD5D55I.length:"…";if(countEl)countEl.textContent=selected.length;updateCost(selected.length);summary.textContent=qualificationErrorD5D55I?'טעינת זכאות המוזמנים נכשלה: '+qualificationErrorD5D55I:!qualificationReadyD5D55I?'מחשב זכאות מוזמנים לפי התבנית…':!rows.length?'אין רשומות בסינון הנוכחי.':!selected.length?(resumeQ22?'חלק מהמוזמנים אינם זכאים כעת להמשך השליחה. החידוש נחסם.':'יש לבחור לפחות הודעה אחת.'):missing&&!fb?'יש רשומות ללא פנייה אישית. הזן פנייה חלופית לבדיקה.':!to?'יש להזין מספר בדיקה תקין.':!approved?'תבנית V3 מוכנה לבדיקה, אך השליחה חסומה עד לאישור Meta (APPROVED).':`${selected.length} הודעות יישלחו למספר +${to} בלבד${missing?` · ב-${missing} רשומות תשמש הפנייה החלופית.`:''}`;summary.className='wa-confirm-status-v1190a16'+((qualificationErrorD5D55I||(qualificationReadyD5D55I&&(!to||!approved||!selected.length||(missing&&!fb))))?' error':'');send.disabled=!to||!selected.length||(missing&&!fb)||(!resumeQ22&&tpl.disabled)||!tpl.value||!approved;};
+  const updateCost=n=>{if(managerTest)return Promise.resolve();const env=managerTest?'PRODUCTION':String(envSelect?.value||'TEST').toUpperCase();if(env==='TEST'){if(costEl)costEl.textContent='מצב בדיקה — ללא אומדן עלות';return Promise.resolve();}const chosen=templatesF14G.find(x=>String(x.id)===String(tpl.value));return getWaCostEstimateCachedF14_(n,chosen?.category).then(e=>{if(costEl&&String(envSelect?.value||'TEST').toUpperCase()!=='TEST')costEl.textContent=waCostTextF14Z34_(e,chosen?.category);});};
+  const refresh=()=>{selected=selectedRows();const to=waPhonePreviewV1190A16_(phone.value),approved=waSelectedTemplateApprovedF14E_(tpl),fb=String(fallback.value||'').trim(),missing=selected.filter(g=>!String(g.invitationGreeting||'').trim()).length;if(eligibleElD5D55J)eligibleElD5D55J.textContent=qualificationReadyD5D55I?qualifiedD5D55I.length:"…";if(countEl)countEl.textContent=selected.length;updateCost(selected.length);summary.textContent=qualificationErrorD5D55I?'טעינת זכאות המוזמנים נכשלה: '+qualificationErrorD5D55I:!qualificationReadyD5D55I?'מחשב זכאות מוזמנים לפי התבנית…':!rows.length?'אין רשומות בסינון הנוכחי.':!selected.length?(resumeQ22?'חלק מהמוזמנים אינם זכאים כעת להמשך השליחה. החידוש נחסם.':'יש לבחור לפחות הודעה אחת.'):missing&&!fb?'יש רשומות ללא פנייה אישית. הזן פנייה חלופית לבדיקה.':!to?'יש להזין מספר בדיקה תקין.':!approved?'תבנית V3 מוכנה לבדיקה, אך השליחה חסומה עד לאישור Meta (APPROVED).':`${selected.length} הודעות יישלחו למספר +${to} בלבד${missing?` · ב-${missing} רשומות תשמש הפנייה החלופית.`:''}`;summary.className='wa-confirm-status-v1190a16'+((qualificationErrorD5D55I||(qualificationReadyD5D55I&&(!to||!approved||!selected.length||(missing&&!fb))))?' error':'');send.disabled=testOutcomeUncertainQ92||!to||!selected.length||(missing&&!fb)||(!resumeQ22&&tpl.disabled)||!tpl.value||!approved;};
   const dispatchSettingsLoadQ10=waLoadTestDispatchSettingsQ10_();
   const simulationButtonQ42=$('#waSimulationQ42');if(simulationButtonQ42)simulationButtonQ42.onclick=()=>waSimulationOpenQ42_();
   $('#waCheckInterruptedQ22').onclick=()=>waOfferInterruptedQ22_(true);
@@ -2516,15 +2703,16 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
     }catch(error){pendingInspectResultFIX67.textContent='בדיקת ההתאוששות נכשלה: '+(error?.message||String(error));}
     finally{pendingInspectButtonFIX67.disabled=false;}
   };
-  let templatesF14G=[];let templateLoadSerialD44=0;const renderPreview=()=>{const container=$('#waTestPreviewF14G');if(!container)return;if(!qualificationReadyD5D55I&&!qualificationErrorD5D55I){container.innerHTML='<p class="muted" role="status">מחשב זכאות מוזמנים ומכין תצוגה מקדימה…</p>';return;}if(qualificationErrorD5D55I){container.innerHTML='<p class="wa-confirm-status-v1190a16 error">טעינת נתוני הזכאות נכשלה. לא ניתן להציג תצוגה מקדימה.</p>';return;}const template=waTemplateByIdF14G_(templatesF14G,tpl.value);if(!template){container.innerHTML='<p class="muted">בחר תבנית להצגת תצוגה מקדימה.</p>';return;}const guest=selectedRows()[0];if(!guest){container.innerHTML='<p class="muted">לא נמצאו מוזמנים זכאים לתצוגה מקדימה.</p>';return;}waRenderPreviewF14G_(container,template,guest);};const loadEnvironment=async()=>{const serial=++templateLoadSerialD44;const env=managerTest?'PRODUCTION':String(envSelect?.value||'TEST').toUpperCase();send.disabled=true;tpl.disabled=true;summary.textContent='טוען תבניות WhatsApp…';summary.className='wa-confirm-status-v1190a16';if(costEl&&env==='TEST')costEl.textContent='מצב בדיקה — ללא אומדן עלות';try{const loaded=await waFillTestTemplateSelectF14Z32_(tpl,summary,send,env);if(serial!==templateLoadSerialD44)return;templatesF14G=loaded||[];if(resumeQ22){tpl.value=resumeQ22.templateId;tpl.disabled=true;if(!tpl.value)throw new Error('התבנית השמורה אינה זמינה להמשך שליחה');}await qualifyD5D55I();}catch(error){if(serial!==templateLoadSerialD44)return;templatesF14G=[];qualificationReadyD5D55I=false;qualifiedD5D55I=[];tpl.disabled=true;send.disabled=true;summary.textContent='טעינת התבניות נכשלה: '+(error?.message||String(error));summary.className='wa-confirm-status-v1190a16 error';}};phone.oninput=refresh;if(limit)limit.oninput=()=>{refresh();renderPreview();};fallback.oninput=refresh;tpl.onchange=()=>{qualifyD5D55I();};if(envSelect)envSelect.onchange=loadEnvironment;if(resumeQ22){phone.value=resumeQ22.testPhone;phone.disabled=true;if(envSelect){envSelect.value='TEST';envSelect.disabled=true;}if(limit){limit.value=resumeIdsQ22.length;limit.disabled=true;}}refresh();const templatesReadyQ27=loadEnvironment();$('#waF7Close').onclick=closeModal;$('#waTestJournalZ22').onclick=()=>{closeModal();showPage('whatsappLog');};let testStoppedZ22=false;$('#waTestStopZ22').onclick=()=>{if(testStoppedZ22||!($('#waTestStopZ22').dataset.waBulkConfirmed==='1'||confirm('לעצור את שליחת הבדיקה? הקבוצה שנשלחת כעת עשויה להסתיים.')))return;testStoppedZ22=true;$('#waTestStopZ22').disabled=true;summary.textContent='בקשת העצירה התקבלה. לא תתחיל קבוצת שליחה נוספת.';};
-  send.onclick=async()=>{const environment=managerTest?'PRODUCTION':String(envSelect?.value||'TEST').toUpperCase(),to=waPhonePreviewV1190A16_(phone.value),chosen=selectedRows(),templateId=tpl.value,fb=String(fallback.value||'').trim(),missing=chosen.filter(g=>!String(g.invitationGreeting||'').trim()).length;if(!qualificationReadyD5D55I||qualificationErrorD5D55I||!to||!chosen.length||(missing&&!fb)||!templateId||!waSelectedTemplateApprovedF14E_(tpl))return;
+  let templatesF14G=[];let templateLoadSerialD44=0;const renderPreview=()=>{const container=$('#waTestPreviewF14G');if(!container)return;if(!qualificationReadyD5D55I&&!qualificationErrorD5D55I){container.innerHTML='<p class="muted" role="status">מחשב זכאות מוזמנים ומכין תצוגה מקדימה…</p>';return;}if(qualificationErrorD5D55I){container.innerHTML='<p class="wa-confirm-status-v1190a16 error">טעינת נתוני הזכאות נכשלה. לא ניתן להציג תצוגה מקדימה.</p>';return;}const template=waTemplateByIdF14G_(templatesF14G,tpl.value);if(!template){container.innerHTML='<p class="muted">בחר תבנית להצגת תצוגה מקדימה.</p>';return;}const guest=selectedRows()[0];if(!guest){container.innerHTML='<p class="muted">לא נמצאו מוזמנים זכאים לתצוגה מקדימה.</p>';return;}waRenderPreviewF14G_(container,template,guest);};const loadEnvironment=async()=>{const serial=++templateLoadSerialD44;const env=managerTest?'PRODUCTION':String(envSelect?.value||'TEST').toUpperCase();send.disabled=true;tpl.disabled=true;summary.textContent='טוען תבניות WhatsApp…';summary.className='wa-confirm-status-v1190a16';if(costEl&&env==='TEST')costEl.textContent='מצב בדיקה — ללא אומדן עלות';try{const loaded=await waFillTestTemplateSelectF14Z32_(tpl,summary,send,env);if(serial!==templateLoadSerialD44)return;templatesF14G=loaded||[];if(resumeQ22){tpl.value=resumeQ22.templateId;tpl.disabled=true;if(!tpl.value)throw new Error('התבנית השמורה אינה זמינה להמשך שליחה');}await qualifyD5D55I();}catch(error){if(serial!==templateLoadSerialD44)return;templatesF14G=[];qualificationReadyD5D55I=false;qualifiedD5D55I=[];tpl.disabled=true;send.disabled=true;summary.textContent='טעינת התבניות נכשלה: '+(error?.message||String(error));summary.className='wa-confirm-status-v1190a16 error';}};phone.oninput=refresh;if(limit)limit.oninput=()=>{refresh();renderPreview();};fallback.oninput=refresh;tpl.onchange=()=>{qualifyD5D55I();};if(envSelect)envSelect.onchange=loadEnvironment;if(resumeQ22){phone.value=resumeQ22.testPhone;phone.disabled=true;if(envSelect){envSelect.value='TEST';envSelect.disabled=true;}if(limit){limit.value=resumeIdsQ22.length;limit.disabled=true;}}refresh();const templatesReadyQ27=loadEnvironment();$('#waF7Close').onclick=closeModal;$('#waTestJournalZ22').onclick=()=>{closeModal();showPage('whatsappLog');};let testStoppedZ22=false;$('#waTestStopZ22').onclick=()=>{if(testStoppedZ22)return;testStoppedZ22=true;const stopButton=$('#waTestStopZ22');stopButton.disabled=true;stopButton.setAttribute('aria-busy','true');stopButton.innerHTML='<span class="seating-spinner-v171" aria-hidden="true"></span> עוצר שליחה…';summary.textContent='בקשת העצירה התקבלה. לא תתחיל קבוצת שליחה נוספת.';};
+  send.onclick=async()=>{if(testOutcomeUncertainQ92)return;const environment=managerTest?'PRODUCTION':String(envSelect?.value||'TEST').toUpperCase(),to=waPhonePreviewV1190A16_(phone.value),chosen=selectedRows(),templateId=tpl.value,fb=String(fallback.value||'').trim(),missing=chosen.filter(g=>!String(g.invitationGreeting||'').trim()).length;if(!qualificationReadyD5D55I||qualificationErrorD5D55I||!to||!chosen.length||(missing&&!fb)||!templateId||!waSelectedTemplateApprovedF14E_(tpl))return;
     if(autoResumeQ27&&resumeStartedQ27)return;
     const oneClickResumeQ27=autoResumeQ27&&environment==='TEST'&&resumeQ22?.environment==='TEST';
     if(autoResumeQ27&&!oneClickResumeQ27)return;
     if(oneClickResumeQ27)resumeStartedQ27=true;
     const selectedTemplate=templatesF14G.find(x=>String(x.id)===String(templateId));
+    if(managerTest&&(!selectedTemplate||!await waManagerTestConfirmQ91_(selectedTemplate,to,send)))return;
     if(selectedTemplate&&(environment==='TEST'||String(selectedTemplate.purpose||'')!=='invitation')){
-      const ok=oneClickResumeQ27||await waConfirmSendF14V_({title:'אישור שליחת בדיקה',message:`לשלוח ${managerTest?1:chosen.length} הודעות בתבנית "${selectedTemplate.name}" למספר הבדיקה בלבד?`,details:`<dl><dt>סביבה</dt><dd>${esc(environment)}</dd><dt>תבנית</dt><dd>${esc(selectedTemplate.name)}</dd><dt>מספר בדיקה</dt><dd dir="ltr">+${esc(to)}</dd></dl>`});
+      const ok=managerTest||oneClickResumeQ27||await waConfirmSendF14V_({title:'אישור שליחת בדיקה',message:`לשלוח ${managerTest?1:chosen.length} הודעות בתבנית "${selectedTemplate.name}" למספר הבדיקה בלבד?`,details:`<dl><dt>סביבה</dt><dd>${esc(environment)}</dd><dt>תבנית</dt><dd>${esc(selectedTemplate.name)}</dd><dt>מספר בדיקה</dt><dd dir="ltr">+${esc(to)}</dd></dl>`});
       if(!ok)return;
       waSetSendingF14V_(send,true,'שולח בדיקה...');
       const closeButton=$('#waF7Close');if(closeButton)closeButton.disabled=true;
@@ -2565,7 +2753,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
         if(progressTextD48)progressTextD48.textContent='מבקש עצירה מהשרת…';
         void stopControllerQ25.request();
       };
-      const genericProgressD14=waBulkProgressWindowZ22_(progressBoxD48,genericStopD14,null,'התקדמות שליחת WhatsApp לבדיקה',testRows.length,environment,!resumeQ22,resumeQ22);
+      const genericProgressD14=managerTest?{setStopStateQ25(){},addMessageId(){},setRecoveryReaderQ48(){},finish(){}}:waBulkProgressWindowZ22_(progressBoxD48,genericStopD14,null,'התקדמות שליחת WhatsApp לבדיקה',testRows.length,environment,!resumeQ22,resumeQ22);
       try{
         // use the server-side prepared batch path. FIX64 mistakenly 
         // called the legacy single-send API 20 times, bypassing fetchAll entirely.
@@ -2622,7 +2810,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
               guestIds:group.map(g=>String(g.guestId||g.id)),
               testPhone:phone.value,templateId,environment,progressId:progressIdFIX66,
               monitorCampaignQ19:{id:monitorCampaignIdQ19,index:Math.floor(offset/testBatchSizeFIX66)+1,selected:testRows.length,plannedBatchSize:testBatchSizeFIX66,plannedBatches:Math.ceil(testRows.length/testBatchSizeFIX66),plannedPauseMs:batchPauseMsQ49,previousPauseMs:offset?fix20Waits[fix20Waits.length-1]??null:0}
-            },{traceQ35});
+            },{traceQ35,...(managerTest?{timeoutMs:90000}:{})});
             if(!batch?.deferredQ48)break;
             if(batch.sent!==0||batch.recoveryIdQ22!==recoveryIdQ22||batch.eventId!==sendEventQ22||batch.expectedNextQ48!==(Number(resumeQ22?.attempted)||0)+offset)throw new Error('לא אומתה דחיית מנה ללא שליחה');
             const keepGoing=()=>!stopGenericTestD14&&state.session?.token===sendTokenQ33&&String(state.activeEventId)===sendEventQ22;
@@ -2648,14 +2836,14 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
             if(!pendingGateFIX67){
               if(progressTextD48)progressTextD48.textContent='מאמת את מצב השליחה מול השרת והיומן… לא נשלחות הודעות נוספות.';
               const baseline={accepted:Number(resumeQ22?.accepted)||0,failed:Number(resumeQ22?.failed)||0,attempted:Number(resumeQ22?.attempted)||0};
-              const verified=await waReadSettledAfterLossQ33_(recoveryIdQ22,sendEventQ22,Number(resumeQ22?.total)||testRows.length,(Number(resumeQ22?.attempted)||0)+offset+group.length,baseline,sendTokenQ33);
+              const verified=recoveryIdQ22?await waReadSettledAfterLossQ33_(recoveryIdQ22,sendEventQ22,Number(resumeQ22?.total)||testRows.length,(Number(resumeQ22?.attempted)||0)+offset+group.length,baseline,sendTokenQ33):null;
               if(verified){
                 acceptedCount=verified.accepted-baseline.accepted;failedCount=verified.failed-baseline.failed;processedCount=acceptedCount+failedCount;uncertainProgressQ33=false;verifiedAfterLossQ33=true;
                 if(verified.messageEvidenceQ48?.available===true)for(const id of verified.messageEvidenceQ48.messageIds||[])genericProgressD14.addMessageId(id);
                 firstError='התקשורת נקטעה, אך תוצאות המנה אומתו בשרת. לא תתחיל מנה נוספת אוטומטית. ניתן להמשיך רק דרך חלון ההתאוששות.';
-              }else{processedCount+=lastSnapshotQ33.n;acceptedCount+=lastSnapshotQ33.a;failedCount+=lastSnapshotQ33.f;uncertainProgressQ33=true;}
+              }else{processedCount+=lastSnapshotQ33.n;acceptedCount+=lastSnapshotQ33.a;failedCount+=lastSnapshotQ33.f;uncertainProgressQ33=true;if(managerTest)testOutcomeUncertainQ92=true;}
               updateTestProgressD48();
-              if(!verified)genericProgressD14.setRecoveryReaderQ48?.(async()=>{
+              if(!verified&&recoveryIdQ22)genericProgressD14.setRecoveryReaderQ48?.(async()=>{
                 const fresh=await waReadSettledAfterLossQ33_(recoveryIdQ22,sendEventQ22,Number(resumeQ22?.total)||testRows.length,(Number(resumeQ22?.attempted)||0)+offset+group.length,baseline,sendTokenQ33);
                 if(!fresh)return false;
                 acceptedCount=fresh.accepted-baseline.accepted;failedCount=fresh.failed-baseline.failed;processedCount=acceptedCount+failedCount;uncertainProgressQ33=false;verifiedAfterLossQ33=true;
@@ -2736,12 +2924,12 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
         const fix20ApiTotal=fix20Samples.reduce((n,x)=>n+x.apiMs,0);
         const fix20WaitTotal=fix20Waits.reduce((n,x)=>n+x,0);
         const fix20Rows=dispatchPhaseRowsFIX67+waPreparationRowsQ10_(fix20Samples)+waRsvpRowsQ11_(fix20Samples)+waMediaRowsQ12_(fix20Samples)+waChunkTimingRowsQ16_(fix20Samples)+'<dt>שמירת אבחון מרוכזת לאחר הפניות</dt><dd>'+waFormatElapsedF14V_(fix20Samples.reduce((n,x)=>n+(Number(x.diagnosticsMs)||0),0))+'</dd>'+Object.entries(fix20Keys).map(([key,label])=>`<dt>${esc(label)}</dt><dd>${fix20Samples.some(x=>typeof x.server?.[key]==='number')?waFormatElapsedF14V_(fix20Sum(key)):'לא נמדד בנפרד'}</dd>`).join('');
-        const fix20TimingHtml=`<div class="wa-timing-d37"><h3>FIX67Q65 — מדידת בקשות אצווה</h3><dl><dt>אצוות עם פירוט מדידה פרטני</dt><dd>${fix20Samples.filter(x=>x.server).length}/${fix20Samples.length}</dd><dt>טיפול בתור הניסיונות החוזרים, כולל המתנות ותקשורת</dt><dd>${waFormatElapsedF14V_(retryQueueMsQ51)}</dd><dt>קריאות API של המנות, כולל תקשורת</dt><dd>${waFormatElapsedF14V_(fix20RoundTrip)}</dd><dt>זמן פונקציית השליחה בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ServerTotal)}</dd><dt>זמן טיפול API בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ApiTotal)}</dd><dt>זמן מחוץ לטיפול API (הערכה)</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא ניתן לחשב ללא תשובת שרת':waFormatElapsedF14V_(Math.max(0,fix20RoundTrip-fix20ApiTotal))}</dd><dt>המתנה להגדרות לאחר אישור השליחה</dt><dd>${waFormatElapsedF14V_(settingsWaitMsQ10)}</dd><dt>השהיות בין מנות</dt><dd>${waFormatElapsedF14V_(fix20WaitTotal)}</dd><dt>המתנה מתוכננת לקצב טלפון הבדיקה בדפדפן</dt><dd>${waFormatElapsedF14V_(testRateBrowserWaitQ48)}</dd>${fix20Rows}</dl><p class="muted">רכיבי משנה עשויים לחפוף; אין לסכום אותם. נתוני שרת מתקבלים רק מהודעות שהחזירו תשובה.</p></div>`;
+        const fix20TimingHtml=`<div class="wa-timing-d37"><h3>FIX67Q170 — מדידת בקשות אצווה</h3><dl><dt>אצוות עם פירוט מדידה פרטני</dt><dd>${fix20Samples.filter(x=>x.server).length}/${fix20Samples.length}</dd><dt>טיפול בתור הניסיונות החוזרים, כולל המתנות ותקשורת</dt><dd>${waFormatElapsedF14V_(retryQueueMsQ51)}</dd><dt>קריאות API של המנות, כולל תקשורת</dt><dd>${waFormatElapsedF14V_(fix20RoundTrip)}</dd><dt>זמן פונקציית השליחה בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ServerTotal)}</dd><dt>זמן טיפול API בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ApiTotal)}</dd><dt>זמן מחוץ לטיפול API (הערכה)</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא ניתן לחשב ללא תשובת שרת':waFormatElapsedF14V_(Math.max(0,fix20RoundTrip-fix20ApiTotal))}</dd><dt>המתנה להגדרות לאחר אישור השליחה</dt><dd>${waFormatElapsedF14V_(settingsWaitMsQ10)}</dd><dt>השהיות בין מנות</dt><dd>${waFormatElapsedF14V_(fix20WaitTotal)}</dd><dt>המתנה מתוכננת לקצב טלפון הבדיקה בדפדפן</dt><dd>${waFormatElapsedF14V_(testRateBrowserWaitQ48)}</dd>${fix20Rows}</dl><p class="muted">רכיבי משנה עשויים לחפוף; אין לסכום אותם. נתוני שרת מתקבלים רק מהודעות שהחזירו תשובה.</p></div>`;
         console.info('[WA FIX20 PERF]',{samples:fix20Samples.length,roundTripMs:Math.round(fix20RoundTrip),serverMs:Math.round(fix20ServerTotal),apiMs:Math.round(fix20ApiTotal),waitMs:Math.round(fix20WaitTotal),breakdown:Object.fromEntries(Object.keys(fix20Keys).map(k=>[k,fix20Sum(k)]))});
         const timingHtml=`<div class="wa-timing-d37"><h3>פירוט זמנים — TEST</h3><dl><dt>קריאת API כולל תקשורת</dt><dd>${waFormatElapsedF14V_(roundTripMs)}</dd><dt>פירוט מהשרת</dt><dd>${serverTiming?'התקבל':'לא התקבל נתון'}</dd>${serverTiming}</dl><p class="muted">זמן קריאת API כולל זמן שרת, תקשורת והמתנה; אין לחבר אותו לזמני השרת.</p></div>`;
         console.info('[WA PERF] sendAnyTemplateToTestNumber',{roundTripMs:Math.round(roundTripMs),serverPerfAvailable:!!serverTiming});
         if(state.session?.role==='EventManager'){
-          summary.innerHTML=`<p><strong>טופלו ${processedCount}/${testRows.length} · התקבלו ב-Meta ${acceptedCount} · נדחו בשליחה ${failedCount}.</strong></p>${firstError?`<p>${esc(firstError)}</p>`:''}${logWarningHtmlD49}<p>נמען: <span dir="ltr">+${esc(r?.recipient||to)}</span> · זמן: ${waFormatElapsedF14V_(roundTripMs)}</p>${timingHtml}${fix20TimingHtml}<p class="muted">התקבלו ב-Meta אינם בהכרח נמסרו לטלפון. בדוק את יומן WhatsApp לדיווחי מסירה וכישלון מאוחרים.</p>`;
+          summary.innerHTML=waManagerTestResultQ91_({accepted:acceptedCount===1&&failedCount===0&&!firstError&&!uncertainProgressQ33,recipient:r?.recipient||to,error:firstError||'',uncertain:uncertainProgressQ33})+logWarningHtmlD49;
         }else{
           summary.innerHTML=`<p><strong>טופלו ${processedCount}/${testRows.length} · התקבלו ב-Meta ${acceptedCount} · נדחו בשליחה ${failedCount}</strong></p>${firstError?`<p>השליחה נעצרה: ${esc(firstError)}. יש לבדוק את יומן WhatsApp לפני ניסיון חוזר.</p>`:''}${logWarningHtmlD49}<p>זמן שרת מצטבר: ${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(totalServerMs)}</p>`+timingHtml+fix20TimingHtml+waResultHtmlF14V_({ok:acceptedCount,fail:failedCount,left:testRows.length-processedCount,elapsedMs:roundTripMs,test:true,uncertain:!!firstError&&!blockedBeforeDispatchQ14&&!knownPartialQ30&&!verifiedAfterLossQ33,blockedBeforeDispatch:blockedBeforeDispatchQ14,canceled:stopGenericTestD14&&!firstError});
         }
@@ -2750,25 +2938,25 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
         genericProgressD14.finish(stopGenericTestD14?(stopControllerQ25.error?'לא אומתה עצירה בשרת; יש לבדוק ביומן ובניטור':'השליחה נעצרה לבקשת המשתמש; ההודעות שלא נשלחו בוטלו'):progressTextD48?.textContent||'השליחה הסתיימה',!!(failedCount||firstError||stopGenericTestD14),!!stopControllerQ25.error,{canceled:stopGenericTestD14&&!stopControllerQ25.error&&!firstError});
         summary.className='wa-confirm-status-v1190a16 '+((failedCount||firstError||logWarningsD49.length||stopGenericTestD14)?'error':'success');waSetSendingF14V_(send,false);send.disabled=true;if(closeButton)closeButton.disabled=false;
       }catch(e){
+        if(managerTest)testOutcomeUncertainQ92=true;
         const elapsed=performance.now()-requestStarted;
-        summary.innerHTML=`<p><strong>שליחת הבדיקה נכשלה:</strong> ${esc(e?.message||String(e))}</p><p>זמן עד לכישלון: ${waFormatElapsedF14V_(elapsed)}</p>`;
+        summary.innerHTML=managerTest?`<p><strong>לא התקבלה תשובה מהמערכת או שהבדיקה נעצרה.</strong></p><p>יש לבדוק בטלפון וביומן WhatsApp ולהתייעץ עם מנהל המערכת לפני ניסיון נוסף.</p>`:`<p><strong>שליחת הבדיקה נכשלה:</strong> ${esc(e?.message||String(e))}</p><p>זמן עד לכישלון: ${waFormatElapsedF14V_(elapsed)}</p>`;
         genericProgressD14.finish('שליחת הבדיקה נכשלה',true);
-        summary.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);if(closeButton)closeButton.disabled=false;
+        summary.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);if(managerTest)send.disabled=true;if(closeButton)closeButton.disabled=false;
       }
       return;
     }
     if(managerTest){
-      const confirmed=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp לבדיקה',message:`לשלוח הודעת בדיקה אחת למספר +${to}?`,details:`<b>תבנית:</b> ${esc(selectedTemplate?.displayName||selectedTemplate?.name||selectedTemplate?.metaName||'הזמנה לאירוע')} · <b>כמות:</b> 1`});if(!confirmed)return;
-      const started=performance.now();waSetSendingF14V_(send,true,'בודק תבנית ב-Meta...');const closeBtn=$('#waF7Close');if(closeBtn)closeBtn.disabled=true;
+      const started=performance.now();waSetSendingF14V_(send,true,'בודק תבנית ב-Meta...');const closeBtn=$('#waF7Close');if(closeBtn)closeBtn.disabled=true;let requestedQ92=false;
       try{
-        const validationStartedD32=performance.now();const validation=await API.request('validateInvitationTemplateAgainstMetaF14Z43',{templateId});const validationMsD32=performance.now()-validationStartedD32;console.info('[WA PERF] Meta template validation',Math.round(validationMsD32),'ms');
+        const validationStartedD32=performance.now();const validation=await API.request('validateInvitationTemplateAgainstMetaF14Z43',{templateId},{timeoutMs:15000});const validationMsD32=performance.now()-validationStartedD32;console.info('[WA PERF] Meta template validation',Math.round(validationMsD32),'ms');
         if(!validation?.ok)throw new Error('מבנה התבנית ב-Meta אינו מתאים לשליחת ההזמנה: '+(validation?.issues||[]).join(' · '));
         waSetSendingF14V_(send,false);waSetSendingF14V_(send,true,'שולח בדיקה...');
-        const g=chosen[0],sendStartedD32=performance.now(),r=await API.request('sendOneInvitationToTestNumberA19P2F8',{eventId:state.activeEventId,guestId:g.guestId||g.id,testPhone:to,templateId});const sendMsD32=performance.now()-sendStartedD32;console.info('[WA PERF] single test send',Math.round(sendMsD32),'ms');
+        const g=chosen[0],sendStartedD32=performance.now();requestedQ92=true;const r=await API.request('sendOneInvitationToTestNumberA19P2F8',{eventId:state.activeEventId,guestId:g.guestId||g.id,testPhone:to,templateId},{timeoutMs:90000});const sendMsD32=performance.now()-sendStartedD32;console.info('[WA PERF] single test send',Math.round(sendMsD32),'ms');
         const elapsedMs=performance.now()-started;
-        summary.innerHTML=`<div class="wa-result-f14v success"><strong>תוצאת בדיקת WhatsApp</strong><dl><dt>תבנית</dt><dd>${esc(selectedTemplate?.displayName||selectedTemplate?.name||selectedTemplate?.metaName||'הזמנה לאירוע')}</dd><dt>מספר שהוזן</dt><dd dir="ltr">${esc(phone?.value||'')}</dd><dt>מספר שנשלח ל-Meta</dt><dd dir="ltr">+${esc(r?.requestedRecipient||to)}</dd><dt>מספר ש-Meta זיהתה</dt><dd dir="ltr">+${esc(r?.recipient||to)}</dd><dt>כמות הודעות</dt><dd>1</dd><dt>סטטוס Meta</dt><dd>${r?.accepted?'התקבלה לשליחה':'נכשלה'}</dd><dt>זמן כולל</dt><dd>${waFormatElapsedF14V_(elapsedMs)}</dd><dt>בדיקת Meta</dt><dd>${waFormatElapsedF14V_(validationMsD32)}</dd><dt>שליחה לשרת</dt><dd>${waFormatElapsedF14V_(sendMsD32)}</dd>${r?.performanceD34?`<dt>איתור נתוני מוזמן</dt><dd>${waFormatElapsedF14V_(r.performanceD34.lookupMs||0)}</dd><dt>הכנת תמונה ו-Payload</dt><dd>${waFormatElapsedF14V_(r.performanceD34.buildMediaMs||0)}</dd><dt>שליחה ורישום</dt><dd>${waFormatElapsedF14V_(r.performanceD34.sendAndLogMs||0)}</dd>`:''}<dt>Template Meta</dt><dd dir="ltr">${esc(r?.templateName||selectedTemplate?.metaName||'')}</dd><dt>Language</dt><dd dir="ltr">${esc(r?.templateLanguage||'')}</dd><dt>Components</dt><dd dir="ltr">${esc((r?.componentTypes||[]).join(' → '))}</dd><dt>תמונת הזמנה</dt><dd>${r?.mediaSource==='fresh-upload'?'Fresh upload — ללא Media Cache':esc(r?.mediaSource||'לא ידוע')}</dd><dt>קבלה בטלפון</dt><dd>לא ניתן לאמת ללא אישור מסירה</dd></dl><p class="muted">Meta קיבלה את בקשת השליחה, אך סטטוס זה אינו מוכיח שההודעה הגיעה למכשיר.</p></div>`;
-        summary.className='wa-confirm-status-v1190a16 success';waSetSendingF14V_(send,false);send.disabled=true;if(closeBtn)closeBtn.disabled=false;
-      }catch(e){summary.innerHTML=`<p><strong>שליחת הבדיקה נכשלה</strong></p><p>${esc(e?.message||String(e))}</p>`;summary.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);if(closeBtn)closeBtn.disabled=false;}
+        summary.innerHTML=waManagerTestResultQ91_({accepted:r?.accepted===true,recipient:r?.recipient||to});
+        summary.className='wa-confirm-status-v1190a16 '+(r?.accepted===true?'success':'error');waSetSendingF14V_(send,false);send.disabled=true;if(closeBtn)closeBtn.disabled=false;
+      }catch(e){if(requestedQ92)testOutcomeUncertainQ92=true;summary.innerHTML=requestedQ92?waManagerTestResultQ91_({recipient:to,uncertain:true}):`<p><strong>לא ניתן להכין את שליחת הבדיקה.</strong></p><p>${esc(e?.message||String(e))}</p>`;summary.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);send.disabled=requestedQ92;if(closeBtn)closeBtn.disabled=false;}
       return;
     }
     // FIX67: TEST bulk uses the same server-authorized batch size as the live path.
@@ -2786,7 +2974,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
     }
     // TEST: suppress monetary estimates in the test confirmation; Meta may still bill for sends.
     const confirmed=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp לבדיקה',message:`לשלוח ${chosen.length} הודעות למספר +${to} בלבד?`,details:`<b>כמות:</b> ${chosen.length} · <b>מצב:</b> בדיקה — ללא אומדן עלות${missing?` · <b>פנייה חלופית:</b> ${esc(fb)}`:''}`});if(!confirmed)return;
-    const started=performance.now();testStoppedZ22=false;const testStopButtonZ22=$('#waTestStopZ22');testStopButtonZ22.hidden=false;testStopButtonZ22.disabled=false;$('#waTestJournalZ22').hidden=true;waSetSendingF14V_(send,true);const box=$('#waTestProgressF14C');box.hidden=false;box.querySelector('span').textContent='מכין שליחה · בודק Media ושער דולר...';const bulkWindowZ22=waBulkProgressWindowZ22_(box,testStopButtonZ22,$('#waTestJournalZ22'),'התקדמות שליחת WhatsApp לבדיקה',chosen.length,environment);let prepared;const prepareStartedD34=performance.now();try{prepared=await API.request('prepareWhatsAppSendF14Z9',{templateId,eventId:state.activeEventId});const prepareMsD34=performance.now()-prepareStartedD34;console.info('[WA PERF] prepareWhatsAppSend',Math.round(prepareMsD34),'ms');box.querySelector('span').textContent=`הכנה הושלמה · Media: ${prepared.mediaSource} · שער דולר: ${prepared.costSource} · Messages: ${chosen.length}`;}catch(e){summary.innerHTML=`<p><strong>הכנת השליחה נכשלה:</strong> ${esc(e?.message||'שגיאה לא ידועה')}</p>`;summary.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);testStopButtonZ22.hidden=true;bulkWindowZ22.finish('הכנת השליחה נכשלה',true);return;}if(phone)phone.disabled=true;if(tpl)tpl.disabled=true;if(limit)limit.disabled=true;if(fallback)fallback.disabled=true;const closeBtn=$('#waF7Close');if(closeBtn)closeBtn.disabled=true;let ok=0,fail=0,receivedServerPerfD35=false,batchRoundTripsD35=[],perf={eventMs:0,ensureMs:0,guestsMs:0,configTemplateMs:0,mediaMs:0,rsvpMs:0,buildMs:0,metaMs:0,processMs:0,pricingMs:0,waLogWriteMs:0,costWriteMs:0,activityWriteMs:0,diagnosticMs:0,writeMs:0,totalMs:0};
+    const started=performance.now();testStoppedZ22=false;const testStopButtonZ22=$('#waTestStopZ22');testStopButtonZ22.hidden=false;testStopButtonZ22.disabled=false;$('#waTestJournalZ22').hidden=true;waSetSendingF14V_(send,true);const box=$('#waTestProgressF14C');box.hidden=false;box.querySelector('span').textContent='מכין שליחה · בודק Media ושער דולר...';const bulkWindowZ22=waBulkProgressWindowZ22_(box,testStopButtonZ22,$('#waTestJournalZ22'),'התקדמות שליחת WhatsApp לבדיקה',chosen.length,environment);let prepared,prepareMsD34=0;const prepareStartedD34=performance.now();try{prepared=await API.request('prepareWhatsAppSendF14Z9',{templateId,eventId:state.activeEventId});prepareMsD34=performance.now()-prepareStartedD34;console.info('[WA PERF] prepareWhatsAppSend',Math.round(prepareMsD34),'ms');box.querySelector('span').textContent=`הכנה הושלמה · Media: ${prepared.mediaSource} · שער דולר: ${prepared.costSource} · Messages: ${chosen.length}`;}catch(e){summary.innerHTML=`<p><strong>הכנת השליחה נכשלה:</strong> ${esc(e?.message||'שגיאה לא ידועה')}</p>`;summary.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);testStopButtonZ22.hidden=true;bulkWindowZ22.finish('הכנת השליחה נכשלה',true);return;}if(phone)phone.disabled=true;if(tpl)tpl.disabled=true;if(limit)limit.disabled=true;if(fallback)fallback.disabled=true;const closeBtn=$('#waF7Close');if(closeBtn)closeBtn.disabled=true;let ok=0,fail=0,receivedServerPerfD35=false,batchRoundTripsD35=[],perf={eventMs:0,ensureMs:0,guestsMs:0,configTemplateMs:0,mediaMs:0,rsvpMs:0,buildMs:0,metaMs:0,processMs:0,pricingMs:0,waLogWriteMs:0,costWriteMs:0,activityWriteMs:0,diagnosticMs:0,writeMs:0,totalMs:0};
     const chunkSize=testBatchSizeFIX67,totalBatches=Math.ceil(chosen.length/chunkSize);let done=0,batchError='',batchMeta=[];
     for(let i=0,batchNo=1;i<chosen.length;i+=chunkSize,batchNo++){if(testStoppedZ22)break;const chunk=chosen.slice(i,i+chunkSize);const elapsed=performance.now()-started;box.querySelector('span').textContent=`קבוצת שליחה ${batchNo}/${totalBatches} · ${done}/${chosen.length} · הצליחו ${ok} · נכשלו ${fail} · ${waFormatElapsedF14V_(elapsed)}`;try{const batchStartedD35=performance.now();const r=await API.request('sendInvitationBatchF14U',{eventId:state.activeEventId,items:chunk.map(g=>({guestId:g.guestId||g.id,testGreeting:String(g.invitationGreeting||'').trim()||fb})),testPhone:to,templateId,mediaId:prepared.mediaId,costEstimate:prepared.costEstimate});if(!r||typeof r.accepted!=='number'||typeof r.failed!=='number'||!Number.isSafeInteger(r.accepted)||!Number.isSafeInteger(r.failed)||r.accepted<0||r.failed<0||r.accepted+r.failed!==chunk.length)throw new Error('קבוצת השליחה החזירה ספירות לא עקביות; יש לבדוק יומן לפני חידוש');if(r.waLogError){throw new Error('השליחה נעצרה: Meta עשויה הייתה לקבל את ההודעות, אך שמירת יומן WhatsApp נכשלה. אין לשלוח שוב לפני שחזור היומן. פרטים: '+String(r.waLogError));}const acceptedCount=r.accepted,failedCount=r.failed;if(typeof acceptedCount!=='number'||typeof failedCount!=='number'||!Number.isSafeInteger(acceptedCount)||!Number.isSafeInteger(failedCount)||acceptedCount<0||failedCount<0||acceptedCount+failedCount!==chunk.length)throw new Error('תוצאות אצוות השליחה אינן תואמות למספר הנמענים; יש לברר מצב הודעות לפני חידוש');const expectedBatchIds=new Set(chunk.map(g=>String(g.guestId||g.id||'')));const actualResults=r.results;if(!Array.isArray(actualResults)||actualResults.length!==chunk.length||new Set(actualResults.map(x=>String(x&&x.guestId||''))).size!==chunk.length||actualResults.some(x=>!x||typeof x.accepted!=='boolean'||!expectedBatchIds.has(String(x.guestId||'')))||actualResults.filter(x=>x.accepted).length!==acceptedCount)throw new Error('פירוט תוצאות האצווה אינו תואם לנמענים או לסיכום; אין להמשיך שליחה לפני בירור');actualResults.filter(x=>x.accepted&&x.messageId).forEach(x=>bulkWindowZ22.addMessageId(x.messageId));ok+=acceptedCount;fail+=failedCount;batchRoundTripsD35.push(performance.now()-batchStartedD35);if(r.performance){receivedServerPerfD35=true;Object.keys(perf).forEach(k=>perf[k]+=Number(r.performance[k]||0));}if(r.metaSummary)batchMeta.push({batchNo,...r.metaSummary});done+=chunk.length;box.waProgressQ33=waProgressStateQ33_(chosen.length,done,ok,fail);box.querySelector('progress').value=Math.round(done*100/chosen.length);box.querySelector('span').textContent=`קבוצת שליחה ${batchNo}/${totalBatches} הסתיימה · ${done}/${chosen.length} · הצליחו ${ok} · נכשלו ${fail} · ${waFormatElapsedF14V_(performance.now()-started)}`;if(done<chosen.length&&!testStoppedZ22)await waPauseBetweenBatchesF14Z7_(box,done,chosen.length,batchNo+1,totalBatches,started);}catch(e){batchError=e?.message||'קבוצת השליחה לא החזירה תשובה תקינה';box.querySelector('span').textContent=`השליחה נעצרה בקבוצת שליחה ${batchNo}/${totalBatches} · ${done}/${chosen.length} טופלו`;break;}}
     const elapsedMs=performance.now()-started,left=chosen.length-done;if(!batchError&&!testStoppedZ22)box.querySelector('progress').value=100;box.querySelector('span').textContent=batchError?`נעצר לאחר ${done}/${chosen.length} · ${waFormatElapsedF14V_(elapsedMs)}`:`הושלם ${done}/${chosen.length} · הצליחו ${ok} · נכשלו ${fail} · ${waFormatElapsedF14V_(elapsedMs)}`;summary.innerHTML=(testStoppedZ22?`<p><strong>הבדיקה נעצרה לבקשת המשתמש.</strong> טופלו ${done} מתוך ${chosen.length}; ${left} לא נשלחו.</p>`:'')+(managerTest?(batchError?`<p><strong>שליחת הבדיקה נכשלה.</strong></p><p>${esc(batchError)}</p>`:`<p><strong>הודעת הבדיקה התקבלה ב-Meta לשליחה.</strong></p><p>נמען: <span dir="ltr">+${esc((batchMeta[batchMeta.length-1]?.recipient)||to)}</span> · זמן: ${waFormatElapsedF14V_(elapsedMs)}</p><p class="muted">אישור Meta אינו אישור שההודעה נמסרה למכשיר.</p>`):(`<p><strong>זמן הכנה:</strong> ${waFormatElapsedF14V_(prepareMsD34)}</p><p><strong>מסלול רשת:</strong> Media: ${esc(prepared.mediaSource)} · שער דולר: ${esc(prepared.costSource)} · Messages: ${chosen.length}</p>`+waBatchMetaHtmlF14Z11_(batchMeta)+(batchError?`<p><strong>השליחה נעצרה:</strong> ${esc(batchError)}. לא ניתן לקבוע אם קבוצת השליחה שלא החזירה תשובה נמסרה בפועל; יש לבדוק ב-WhatsApp לפני ניסיון נוסף.</p>`:'')+`<div class="wa-timing-d35"><h3>מדידת זמנים — TEST</h3><dl><dt>הכנת שליחה (כולל תקשורת)</dt><dd>${waFormatElapsedF14V_(prepareMsD34)}</dd><dt>שליחת קבוצות (כולל תקשורת)</dt><dd>${waFormatElapsedF14V_(batchRoundTripsD35.reduce((a,b)=>a+b,0))}</dd><dt>פירוט זמנים מהשרת</dt><dd>${receivedServerPerfD35?'התקבל':'לא התקבל נתון'}</dd></dl></div>`+waResultHtmlF14V_({ok,fail,left,elapsedMs,test:true,perf:receivedServerPerfD35?perf:null,uncertain:!!batchError})));summary.className='wa-confirm-status-v1190a16 '+((fail||batchError||testStoppedZ22)?'error':'success');testStopButtonZ22.hidden=true;$('#waTestJournalZ22').hidden=false;box.waProgressQ33=waProgressStateQ33_(chosen.length,done,ok,fail,!!batchError);bulkWindowZ22.finish(box.querySelector('span').textContent,!!(fail||batchError||testStoppedZ22),false,{canceled:testStoppedZ22&&!batchError});waSetSendingF14V_(send,false);send.disabled=true;$('#waF7Close').disabled=false;
@@ -2836,24 +3024,31 @@ function waEligibleGuestsForTemplateF14Z35_(rows,template,seating,event,options=
     if(purpose==='rsvp_update')return isAwaitingDecision(g);
     if(purpose==='table_update')return isConfirmed(g)&&isFullySeated(g);
     if(purpose==='table_payment_update')return paymentEnabled&&isConfirmed(g)&&isFullySeated(g);
-    if(purpose==='thank_you')return options.testThankYouTemplateD5D55FIX12?true:Number(g.actualAttendees||g.actualAttendance||0)>0;
+    if(purpose==='thank_you')return options.testThankYouTemplateD5D55FIX12||/^(?:test_)?family_event_thank_you_image_v1$/i.test(String(template?.metaName||'').trim())?true:Number(g.actualAttendees||g.actualAttendance||0)>0;
     return true;
   });
 }
-async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestId=''){
+async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestId='',resumeQ110=null){
   if(!['Admin','EventManager'].includes(state.session?.role)||!state.activeEventId)return;
+  if(resumeQ110&&(!resumeQ110.safe||resumeQ110.eventId!==String(state.activeEventId)||resumeQ110.templateId!==preferredTemplateId||!Array.isArray(resumeQ110.remainingGuestIds)||!resumeQ110.remainingGuestIds.length||new Set(resumeQ110.remainingGuestIds).size!==resumeQ110.remainingGuestIds.length))throw Error('פרטי החידוש אינם תקינים');
+  const resumeMapQ110=new Map(state.guests.filter(g=>String(g.eventId)===String(state.activeEventId)).map(g=>[String(g.guestId||g.id),g]));
+  if(resumeQ110&&resumeQ110.remainingGuestIds.some(id=>!resumeMapQ110.has(id)))throw Error('חלק מהמוזמנים אינם זמינים; החידוש נחסם');
+  let resumeInvalidQ110=false;
   const filter=$('#guestSendFilterA19P2F6');if(!preferredGuestId){filter.value='yes';renderGuests();}
-  const filtered=filteredGuests(),rows=preferredGuestId?state.guests.filter(g=>String(g.eventId)===String(state.activeEventId)&&String(g.guestId||g.id)===String(preferredGuestId)&&guestSendChecked(g)):filtered;
+  const filtered=filteredGuests(),rows=resumeQ110?resumeQ110.remainingGuestIds.map(id=>resumeMapQ110.get(id)):preferredGuestId?state.guests.filter(g=>String(g.eventId)===String(state.activeEventId)&&String(g.guestId||g.id)===String(preferredGuestId)&&guestSendChecked(g)):filtered;
   let eligible=rows.filter(g=>waPhonePreviewV1190A16_(g.phone)),invalid=rows.filter(g=>!waPhonePreviewV1190A16_(g.phone)),templatesF14Z35=[];
   const singleGuestD5D55Z22=!!preferredGuestId;
   const adminD5D55Z22=state.session?.role==='Admin';
-  modal(`<section role="dialog"><h2>שליחת WhatsApp</h2><p>${preferredGuestId?'שליחה למוזמן שנבחר.':'סינון ״שליחה״ הוגדר ל״כן״. יתר הסינונים נשמרו.'}</p>
+  const managerSingleQ94=!adminD5D55Z22&&singleGuestD5D55Z22;
+  const selectedGuestQ94=managerSingleQ94?rows[0]:null;
+  modal(`<section role="dialog" ${!adminD5D55Z22?'class="wa-manager-real-q96"':''}><h2>${resumeQ110?'חידוש שליחת WhatsApp':'שליחת הודעת WhatsApp'}</h2>${resumeQ110?`<p>כבר טופלו ${esc(resumeQ110.completedCount)} מתוך ${esc(resumeQ110.plannedCount)}. חידוש יכלול רק את ${esc(resumeQ110.remainingCount)} הנותרים.</p>`:''}<p>${managerSingleQ94?`<b>מוזמן:</b> ${esc(selectedGuestQ94?.name||'')} · <b>טלפון:</b> <span dir="ltr">${esc(displayUserPhone_(selectedGuestQ94?.phone||''))}</span>`:preferredGuestId?'שליחה למוזמן שנבחר.':'סינון ״שליחה״ הוגדר ל״כן״. יתר הסינונים נשמרו.'}</p>
   <div class="wa-template-picker-fix7"><label for="waRealTemplateF14C">תבנית WhatsApp <span class="required-star">*</span></label><select id="waRealTemplateF14C" aria-label="תבנית WhatsApp" disabled><option value="">טוען תבניות…</option></select><span id="waRealTemplateLoadFix8" class="wa-template-loading-fix8" role="status" aria-live="polite">טוען תבניות…</span></div>
-  <p id="waRealEligibleLineF14Z35"><b>מיועדים לשליחה:</b> ${eligible.length}${invalid.length?` · <b>חסומים בגלל נתון חסר/לא תקין:</b> ${invalid.length}`:''}</p>
-  <div class="wa-send-preview-f14g" id="waRealPreviewF14G"><p class="muted">Preview ההזמנה יוצג לאחר טעינת התבנית.</p></div>
+  <p id="waRealEligibleLineF14Z35" ${managerSingleQ94?'hidden':''}><b>מיועדים לשליחה:</b> ${eligible.length}${invalid.length?` · <b>חסומים בגלל נתון חסר/לא תקין:</b> ${invalid.length}`:''}</p>
+  <div class="wa-send-preview-f14g" id="waRealPreviewF14G"><p class="muted">התצוגה המקדימה תופיע לאחר טעינת התבנית.</p></div>
   <dl class="wa-confirm-details-v1190a16"><dt>כמות הודעות</dt><dd id="waRealCountF14Z35">${eligible.length}</dd><dt>עלות משוערת</dt><dd id="waRealCostF14C">טוען…</dd></dl>
+  ${typeof quotaSummaryMarkupQ161_==='function'?quotaSummaryMarkupQ161_():''}
   <p id="waRealStatusF14C" class="wa-confirm-status-v1190a16"></p>${singleGuestD5D55Z22?'':'<div class="wa-progress-f14c" id="waRealProgressF14C" hidden><progress max="100" value="0"></progress><span></span></div>'}
-  <div class="actions"><button type="button" class="secondary" id="waRealCloseF14C">סגור</button><button type="button" class="secondary" id="waRealJournalZ22" hidden>צפייה ביומן WhatsApp</button><button type="button" class="danger" id="waRealStopF14C" hidden>■ עצור שליחה</button><button type="button" class="primary" id="waRealSendF14C" ${!eligible.length||invalid.length?'disabled':''}>שלח WhatsApp</button></div></section>`);
+  <div class="actions"><button type="button" class="secondary" id="waRealCloseF14C">סגור</button><button type="button" class="secondary" id="waRealJournalZ22" hidden>צפייה ביומן WhatsApp</button><button type="button" class="danger" id="waRealStopF14C" hidden>■ עצור שליחה</button>${singleGuestD5D55Z22?'<button type="button" class="secondary" id="waSingleStatusQ141" hidden>בדוק מצב</button>'+(state.session?.role==='Admin'?'<button type="button" class="secondary" id="waSingleCheckQ137">בדיקה ללא שליחה</button>':''):''}<button type="button" class="primary" id="waRealSendF14C" ${!eligible.length||invalid.length?'disabled':''}>שלח WhatsApp</button></div></section>`);
   {const x=$('#waRealCostF14C');if(x)x.textContent='ממתין לבחירת תבנית…';}
   let paymentStateD5D55D=null;
   let templateLoadSequenceZ22Fix5=0;
@@ -2904,8 +3099,9 @@ async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestI
 
     if(sequence!==templateLoadSequenceZ22Fix5)return;
     templatesF14Z35=t;const sel=$('#waRealTemplateF14C');if(preferredTemplateId&&[...sel.options].some(o=>String(o.value)===String(preferredTemplateId)))sel.value=String(preferredTemplateId);
+    if(resumeQ110)sel.disabled=true;
     const selected=waTemplateByIdF14G_(t,sel.value);
-    if(['table_update','table_payment_update'].includes(waTemplatePurposeD5D55D_(selected))){
+    if(!resumeQ110&&['table_update','table_payment_update'].includes(waTemplatePurposeD5D55D_(selected))){
       const wanted=paymentStateD5D55D?'table_payment_update':'table_update';
       const match=t.find(x=>waTemplatePurposeD5D55D_(x)===wanted&&[...sel.options].some(o=>String(o.value)===String(x.id)&&!o.disabled));
       if(match)sel.value=String(match.id);
@@ -2926,6 +3122,7 @@ async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestI
       eligible=singleGuestD5D55Z22
         ?rows.filter(g=>guestSendChecked(g)&&waPhonePreviewV1190A16_(g.phone))
         :waEligibleGuestsForTemplateF14Z35_(rows,chosen,state.seating,{...activeEvent(),__paymentEnabledD5D55D:paymentStateD5D55D});invalid=rows.filter(g=>!waPhonePreviewV1190A16_(g.phone));
+      resumeInvalidQ110=!!resumeQ110&&(String(sel.value)!==resumeQ110.templateId||waTemplatePurposeD5D55D_(chosen)!=='invitation'||eligible.length!==resumeQ110.remainingGuestIds.length||eligible.some((g,i)=>String(g.guestId||g.id)!==resumeQ110.remainingGuestIds[i]));
       const line=$('#waRealEligibleLineF14Z35'),cnt=$('#waRealCountF14Z35'),send=$('#waRealSendF14C');if(line)line.innerHTML=`<b>מיועדים לשליחה:</b> ${eligible.length} · <b>לא מתאימים לתנאי התבנית:</b> ${Math.max(0,rows.length-eligible.length-invalid.length)}${invalid.length?` · <b>טלפון חסר/לא תקין:</b> ${invalid.length}`:''}`;if(cnt)cnt.textContent=String(eligible.length);
       waRenderPreviewF14G_($('#waRealPreviewF14G'),chosen,eligible[0]||rows[0]||null);
       const costEl=$('#waRealCostF14C'),costTemplateId=String(sel.value),costCount=eligible.length;
@@ -2937,7 +3134,7 @@ async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestI
         if(String(sel.value)!==costTemplateId||environmentSequence!==templateLoadSequenceZ22Fix5||refreshSequence!==templateRefreshSequenceFix9)return;
         const valid=e&&e.rateConfigured===true&&e.estimatedIls!=null&&Number.isFinite(Number(e.estimatedIls))&&Number(e.estimatedIls)>=0;
         if(costEl)costEl.textContent=valid?waCostTextF14Z34_(e,chosen.category):'לא ניתן לחשב כרגע';
-        if(costSend)costSend.disabled=!valid||!eligible.length||!waSelectedTemplateApprovedF14E_(sel)||paymentMismatch;
+        if(costSend)costSend.disabled=resumeInvalidQ110||!valid||!eligible.length||!waSelectedTemplateApprovedF14E_(sel)||paymentMismatch;
       }).catch(()=>{
         if(String(sel.value)!==costTemplateId||environmentSequence!==templateLoadSequenceZ22Fix5||refreshSequence!==templateRefreshSequenceFix9)return;
         if(costEl)costEl.textContent='לא ניתן לחשב כרגע';
@@ -2973,12 +3170,66 @@ async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestI
   };
 
   setupTemplatesD5D55Z22();
-  $('#waRealCloseF14C').onclick=closeModal;$('#waRealJournalZ22').onclick=()=>{closeModal();showPage('whatsappLog');};let stopped=false;$('#waRealStopF14C').onclick=()=>{if(stopped)return;if(!($('#waRealStopF14C').dataset.waBulkConfirmed==='1'||confirm('לעצור את שליחת WhatsApp? הקבוצה שנשלחת כעת עשויה להסתיים, אך לא תתחיל קבוצה נוספת.')))return;stopped=true;$('#waRealStopF14C').disabled=true;$('#waRealStatusF14C').textContent='העצירה התקבלה. לא תתחיל קבוצת שליחה נוספת לאחר סיום הקבוצה הנוכחית.';};
-  $('#waRealSendF14C').onclick=async()=>{if(templateBusyZ22Fix5)return;const templateId=$('#waRealTemplateF14C').value;if(!templateId)return;const selectedTpl=waTemplateByIdF14G_(templatesF14Z35,templateId);
+  const checkQ137=$('#waSingleCheckQ137');
+  if(checkQ137)checkQ137.onclick=async()=>{
+    if(templateBusyZ22Fix5||eligible.length!==1)return;
+    const templateId=$('#waRealTemplateF14C').value;if(!templateId)return;
+    const status=$('#waRealStatusF14C'),send=$('#waRealSendF14C'),wasDisabled=send.disabled;
+    checkQ137.disabled=true;send.disabled=true;checkQ137.textContent='בודק…';
+    try{const result=await API.request('inspectSingleWhatsAppQ137',{eventId:state.activeEventId,guestId:eligible[0].guestId||eligible[0].id,templateId,environment:'PRODUCTION'});status.textContent=result.message;status.className='wa-confirm-status-v1190a16 success';}
+    catch(error){status.textContent='הבדיקה נכשלה: '+(error.message||String(error))+' · לא נשלחה הודעה במסגרת הבדיקה.';status.className='wa-confirm-status-v1190a16 error';}
+    finally{checkQ137.disabled=false;checkQ137.textContent='בדיקה ללא שליחה';send.disabled=wasDisabled;}
+  };
+
+  $('#waRealCloseF14C').onclick=closeModal;$('#waRealJournalZ22').onclick=()=>{closeModal();showPage('whatsappLog');};let stopped=false,requestServerStopQ106=null;$('#waRealStopF14C').onclick=()=>{if(stopped)return;stopped=true;const stopButton=$('#waRealStopF14C');stopButton.disabled=true;stopButton.setAttribute('aria-busy','true');stopButton.innerHTML='<span class="seating-spinner-v171" aria-hidden="true"></span> עוצר שליחה…';$('#waRealStatusF14C').textContent='מבקש עצירה. הודעות שכבר הועברו עשויות להתקבל.';if(requestServerStopQ106)void requestServerStopQ106();};
+  const singleGateQ140={busy:false,spent:false,attempt:null};
+  const statusButtonQ141=$('#waSingleStatusQ141');
+  if(statusButtonQ141)statusButtonQ141.onclick=async()=>{
+    const a=singleGateQ140.attempt;if(!a||statusButtonQ141.disabled)return;
+    statusButtonQ141.disabled=true;statusButtonQ141.textContent='בודק מצב…';
+    try{
+      const r=await API.request('singleWhatsAppStatusQ141',{eventId:a.eventId,guestId:a.guestId,templateId:a.templateId,requestIdQ140:a.requestIdQ140});
+      if(state.session?.token!==a.token||String(state.activeEventId)!==a.eventId||$('#waSingleStatusQ141')!==statusButtonQ141)return;
+      $('#waRealStatusF14C').textContent=r.message;
+      if(r.state==='NOT_SENT'&&r.retryable){singleGateQ140.busy=false;singleGateQ140.spent=false;$('#waRealSendF14C').hidden=false;$('#waRealSendF14C').disabled=false;$('#waRealTemplateF14C').disabled=false;}
+      if(r.state==='ACCEPTED'){$('#waRealJournalZ22').hidden=false;$('#waRealStatusF14C').className='wa-confirm-status-v1190a16 success';}
+    }catch(error){if(state.session?.token===a.token&&String(state.activeEventId)===a.eventId&&$('#waSingleStatusQ141')===statusButtonQ141)$('#waRealStatusF14C').textContent='לא ניתן לבדוק מצב כרגע. לא הופעלה שליחה נוספת. אפשר לבדוק שוב בהמשך.';}
+    finally{statusButtonQ141.disabled=false;statusButtonQ141.textContent='בדוק מצב';}
+  };
+  $('#waRealSendF14C').onclick=async()=>{if(templateBusyZ22Fix5||resumeInvalidQ110||singleGateQ140.busy||singleGateQ140.spent)return;const templateId=$('#waRealTemplateF14C').value;if(!templateId)return;const selectedTpl=waTemplateByIdF14G_(templatesF14Z35,templateId);
+    if(typeof quotaEnsureQ161_==='function'&&!resumeQ110){const b=$('#waRealSendF14C');if(b.dataset.quotaCheckingQ161==='1')return;b.dataset.quotaCheckingQ161='1';b.disabled=true;try{await quotaEnsureQ161_(eligible.length);}catch(error){if($('#waRealSendF14C')===b){const status=$('#waRealStatusF14C');status.textContent=error.message||String(error);status.className='wa-confirm-status-v1190a16 error';b.disabled=false;}delete b.dataset.quotaCheckingQ161;return;}delete b.dataset.quotaCheckingQ161;if($('#waRealSendF14C')!==b)return;b.disabled=false;}
     if(!selectedTpl||String(selectedTpl.environment||'PRODUCTION').toUpperCase()!=='PRODUCTION'){const status=$('#waRealStatusF14C');status.textContent='תבנית TEST אינה מותרת במסך שליחה רגיל';status.className='wa-confirm-status-v1190a16 error';return;}
     // Do not repeat a network request before opening confirmation; the server
     // remains authoritative when the user actually confirms sending.
-    const cost=$('#waRealCostF14C').textContent;if(singleGuestD5D55Z22){if(eligible.length!==1){const status=$('#waRealStatusF14C');status.textContent='לשליחה קבוצתית בתבנית זו יש לבחור מוזמן דרך סמליל WhatsApp ברשימה. מנגנון הסינון הקבוצתי לפי סוג התבנית יופעל בשלב הבא.';status.className='wa-confirm-status-v1190a16 error';return;}const confirmed=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp',message:`לשלוח את התבנית "${selectedTpl.name}" למוזמן שנבחר?`,details:`<b>מוזמן:</b> ${esc(eligible[0].name||'')} · <b>עלות משוערת:</b> ${esc(cost)}`});if(!confirmed)return;const send=$('#waRealSendF14C'),close=$('#waRealCloseF14C'),status=$('#waRealStatusF14C');waSetSendingF14V_(send,true);close.disabled=true;try{const r=await API.request('sendAnyTemplateToGuest',{eventId:state.activeEventId,guestId:eligible[0].guestId||eligible[0].id,templateId,environment:'PRODUCTION'});status.textContent=r?.accepted?'ההודעה התקבלה לשליחה ב-WhatsApp. ניתן לצפות ביומן.':'השליחה לא אושרה.';$('#waRealJournalZ22').hidden=!r?.accepted;status.className='wa-confirm-status-v1190a16 '+(r?.accepted?'success':'error');waSetSendingF14V_(send,false);send.disabled=true;close.disabled=false;}catch(e){status.textContent=e?.message||String(e);status.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);close.disabled=false;}return;}const confirmed=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp',message:`לשלוח ${eligible.length} הודעות למספרי המוזמנים?`,details:`<b>כמות:</b> ${eligible.length} · <b>עלות משוערת:</b> ${esc(cost)}`});if(!confirmed)return;
+    const cost=$('#waRealCostF14C').textContent;if(singleGuestD5D55Z22){if(eligible.length!==1){const status=$('#waRealStatusF14C');status.textContent='לשליחה קבוצתית בתבנית זו יש לבחור מוזמן דרך סמליל WhatsApp ברשימה. מנגנון הסינון הקבוצתי לפי סוג התבנית יופעל בשלב הבא.';status.className='wa-confirm-status-v1190a16 error';return;}singleGateQ140.busy=true;
+      const originQ140={eventId:String(state.activeEventId),token:state.session?.token,guestId:String(eligible[0].guestId||eligible[0].id),templateId,requestIdQ140:waSingleRequestIdQ141_()};
+      const buttonQ140=$('#waRealSendF14C'),selectQ140=$('#waRealTemplateF14C');buttonQ140.disabled=true;selectQ140.disabled=true;
+      let confirmed=false;
+      try{confirmed=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp',message:`לשלוח את התבנית "${selectedTpl.name}" למוזמן שנבחר?`,details:`<b>מוזמן:</b> ${esc(eligible[0].name||'')} · <b>עלות משוערת:</b> ${esc(cost)}`});}
+      catch(error){singleGateQ140.busy=false;buttonQ140.disabled=false;selectQ140.disabled=false;throw error;}
+      if(!confirmed){singleGateQ140.busy=false;buttonQ140.disabled=false;selectQ140.disabled=false;return;}
+      if(state.session?.token!==originQ140.token||String(state.activeEventId)!==originQ140.eventId||$('#waRealSendF14C')!==buttonQ140){singleGateQ140.busy=false;return;}
+      singleGateQ140.spent=true;singleGateQ140.attempt=originQ140;
+      const send=$('#waRealSendF14C'),close=$('#waRealCloseF14C'),status=$('#waRealStatusF14C');
+      waSetSendingF14V_(send,true,'מטפל בשליחה…');close.disabled=true;status.textContent='ממתין לזמינות השרת ומטפל בבקשה. אין צורך ללחוץ שוב.';
+      const currentQ141=()=>state.session?.token===originQ140.token&&String(state.activeEventId)===originQ140.eventId&&$('#waRealSendF14C')===send;
+      try{
+        const r=await API.request('sendAnyTemplateToGuest',{eventId:originQ140.eventId,guestId:originQ140.guestId,templateId:originQ140.templateId,environment:'PRODUCTION',requestIdQ140:originQ140.requestIdQ140});
+        if(!currentQ141())return;
+        if(r?.statusRequestIdQ141)singleGateQ140.attempt.requestIdQ140=r.statusRequestIdQ141;
+        status.textContent=r?.accepted?(r.duplicateRequestQ140?'ההודעה כבר התקבלה לשליחה. לא נשלחה הודעה נוספת.':'ההודעה התקבלה ב-WhatsApp לשליחה. ניתן לבדוק מסירה באמצעות ״בדוק מצב״.'):'לא התקבל אישור שליחה. לחץ ״בדוק מצב״.';
+        if(state.session?.role==='EventManager'&&r?.accepted)send.hidden=true;
+        $('#waRealJournalZ22').hidden=!r?.accepted;status.className='wa-confirm-status-v1190a16 '+(r?.accepted?'success':'error');waSetSendingF14V_(send,false);send.disabled=true;close.disabled=false;
+        if(statusButtonQ141)statusButtonQ141.hidden=false;
+      }catch(e){
+        if(!currentQ141())return;
+        const retry=e?.sendStageQ137==='PRECHECK'&&e?.retryableQ141===true;
+        status.textContent=retry?'השרת עסוק. הודעה לא נשלחה בבקשה זו. ניתן ללחוץ שוב על ״שלח WhatsApp״ כאן.':e?.sendStageQ137==='PRECHECK'?'הודעה לא נשלחה: '+e.message:(e?.message||String(e))+' · לחץ ״בדוק מצב״ לבירור ללא שליחה נוספת.';
+        status.className='wa-confirm-status-v1190a16 error';waSetSendingF14V_(send,false);send.disabled=!retry;close.disabled=false;
+        if(retry){singleGateQ140.busy=false;singleGateQ140.spent=false;selectQ140.disabled=false;}
+        if(statusButtonQ141)statusButtonQ141.hidden=retry||e?.sendStageQ137==='PRECHECK';
+      }
+      return;}const confirmed=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp',message:`לשלוח ${eligible.length} הודעות למספרי המוזמנים?`,details:`<b>כמות:</b> ${eligible.length} · <b>עלות משוערת:</b> ${esc(cost)}`});if(!confirmed)return;
     if(waTemplatePurposeD5D55D_(selectedTpl)!=='invitation'){
       const send=$('#waRealSendF14C'),close=$('#waRealCloseF14C'),stop=$('#waRealStopF14C'),box=$('#waRealProgressF14C'),status=$('#waRealStatusF14C');
       const started=performance.now();let done=0,ok=0,fail=0,uncertain=false;
@@ -3000,20 +3251,23 @@ async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestI
       }
       box.waProgressQ33=waProgressStateQ33_(eligible.length,done,ok,fail,uncertain);
       const left=eligible.length-done;
-      status.innerHTML=(uncertain?'<p>קיימת הודעה שתוצאת שליחתה אינה ידועה; אין לשלוח אותה שוב לפני בדיקה ביומן.</p>':'')+waResultHtmlF14V_({ok,fail,left,elapsedMs:performance.now()-started,uncertain});
+      status.innerHTML=adminD5D55Z22?(uncertain?'<p>קיימת הודעה שתוצאת שליחתה אינה ידועה; אין לשלוח אותה שוב לפני בדיקה ביומן.</p>':'')+waResultHtmlF14V_({ok,fail,left,elapsedMs:performance.now()-started,uncertain}):waManagerBulkResultQ97_({done,total:eligible.length,failed:fail,uncertain,stopped});
       status.className='wa-confirm-status-v1190a16 '+(fail||uncertain||stopped?'error':'success');
       box.querySelector('span').textContent=`טופלו ${done} מתוך ${eligible.length}`;
       stop.hidden=true;$('#waRealJournalZ22').hidden=false;progress.finish(box.querySelector('span').textContent,!!(fail||uncertain||stopped),false,{canceled:stopped&&!uncertain});
       waSetSendingF14V_(send,false);send.disabled=true;close.disabled=false;return;
     }
-    const started=performance.now(),send=$('#waRealSendF14C'),close=$('#waRealCloseF14C'),stop=$('#waRealStopF14C'),box=$('#waRealProgressF14C'),status=$('#waRealStatusF14C');waSetSendingF14V_(send,true);close.disabled=true;stop.hidden=false;$('#waRealJournalZ22').hidden=true;box.hidden=false;box.querySelector('span').textContent='מכין שליחה · בודק Media ושער דולר...';const bulkWindowZ22=waBulkProgressWindowZ22_(box,stop,$('#waRealJournalZ22'),'התקדמות שליחת WhatsApp',eligible.length);let prepared;const prepareStartedD34=performance.now();try{prepared=await API.request('prepareWhatsAppSendF14Z9',{templateId,eventId:state.activeEventId});const prepareMsD34=performance.now()-prepareStartedD34;console.info('[WA PERF] prepareWhatsAppSend',Math.round(prepareMsD34),'ms');box.querySelector('span').textContent=`הכנה הושלמה · Media: ${prepared.mediaSource} · שער דולר: ${prepared.costSource} · Messages: ${eligible.length}`;}catch(e){status.innerHTML=`<p><strong>הכנת השליחה נכשלה:</strong> ${esc(e?.message||'שגיאה לא ידועה')}</p>`;status.className='wa-confirm-status-v1190a16 error';stop.hidden=true;waSetSendingF14V_(send,false);close.disabled=false;bulkWindowZ22.finish('הכנת השליחה נכשלה',true);return;}let ok=0,fail=0,done=0,perf={eventMs:0,ensureMs:0,guestsMs:0,configTemplateMs:0,mediaMs:0,rsvpMs:0,buildMs:0,metaMs:0,processMs:0,pricingMs:0,waLogWriteMs:0,costWriteMs:0,activityWriteMs:0,diagnosticMs:0,writeMs:0,totalMs:0};
+    const started=performance.now(),send=$('#waRealSendF14C'),close=$('#waRealCloseF14C'),stop=$('#waRealStopF14C'),box=$('#waRealProgressF14C'),status=$('#waRealStatusF14C');waSetSendingF14V_(send,true);close.disabled=true;stop.hidden=false;$('#waRealJournalZ22').hidden=true;box.hidden=false;box.querySelector('span').textContent='מכין שליחה · בודק Media ושער דולר...';const bulkWindowZ22=waBulkProgressWindowZ22_(box,stop,$('#waRealJournalZ22'),'התקדמות שליחת WhatsApp',eligible.length);let prepared,prepareMsD34=0;const prepareStartedD34=performance.now();try{prepared=await API.request('prepareWhatsAppSendF14Z9',{templateId,eventId:state.activeEventId});prepareMsD34=performance.now()-prepareStartedD34;console.info('[WA PERF] prepareWhatsAppSend',Math.round(prepareMsD34),'ms');box.querySelector('span').textContent=`הכנה הושלמה · Media: ${prepared.mediaSource} · שער דולר: ${prepared.costSource} · Messages: ${eligible.length}`;}catch(e){status.innerHTML=`<p><strong>הכנת השליחה נכשלה:</strong> ${esc(e?.message||'שגיאה לא ידועה')}</p>`;status.className='wa-confirm-status-v1190a16 error';stop.hidden=true;waSetSendingF14V_(send,false);close.disabled=false;bulkWindowZ22.finish('הכנת השליחה נכשלה',true);return;}let ok=0,fail=0,done=0,perf={eventMs:0,ensureMs:0,guestsMs:0,configTemplateMs:0,mediaMs:0,rsvpMs:0,buildMs:0,metaMs:0,processMs:0,pricingMs:0,waLogWriteMs:0,costWriteMs:0,activityWriteMs:0,diagnosticMs:0,writeMs:0,totalMs:0};
     // FIX67: resolve the authorized server setting before reserving a campaign or contacting Meta.
-    let chunkSize;
+    let chunkSize,concurrencyQ104,batchPauseMsQ106;
     try {
       const dispatchSettingsFIX67=await API.request('getWhatsAppDispatchSettingsFIX67',{});
-      chunkSize=Number(dispatchSettingsFIX67?.batchSize);
-      if(!Number.isSafeInteger(chunkSize)||chunkSize<1||chunkSize>50)
-        throw new Error('גודל אצווה לא תקין (1–50)');
+      if(dispatchSettingsFIX67?.productionLifecycleReadyQ107!==true)throw Error('עדכון Q107 בשרת אינו מלא. יש להחליף את כל קובצי השרת שבחבילה ולעדכן פריסה');
+      if(dispatchSettingsFIX67?.productionEngineReadyQ106!==true)throw Error(state.session?.role==='Admin'?'רכיב השליחה החדש אינו זמין. יש להוסיף את WhatsAppProductionEngineQ106.gs ולעדכן את הפריסה':'מנגנון השליחה אינו זמין. יש לפנות למנהל המערכת לעדכון המערכת');
+      chunkSize=Number(dispatchSettingsFIX67?.batchSize);concurrencyQ104=Number(dispatchSettingsFIX67?.concurrency);
+      const pauseSecondsQ106=Number(dispatchSettingsFIX67?.pauseSeconds??5);if(!Number.isSafeInteger(pauseSecondsQ106)||pauseSecondsQ106<0||pauseSecondsQ106>60)throw Error('השהיה בין מנות אינה תקינה');batchPauseMsQ106=pauseSecondsQ106*1000;
+      if(!Number.isSafeInteger(chunkSize)||chunkSize<1||chunkSize>20||!Number.isSafeInteger(concurrencyQ104)||concurrencyQ104<1||concurrencyQ104>5)
+        throw new Error('גודל מנה או מקביליות אינם תקינים');
     } catch(e) {
       status.textContent='השליחה נעצרה: לא ניתן לטעון הגדרות אצווה מהשרת. '+String(e?.message||e);
       status.className='wa-confirm-status-v1190a16 error';
@@ -3026,7 +3280,14 @@ async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestI
     let totalBatches=Math.ceil(eligible.length/chunkSize);let batchError='',batchMeta=[];
     // Reserve the complete campaign before the first Meta request. A crash keeps
     // the server marker until recovery; never silently clear uncertain sends.
-    let campaignIdFIX59='',campaignMediaIdFIX59=String(prepared.mediaId||'');
+    let campaignIdFIX59='',campaignMediaIdFIX59=String(prepared.mediaId||''),campaignPriorDoneQ104=0;
+    if(resumeQ110){
+      try{
+        const fresh=await API.request('previewWhatsAppCampaignResumeFIX59',{eventId:state.activeEventId});
+        if(state.session?.token!==resumeQ110.sessionTokenQ110||String(state.activeEventId)!==resumeQ110.eventId||!fresh?.safe||fresh.campaignId!==resumeQ110.campaignId||fresh.templateId!==templateId||fresh.mediaId!==resumeQ110.mediaId||fresh.completedCount!==resumeQ110.completedCount||JSON.stringify(fresh.remainingGuestIds)!==JSON.stringify(resumeQ110.remainingGuestIds))throw Error('מצב המסע השתנה; יש לפתוח שוב את חלון ההתאוששות');
+        campaignIdFIX59=fresh.campaignId;campaignMediaIdFIX59=fresh.mediaId;campaignPriorDoneQ104=fresh.completedCount;
+      }catch(e){batchError=String(e?.message||e);}
+    }else{
     try{const reservation=await API.request('beginWhatsAppCampaignFIX59',{eventId:state.activeEventId,environment:'PRODUCTION',guestIds:eligible.map(g=>String(g.guestId||g.id||'')),templateId,mediaId:prepared.mediaId,imageFileId:prepared.imageFileId});campaignIdFIX59=String(reservation?.campaignId||'');if(!campaignIdFIX59)throw new Error('לא התקבל מזהה מסע שליחה');}
     catch(e){
       batchError='לא ניתן להתחיל מסע שליחה: '+String(e?.message||e);
@@ -3057,12 +3318,9 @@ async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestI
                 const approved=confirm('נמצא מסע קודם עם '+recovery.completedCount+
                   ' מוזמנים שטופלו ו־'+ids.length+' שנותרו. להמשיך רק עם הנותרים?');
                 if(approved){
-                  campaignIdFIX59=String(recovery.campaignId);
-                  campaignMediaIdFIX59=recovery.mediaId;
-                  eligible=ids.map(id=>byId.get(id));
-                  totalBatches=Math.ceil(eligible.length/chunkSize);
-                  batchError='';
-                  box.querySelector('span').textContent='מחדש מסע קיים · נותרו '+eligible.length+' מוזמנים';
+                  bulkWindowZ22.dispose();closeModal();
+                  await waResumeProductionDirectQ111_({...recovery,eventId:String(state.activeEventId),sessionTokenQ110:state.session.token});
+                  return;
                 }else batchError+=' · החידוש בוטל';
               }else batchError+=' · פרטי התבנית, המדיה או רשימת המוזמנים אינם תואמים; החידוש נחסם';
             }else if(recovery?.reason)batchError+=' · '+String(recovery.reason);
@@ -3071,11 +3329,55 @@ async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestI
       }catch(inspectionError){console.warn('[WA FIX59] campaign inspection unavailable',inspectionError);}
     }
 
-    for(let i=0,batchNo=1;!batchError&&i<eligible.length;i+=chunkSize,batchNo++){if(stopped)break;const chunk=eligible.slice(i,i+chunkSize);box.querySelector('span').textContent=`קבוצת שליחה ${batchNo}/${totalBatches} · שולח ${done+1}–${done+chunk.length} מתוך ${eligible.length}`;try{const r=await API.request('sendInvitationBatchF14U',{eventId:state.activeEventId,items:chunk.map(g=>({guestId:g.guestId||g.id})),templateId,mediaId:campaignMediaIdFIX59,costEstimate:prepared.costEstimate,campaignId:campaignIdFIX59});if(!r||typeof r.accepted==='undefined'||typeof r.failed==='undefined')throw new Error('קבוצת השליחה לא החזירה תשובה תקינה');if(r.waLogError){throw new Error('השליחה נעצרה: Meta עשויה הייתה לקבל את ההודעות, אך שמירת יומן WhatsApp נכשלה. אין לשלוח שוב לפני שחזור היומן. פרטים: '+String(r.waLogError));}const acceptedCount=r.accepted,failedCount=r.failed;if(typeof acceptedCount!=='number'||typeof failedCount!=='number'||!Number.isSafeInteger(acceptedCount)||!Number.isSafeInteger(failedCount)||acceptedCount<0||failedCount<0||acceptedCount+failedCount!==chunk.length)throw new Error('תוצאות אצוות השליחה אינן תואמות למספר הנמענים; יש לברר מצב הודעות לפני חידוש');const expectedBatchIds=new Set(chunk.map(g=>String(g.guestId||g.id||'')));const actualResults=r.results;if(!Array.isArray(actualResults)||actualResults.length!==chunk.length||new Set(actualResults.map(x=>String(x&&x.guestId||''))).size!==chunk.length||actualResults.some(x=>!x||typeof x.accepted!=='boolean'||!expectedBatchIds.has(String(x.guestId||'')))||actualResults.filter(x=>x.accepted).length!==acceptedCount)throw new Error('פירוט תוצאות האצווה אינו תואם לנמענים או לסיכום; אין להמשיך שליחה לפני בירור');actualResults.filter(x=>x.accepted&&x.messageId).forEach(x=>bulkWindowZ22.addMessageId(x.messageId));ok+=acceptedCount;fail+=failedCount;if(r.performance)Object.keys(perf).forEach(k=>perf[k]+=Number(r.performance[k]||0));if(r.metaSummary)batchMeta.push({batchNo,...r.metaSummary});done+=chunk.length;box.waProgressQ33=waProgressStateQ33_(eligible.length,done,ok,fail);box.querySelector('progress').value=Math.round(done*100/eligible.length);if(done<eligible.length&&!stopped)await waPauseBetweenBatchesF14Z7_(box,done,eligible.length,batchNo+1,totalBatches,started);}catch(e){batchError=e?.message||'קבוצת השליחה לא החזירה תשובה תקינה';break;}}
-    if(campaignIdFIX59&&!batchError&&!stopped&&done===eligible.length){try{await API.request('finishWhatsAppCampaignFIX59',{campaignId:campaignIdFIX59});}catch(e){batchError='סיום מסע השליחה לא אושר: '+String(e?.message||e);}}
-    // An interrupted or user-stopped campaign retains its durable marker;
-    // it must be reconciled before starting a new campaign or charging costs.
-    const elapsedMs=performance.now()-started,left=eligible.length-done;status.innerHTML=`<p><strong>זמן הכנה:</strong> ${waFormatElapsedF14V_(prepareMsD34)}</p><p><strong>מסלול רשת:</strong> Media: ${esc(prepared.mediaSource)} · שער דולר: ${esc(prepared.costSource)} · Messages: ${eligible.length}</p>`+waBatchMetaHtmlF14Z11_(batchMeta)+(batchError?`<p><strong>השליחה נעצרה:</strong> ${esc(batchError)}. לא ניתן לקבוע אם קבוצת השליחה שלא החזירה תשובה נמסרה בפועל; יש לבדוק ב-WhatsApp לפני ניסיון נוסף.</p>`:'')+waResultHtmlF14V_({ok,fail,left,elapsedMs,test:false,perf,uncertain:!!batchError});status.className='wa-confirm-status-v1190a16 '+((fail||batchError||stopped)?'error':'success');box.querySelector('span').textContent=batchError?`נעצר לאחר ${done} מתוך ${eligible.length} · ${waFormatElapsedF14V_(elapsedMs)}`:`${stopped?'נעצר לבקשת המשתמש':'טופלו'} ${done} מתוך ${eligible.length} · ${waFormatElapsedF14V_(elapsedMs)}`;stop.hidden=true;$('#waRealJournalZ22').hidden=false;box.waProgressQ33=waProgressStateQ33_(eligible.length,done,ok,fail,!!batchError);bulkWindowZ22.finish(box.querySelector('span').textContent,!!(fail||batchError||stopped),false,{canceled:stopped&&!batchError});waSetSendingF14V_(send,false);send.disabled=true;close.disabled=false;
+    }
+
+    const campaignMessageIdsQ106=new Set(),sendEventQ106=String(state.activeEventId),sendTokenQ106=state.session?.token;
+    for(let offsetQ106=0,batchNo=1;offsetQ106<eligible.length;offsetQ106+=chunkSize,batchNo++){
+      if(batchError||stopped)break;
+      const chunk=eligible.slice(offsetQ106,offsetQ106+chunkSize),baseline={done,ok,fail},priorIds=new Set(campaignMessageIdsQ106);
+      const progressIdQ106='prod'+Date.now().toString(36)+Math.random().toString(36).slice(2,14);
+      let lastKnownQ106=null;
+      const paint=snapshot=>{
+        if(snapshot.results.some(x=>x.accepted&&priorIds.has(x.messageId)))throw Error('מזהי הודעות חוזרים בין מנות; יש לבדוק ביומן');
+        lastKnownQ106=snapshot;
+        snapshot.results.filter(x=>x.accepted).forEach(x=>bulkWindowZ22.addMessageId(x.messageId));
+        box.waProgressQ33=waProgressStateQ33_(eligible.length,baseline.done+snapshot.processed,baseline.ok+snapshot.accepted,baseline.fail+snapshot.failed,snapshot.phase==='ERROR');
+        box.querySelector('span').textContent=`טופלו ${baseline.done+snapshot.processed} מתוך ${eligible.length}`;
+        box.querySelector('progress').value=Math.round((baseline.done+snapshot.processed)*100/eligible.length);
+      };
+      try{
+        const r=await waRunProductionLogicalQ106_({eventId:sendEventQ106,campaignId:campaignIdFIX59,progressId:progressIdQ106,items:chunk.map(g=>({guestId:String(g.guestId||g.id)})),templateId,mediaId:campaignMediaIdFIX59,costEstimate:prepared.costEstimate},{
+          ownerId:String(state.session?.id||state.session?.userId||''),current:()=>state.session?.token===sendTokenQ106&&String(state.activeEventId)===sendEventQ106,
+          onProgress:paint,onStopReady:fn=>{requestServerStopQ106=fn;if(fn&&stopped)void fn();},onStopState:(phase,message)=>bulkWindowZ22.setStopStateQ25(phase,message)
+        });
+        done=baseline.done+r.processed;ok=baseline.ok+r.accepted;fail=baseline.fail+r.failed;
+        r.results.filter(x=>x.accepted).forEach(x=>campaignMessageIdsQ106.add(x.messageId));
+        if(r.performance)Object.keys(perf).forEach(k=>perf[k]+=Number(r.performance[k]||0));
+        if(r.phase==='ERROR'||r.journalCommitted!==true||r.uncertain)throw Error(r.error||'המשך המנה נעצר ללא תוצאה ודאית; יש לבדוק ביומן');
+        if(r.stopped)stopped=true;
+        if(done<eligible.length&&!stopped)await waPauseBetweenBatchesF14Z7_(box,done,eligible.length,batchNo+1,totalBatches,started,batchPauseMsQ106,()=>!stopped);
+      }catch(e){
+        if(lastKnownQ106){done=baseline.done+lastKnownQ106.processed;ok=baseline.ok+lastKnownQ106.accepted;fail=baseline.fail+lastKnownQ106.failed;}
+        batchError=e?.message||'לא התקבלה תשובה ודאית למנה';break;
+      }
+    }
+    if(campaignIdFIX59&&stopped&&!batchError){
+      box.querySelector('span').textContent='מאמת עצירה וסוגר את ניסיון השליחה…';
+      try{
+        const r=await API.request('stopProductionCampaignQ104',{eventId:state.activeEventId,campaignId:campaignIdFIX59,expectedProcessed:campaignPriorDoneQ104+done});
+        if(r?.stopped!==true||r.sent!==0||r.processed!==campaignPriorDoneQ104+done||r.canceled!==eligible.length-done||r.total!==eligible.length+campaignPriorDoneQ104)throw Error('סיום העצירה לא אומת');
+      }catch(e){batchError='לא ניתן לאמת את סגירת העצירה. אין לחדש שליחה לפני בדיקה ביומן. '+String(e?.message||e);}
+    }
+    let finishUnconfirmedQ95=false;
+    if(campaignIdFIX59&&!batchError&&!stopped&&done===eligible.length){
+      stop.hidden=true;stop.disabled=true;
+      box.querySelector('span').textContent=`טופלו ${done} מתוך ${eligible.length} · ממתין לאישור סיום`;
+      try{await API.request('finishWhatsAppCampaignFIX59',{campaignId:campaignIdFIX59},{timeoutMs:30000});}
+      catch(e){finishUnconfirmedQ95=true;console.warn('[WA Q95] campaign completion not confirmed',e?.message||String(e));}
+    }
+    // Interrupted/uncertain campaigns retain their durable markers. Explicit
+    // known stops are closed only by the verified cancellation API above.
+    const elapsedMs=performance.now()-started,left=eligible.length-done;status.innerHTML=adminD5D55Z22?`<p><strong>זמן הכנה:</strong> ${waFormatElapsedF14V_(prepareMsD34)}</p><p><strong>מסלול רשת:</strong> Media: ${esc(prepared.mediaSource)} · שער דולר: ${esc(prepared.costSource)} · Messages: ${eligible.length}</p>`+waBatchMetaHtmlF14Z11_(batchMeta)+(batchError?`<p><strong>השליחה נעצרה:</strong> ${esc(batchError)}. לא ניתן לקבוע אם קבוצת השליחה שלא החזירה תשובה נמסרה בפועל; יש לבדוק ב-WhatsApp לפני ניסיון נוסף.</p>`:'')+(finishUnconfirmedQ95?'<p>הודעות השליחה טופלו, אך סיום התהליך לא אומת. יש לבדוק ביומן ובמצב השליחה לפני ניסיון נוסף.</p>':'')+waResultHtmlF14V_({ok,fail,left,elapsedMs,test:false,perf,uncertain:!!batchError}):waManagerBulkResultQ97_({done,total:eligible.length,failed:fail,uncertain:!!batchError,stopped,finishUnconfirmed:finishUnconfirmedQ95});status.className='wa-confirm-status-v1190a16 '+((fail||batchError||stopped||finishUnconfirmedQ95)?'error':'success');box.querySelector('span').textContent=finishUnconfirmedQ95?`טופלו ${done} מתוך ${eligible.length}. סיום התהליך לא אומת; יש לבדוק ביומן לפני ניסיון נוסף.`:batchError?`נעצר לאחר ${done} מתוך ${eligible.length} · ${waFormatElapsedF14V_(elapsedMs)}`:`${stopped?'נעצר לבקשת המשתמש':'טופלו'} ${done} מתוך ${eligible.length} · ${waFormatElapsedF14V_(elapsedMs)}`;stop.hidden=true;$('#waRealJournalZ22').hidden=false;box.waProgressQ33=waProgressStateQ33_(eligible.length,done,ok,fail,!!batchError);bulkWindowZ22.finish(box.querySelector('span').textContent,!!(fail||batchError||stopped||finishUnconfirmedQ95),false,{canceled:stopped&&!batchError});waSetSendingF14V_(send,false);send.disabled=true;close.disabled=false;
   };
 }
 
@@ -3086,7 +3388,7 @@ function waPhonePreviewV1190A16_(phone){
   raw=raw.replace(/\D/g,'');
   if(raw.startsWith('00972'))raw=raw.slice(2);
   if(raw.startsWith('972'))raw='0'+raw.slice(3);
-  if(!/^0\d{8,9}$/.test(raw))return '';
+  if(!/^05\d{8}$/.test(raw))return '';
   return '972'+raw.slice(1);
 }
 async function openWhatsAppTestConfirmV1190A16_(g){
@@ -3100,7 +3402,7 @@ async function openWhatsAppTestConfirmV1190A16_(g){
       <dt>מספר לשליחה ל־Meta</dt><dd dir="ltr">${to?esc('+'+to):'מספר לא תקין'}</dd>
       <dt>כמות הודעות</dt><dd>1</dd><dt>מחיר משוער להודעה</dt><dd id="waConfirmUnitUsdF14">טוען…</dd><dt>עלות משוערת בדולר</dt><dd id="waConfirmUsdF14">טוען…</dd><dt>שער יציג USD/ILS</dt><dd id="waConfirmFxF14">טוען…</dd><dt><b>סך עלות משוערת</b></dt><dd id="waConfirmCostF14"><b>טוען…</b></dd>
     </dl>
-    <div class="wa-send-preview-f14g" id="waSinglePreviewF14G"><p class="muted">Preview ההזמנה יוצג לאחר טעינת התבנית.</p></div>
+    <div class="wa-send-preview-f14g" id="waSinglePreviewF14G"><p class="muted">התצוגה המקדימה תופיע לאחר טעינת התבנית.</p></div>
     <p class="wa-confirm-status-v1190a16" id="waConfirmStatusV1190A16" role="status" aria-live="polite"></p>
     <div class="actions"><button type="button" class="primary" id="waConfirmSendV1190A16" ${to?'':'disabled'}>אישור ושליחה</button>
     <button type="button" id="waConfirmCancelV1190A16">ביטול</button></div>
@@ -3289,10 +3591,11 @@ document.addEventListener("click",async e=>{
   const gr=e.target.closest("#guestsBody [data-guest]");if(gr&&!e.target.closest("button,input,label,select")){if(window.matchMedia("(hover: none), (pointer: coarse)").matches){const g=state.guests.find(x=>String(x.guestId||x.id)===String(gr.dataset.guest));if(g)guestDetails(g)}return}
 
   const seatGuest=e.target.closest("[data-seat-guest]");if(seatGuest){e.stopPropagation();openSeatingGuestV170_(seatGuest.dataset.seatGuest);return}
+  if(e.target.closest("#resetAllSeatingV170")){await resetAllSeatingV170_();return}
   if(e.target.closest("#resetEventGuestsV1190A10")){resetEventGuestsV1190A10_();return}
   if(e.target.closest("#deleteAllEventTablesV1190A10")){deleteAllEventTablesV1190A10_();return}
   const et=e.target.closest(".edit-table");if(et){tableForm(tablesForActiveEvent().find(x=>x.id===et.dataset.id));return}
-  const dt=e.target.closest(".delete-table");if(dt){if(confirm("למחוק את השולחן?")){try{const started=performance.now();const r=await API.request("deleteTable",{id:dt.dataset.id});removeLocal_(state.tables,dt.dataset.id);if(state.seating&&String(state.seating.eventId)===String(state.activeEventId))state.seating.tables=state.seating.tables.filter(t=>String(t.id)!==String(dt.dataset.id));renderAll();mutationDone_("השולחן נמחק",r,started);await refreshSeatingAfterTableCrudV173_(state.activeEventId)}catch(err){alert(err.message)}}return}
+  const dt=e.target.closest(".delete-table");if(dt){await deleteTableDialogQ74_(dt);return}
 
   if(e.target.closest(".add-event-type"))eventTypeForm();
   const eet=e.target.closest(".edit-event-type");if(eet)eventTypeForm(state.eventTypes.find(x=>String(x.eventTypeId||x.id)===String(eet.dataset.id)));
@@ -3342,7 +3645,7 @@ if(activeEventSelectEl)activeEventSelectEl.onchange=e=>setCurrentEvent_(e.target
 const currentEventSelectEl=$("#currentEventSelect");
 if(currentEventSelectEl)currentEventSelectEl.onchange=e=>setCurrentEvent_(e.target.value);
 $('#guestStatsV178')?.addEventListener('click',e=>{
-  const card=e.target.closest('[data-guest-stat-kind]');if(!card)return;
+  const card=e.target.closest('[data-guest-stat-kind]');if(!card||card.disabled)return;
   const kind=card.dataset.guestStatKind;
   const select=kind==='rsvp'?$('#statusFilter'):$('#guestSeatingFilterV174');
   if(!select||select.disabled)return;
@@ -3353,14 +3656,14 @@ $('#guestStatsV178')?.addEventListener('click',e=>{
     ['guestSearch','sideFilter','groupFilter','guestTableFilterV174','guestSendFilterA19P2F6',
      kind==='rsvp'?'guestSeatingFilterV174':'statusFilter'].every(id=>!$('#'+id)?.value);
   ['guestSearch','sideFilter','groupFilter','statusFilter','guestSeatingFilterV174',
-   'guestTableFilterV174','guestSendFilterA19P2F6'].forEach(id=>{const el=$('#'+id);if(el)el.value='';});
+   'guestTableFilterV174','guestSendFilterA19P2F6','guestMessageStatusQ114'].forEach(id=>{const el=$('#'+id);if(el)el.value='';});
   // A second click toggles the active card off; "all records" is the empty filter.
   if(!wasActive)select.value=value;
   renderGuests();
 });
 ["guestSearch","sideFilter","groupFilter","statusFilter","guestSeatingFilterV174","guestTableFilterV174","guestSendFilterA19P2F6"].forEach(id=>$("#"+id).addEventListener(id==="guestSearch"?"input":"change",renderGuests));
 $("#clearGuestFiltersV180")?.addEventListener("click",()=>{
-  ["guestSearch","sideFilter","groupFilter","statusFilter","guestSeatingFilterV174","guestTableFilterV174","guestSendFilterA19P2F6"].forEach(id=>{const el=$("#"+id);if(el)el.value=""});
+  ["guestSearch","sideFilter","groupFilter","statusFilter","guestSeatingFilterV174","guestTableFilterV174","guestSendFilterA19P2F6","guestMessageStatusQ114"].forEach(id=>{const el=$("#"+id);if(el)el.value=""});
   renderGuests();
 });
 $("#themeBtn").onclick=()=>setTheme(document.body.classList.contains("light")?"dark":"light");
@@ -3518,14 +3821,28 @@ async function refreshSeatingAfterTableCrudV173_(eventId){
   }catch(err){showToast('השולחן נשמר, אך רענון השיוכים נכשל: '+(err.message||String(err)),'error')}
 }
 /* Stage 5B — event-scoped seating workspace; source of truth is GuestTableAssignments. */
+let seatingLoadSequenceQ66_=0;
+function seatingLoadNoticeQ66_(busy,message=''){
+  const host=$('#guestSeatingNoticeV174');if(!host)return;
+  host.setAttribute('role','status');host.setAttribute('aria-busy',String(busy));
+  if(busy)host.innerHTML='<span class="seating-spinner-v171" aria-hidden="true"></span> טוען נתוני שיוך...';
+  else host.textContent=message;
+}
 async function loadSeatingV170_(){
-  const eid=String(state.activeEventId||'');if(!eid||!canManageTables_())return;
-  const host=$('#guestSeatingNoticeV174');if(host)host.textContent="טוען נתוני שיוך...";
+  const sequence=++seatingLoadSequenceQ66_;
+  const eid=String(state.activeEventId||''),token=state.session?.token;
+  if(!eid||!canManageTables_()){seatingLoadNoticeQ66_(false);return;}
+  const current=()=>sequence===seatingLoadSequenceQ66_&&eid===String(state.activeEventId||'')&&token===state.session?.token;
+  let errorMessage='';seatingLoadNoticeQ66_(true);
   try{
     const r=await API.request('seatingStateV169',{eventId:eid});
-    if(eid!==String(state.activeEventId||''))return;
+    if(!current())return;
     state.seating=r;renderTables();renderGuests();
-  }catch(err){if(host)host.textContent=err.message||String(err);showToast(err.message||String(err),'error')}
+  }catch(err){
+    if(current()){errorMessage=err.message||String(err);showToast(errorMessage,'error');}
+  }finally{
+    if(sequence===seatingLoadSequenceQ66_)seatingLoadNoticeQ66_(false,current()?errorMessage:'');
+  }
 }
 function renderSeatingWorkspaceV170_(){
   const host=$('#seatingWorkspaceV170');if(!host)return;
@@ -3634,11 +3951,8 @@ async function openSeatingGuestV170_(gid){
   $('#seatingPartsV170').oninput=e=>{
     if(e.target.dataset.seatsIndex===undefined)return;
     seatingTouched=true;parts[+e.target.dataset.seatsIndex].seats=Number(e.target.value);
-    // Rebuild dropdowns immediately without replacing the number input while typing.
-    const focused=e.target,index=Number(focused.dataset.seatsIndex),start=focused.selectionStart;
-    renderParts();
-    const replacement=$(`#seatingPartsV170 [data-seats-index="${index}"]`);
-    if(replacement){replacement.focus();try{replacement.setSelectionRange(start,start)}catch(_){}}
+    // Keep the focused number input attached. Rebuild options on change (blur).
+    update();
   };
   $('#seatingPartsV170').onclick=e=>{const i=e.target.dataset.removePart;if(i!==undefined){seatingTouched=true;parts.splice(+i,1);renderParts()}};
   $('#seatingAddPartV170').onclick=()=>{const total=parts.reduce((n,x)=>n+Number(x.seats),0);if(confirmed<=0||total>=confirmed)return;seatingTouched=true;parts.push({tableId:'',seats:confirmed-total});renderParts()};
@@ -3649,17 +3963,38 @@ async function openSeatingGuestV170_(gid){
     catch(err){form.querySelectorAll('input,select').forEach(el=>el.disabled=false);seatingButtonBusyV171_(button,false);inlineSeatingStatus_(err.message||String(err),'error');update();inlineSeatingStatus_(err.message||String(err),'error')}
   };
   const reset=$('#seatingResetV170');if(reset)reset.onclick=async()=>{
+    if(reset.disabled)return;
     if(!await seatingConfirmV171_('לאפס את כל שיוכי המוזמן לשולחנות?'))return;
-    seatingButtonBusyV171_(reset,true,'מאפס...');
-    try{const r=await API.request('resetGuestAssignmentsV169',{eventId:st.eventId,guestId:gid});state.seating=r;renderTables();renderGuests();inlineSeatingStatus_('שיוכי המוזמן אופסו','success');setTimeout(()=>{if($('#seatingGuestFormV170')===form)closeModal()},1800)}
-    catch(err){inlineSeatingStatus_(err.message||String(err),'error')}finally{seatingButtonBusyV171_(reset,false)}
+    const form=$('#seatingGuestFormV170'),token=state.session?.token;
+    const controls=[...form.querySelectorAll('input,select,button')].map(el=>({el,disabled:el.disabled}));
+    let resetSucceededQ83=false;
+    seatingButtonBusyV171_(reset,true,'מאפס...');controls.forEach(({el})=>el.disabled=true);
+    try{
+      const r=await API.request('resetGuestAssignmentsV169',{eventId:st.eventId,guestId:gid});
+      if(state.session?.token!==token||String(state.activeEventId)!==String(st.eventId))return;
+      if(String(r?.eventId)!==String(st.eventId)||!Array.isArray(r.assignments)||r.assignments.some(a=>String(a.guestId)===String(gid)))throw Error('לא התקבל אישור מלא לאיפוס השיוכים. יש לרענן ולבדוק שוב.');
+      state.seating=r;renderTables();renderGuests();
+      resetSucceededQ83=true;
+      if($('#seatingGuestFormV170')===form){
+        inlineSeatingStatus_('כל שיוכי המוזמן אופסו והמקומות התפנו','success');
+        setTimeout(()=>{if($('#seatingGuestFormV170')===form)closeModal()},2000);
+      }
+    }catch(err){if($('#seatingGuestFormV170')===form)inlineSeatingStatus_(err.message||String(err),'error');}
+    finally{if(!resetSucceededQ83){seatingButtonBusyV171_(reset,false);controls.forEach(({el,disabled})=>el.disabled=disabled);}}
   };
 }
 async function resetAllSeatingV170_(){
-  if(!state.seating?.assignments.length)return;
-  if(!await seatingConfirmV171_('לאפס את כל השיוכים באירוע הנבחר? כל השולחנות יחזרו לתפוסה אפס.'))return;
-  const resetBtn=$('#resetAllSeatingV170');seatingButtonBusyV171_(resetBtn,true,'מאפס...');
-  try{const eid=String(state.activeEventId),r=await API.request('resetAllAssignmentsV169',{eventId:eid});if(eid!==String(state.activeEventId))return;state.seating=r;renderTables();renderGuests();showToast('כל השיוכים באירוע אופסו','success')}catch(err){showToast(err.message||String(err),'error')}finally{seatingButtonBusyV171_(resetBtn,false)}
+ const role=state.session?.role;if(!['Admin','EventManager'].includes(role)||!canManageTables_()||!state.activeEventId)return;
+ const eid=String(state.activeEventId),token=state.session.token,name=String(activeEvent()?.name||'');
+ await guestBulkActionDialogQ80_({title:'איפוס כל השיוכים לשולחנות',message:`אירוע: ״${name}״. כל השיוכים לשולחנות יוסרו והמקומות יתפנו. כל המוזמנים, אישורי ההגעה, מספר המשתתפים והשולחנות יישמרו ללא שינוי. הפעולה חלה על כל האירוע, גם כשיש סינון ברשימה.`,confirmText:'איפוס כל השיוכים',successText:'כל השיוכים אופסו והמקומות התפנו. המוזמנים ואישורי ההגעה נשמרו.',onConfirm:async()=>{
+  if(state.session?.token!==token||String(state.activeEventId)!==eid)throw Error('האירוע או ההתחברות השתנו. יש לסגור ולנסות שוב.');
+  const r=await API.request('resetAllAssignmentsV169',{eventId:eid});
+  if(String(r?.eventId)!==eid||!Array.isArray(r.assignments)||r.assignments.length)throw Error('לא התקבל אישור מלא לאיפוס השיוכים. יש לרענן ולבדוק.');
+  if(state.session?.token!==token)return;
+  ++seatingTableRefreshSequenceV173_;++seatingLoadSequenceQ66_;
+  if(String(state.activeEventId)===eid)state.seating=r;
+  renderTables();renderGuests();
+ }});
 }
 
 /* Stage 5B UX: styled, accessible confirmation and action spinners. */
@@ -3768,6 +4103,11 @@ function renderGuestSeatingFiltersV174_(){
   const status=$('#guestSeatingFilterV174'),tables=$('#guestTableFilterV174');
   if(!status||!tables)return;
   const enabled=canManageTables_();status.disabled=!enabled;tables.disabled=!enabled;
+  if(typeof gmSyncPurposesQ166_==='function')gmSyncPurposesQ166_();
+  document.getElementById('page-guests')?.classList.toggle('no-seating-q165',!enabled);
+  if(!enabled){status.value='';tables.value='';}
+  const pdf=$('#guestSeatingPdfQ158');if(pdf)pdf.hidden=!enabled||!['Admin','EventManager'].includes(state.session?.role);
+  if(typeof guestSummarySeatingQ165_==='function')guestSummarySeatingQ165_(enabled);
   const old=tables.value,st=state.seating?.eventId===String(state.activeEventId)?state.seating:null;
   tables.innerHTML='<option value="">כל השולחנות</option>'+(st?.tables||[]).map(t=>'<option value="'+esc(t.id)+'">שולחן '+esc(t.tableNumber)+'</option>').join('');
   if([...tables.options].some(o=>o.value===old))tables.value=old;
@@ -3785,16 +4125,31 @@ document.getElementById("guestsBody")?.addEventListener("dblclick",e=>{
 let rsvpRefreshBusyV1189A4_=false;
 let rsvpRefreshNeededV1189A4_=false;
 let rsvpRevisionQ64={token:'',eventId:'',revision:''};
-async function refreshGuestsAfterRsvpV1189A4_(){
+const guestUpdatedQ67_=new Map();
+let guestManualBusyQ128=false;
+function renderGuestRefreshQ67_(){
+ const button=$('#guestRefreshQ67'),label=$('#guestUpdatedQ67');
+ const entry=guestUpdatedQ67_.get(String(state.activeEventId||''));
+ if(label){
+  if(entry&&entry.token===state.session?.token){
+   label.innerHTML=refreshStampQ128_(entry.at);
+  }else label.textContent='טרם עודכן עבור האירוע הנבחר';
+ }
+ if(button){button.disabled=rsvpRefreshBusyV1189A4_||guestManualBusyQ128||!state.activeEventId;button.setAttribute('aria-busy',String(rsvpRefreshBusyV1189A4_||guestManualBusyQ128));button.setAttribute('aria-label','רענון נתונים');button.title='רענון נתונים';button.innerHTML=refreshButtonContentQ130_(rsvpRefreshBusyV1189A4_||guestManualBusyQ128);}
+
+}
+$('#guestRefreshQ67')?.addEventListener('click',async()=>{if(guestManualBusyQ128)return;guestManualBusyQ128=true;renderGuestRefreshQ67_();try{await refreshGuestsAfterRsvpV1189A4_(true);await guestMessagesLoadQ114_(true);}finally{guestManualBusyQ128=false;renderGuestRefreshQ67_();}});
+async function refreshGuestsAfterRsvpV1189A4_(manualQ67=false,entryQ71=false){
+ manualQ67=manualQ67===true;
  if(!state.session||!['Admin','EventManager'].includes(state.session.role)||!state.activeEventId||document.hidden||!['guests','dashboard','seating'].includes(currentPage)||$('#modal')?.classList.contains('show'))return;
- if(rsvpRefreshBusyV1189A4_){rsvpRefreshNeededV1189A4_=true;return;}
+ if(rsvpRefreshBusyV1189A4_){if(!manualQ67||entryQ71===true)rsvpRefreshNeededV1189A4_=true;return;}
  const token=state.session.token,eventId=String(state.activeEventId);
- const revision=rsvpRevisionQ64.token===token&&rsvpRevisionQ64.eventId===eventId?rsvpRevisionQ64.revision:'';
- rsvpRefreshBusyV1189A4_=true;
+ const revision=!manualQ67&&rsvpRevisionQ64.token===token&&rsvpRevisionQ64.eventId===eventId?rsvpRevisionQ64.revision:'';
+ rsvpRefreshBusyV1189A4_=true;renderGuestRefreshQ67_();
  try{
-  const result=await API.request('getRsvpEventUpdatesQ64',{eventId,revision},{skipActivityQ31:true});
+  const result=await API.request('getRsvpEventUpdatesQ64',{eventId,revision},manualQ67?{}:{skipActivityQ31:true});
   if(state.session?.token!==token||String(state.activeEventId)!==eventId||result?.eventId!==eventId||document.hidden)return;
-  if(result.busy)return;
+  if(result.busy){if(manualQ67)showToast('הנתונים מתעדכנים כעת. נסה לרענן שוב בעוד מספר שניות.','info');return;}
   if(typeof result.revision!=='string'||typeof result.changed!=='boolean')throw Error('תשובת עדכון אישורי ההגעה אינה תקינה');
   // Do not replace data or close a seating editor opened while the read was running.
   if($('#modal')?.classList.contains('show'))return;
@@ -3805,28 +4160,48 @@ async function refreshGuestsAfterRsvpV1189A4_(){
     renderGuests();renderDashboard();if(currentPage==='seating')renderTables();
   }
   rsvpRevisionQ64={token,eventId,revision:result.revision};
- }catch(err){console.warn('RSVP guest refresh failed',err)}
- finally{rsvpRefreshBusyV1189A4_=false;if(rsvpRefreshNeededV1189A4_){rsvpRefreshNeededV1189A4_=false;void refreshGuestsAfterRsvpV1189A4_();}}
+  guestUpdatedQ67_.set(eventId,{token,at:new Date()});renderGuestRefreshQ67_();
+ }catch(err){console.warn('RSVP guest refresh failed',err);if(manualQ67&&state.session?.token===token&&String(state.activeEventId)===eventId)showToast('רענון המוזמנים נכשל: '+(err.message||String(err)),'error');}
+ finally{rsvpRefreshBusyV1189A4_=false;renderGuestRefreshQ67_();if(rsvpRefreshNeededV1189A4_){rsvpRefreshNeededV1189A4_=false;void refreshGuestsAfterRsvpV1189A4_();}}
 }
 window.addEventListener('storage',e=>{
  if(e.key!=='events_rsvp_updated_v1189a4'||!e.newValue)return;
  void refreshGuestsAfterRsvpV1189A4_();
 });
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshGuestsAfterRsvpV1189A4_();});
-// Phone/other-device replies cannot emit this browser's localStorage events.
-setInterval(()=>{if(!rsvpRefreshBusyV1189A4_)void refreshGuestsAfterRsvpV1189A4_();},15000);
+// Q69: refresh only on explicit manual action or a same-origin RSVP change notification.
+// No interval polling or refresh merely on returning to this tab.
 
 /* WhatsApp log UI */
 let waLogRowsZ55=[];
-function waLogStatusLabelZ55_(s){return ({RETRY_WAIT_Q51:'ממתינה לניסיון חוזר',CANCELLED_RETRY_Q51:'בוטלה',UNKNOWN:'תוצאה לא ודאית',META_ACCEPTED:'ממתינה למסירה',API_FAILED:'נכשלה',SENT:'ממתינה למסירה',DELIVERED:'נמסרה',READ:'נקראה',FAILED:'נכשלה'})[String(s||'')]||String(s||'');}
+function waLogStatusLabelZ55_(s){return ({PRE_SEND_FAILED:'לא נשלחה',RETRY_WAIT_Q51:'ממתינה לניסיון חוזר',CANCELLED_RETRY_Q51:'בוטלה',UNKNOWN:'תוצאה לא ודאית',META_ACCEPTED:'ממתינה למסירה',API_FAILED:'נכשלה',SENT:'ממתינה למסירה',DELIVERED:'נמסרה',READ:'נקראה',FAILED:'נכשלה'})[String(s||'')]||String(s||'');}
 function waLogIsEventManagerZ56C_(){return state.session?.role==='EventManager';}
 function waLogApplyRoleViewZ56C_(){const simple=waLogIsEventManagerZ56C_(),page=$('#page-whatsappLog');if(!page)return;page.classList.toggle('wa-log-manager-z56c',simple);const env=$('#waLogEnvironmentZ55B');if(env)env.closest('select')?.classList.toggle('wa-log-manager-hidden-z56c',simple);const search=$('#waLogSearchZ55B');if(search)search.placeholder=simple?'חיפוש לפי שם או טלפון':'חיפוש לפי שם, טלפון או wamid';const intro=page.querySelector('.wa-log-intro-z55');if(intro)intro.textContent=simple?'כאן ניתן לראות אם הודעות WhatsApp ממתינות למסירה, נמסרו, נקראו או נכשלו.':'הסטטוס „ממתינה למסירה” מציין שההודעה התקבלה במערכת השליחה אך טרם התקבל אישור מסירה לטלפון.';}
 function waLogEventNameZ55_(id){return state.events.find(e=>String(e.id)===String(id))?.name||id||'';}
-function waLogInitFiltersZ55_(){const sel=$('#waLogEventZ55B');if(!sel)return;const old=sel.value;sel.innerHTML='<option value="">כל האירועים</option>'+state.events.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');sel.value=state.events.some(e=>String(e.id)===old)?old:'';}
+let waLogScopeQ149,waLogSerialQ149=0,waLogFollowQ149=true;
+function waLogSyncEventQ149_(force=false){
+  const scope=String(state.activeEventId||'');
+  if(!force&&waLogScopeQ149===scope)return;
+  waLogScopeQ149=scope;waLogFollowQ149=true;++waLogSerialQ149;waLogRowsZ55=[];
+  const sel=$('#waLogEventZ55B');if(sel)sel.value=scope;
+}
+function waLogInitFiltersZ55_(){
+  waLogSyncEventQ149_();
+  const sel=$('#waLogEventZ55B');if(!sel)return;
+  const old=sel.value;
+  sel.innerHTML='<option value="">כל האירועים</option>'+state.events.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
+  const wanted=waLogFollowQ149?String(state.activeEventId||''):old;
+  sel.value=state.events.some(e=>String(e.id)===wanted)?wanted:'';waLogFollowQ149=false;
+}
 async function loadWhatsAppLogZ55_(button){
-  const body=$('#waLogBodyZ55B');if(!body)return;logButtonBusyZ57A_(button,true,'מרענן...');waLogApplyRoleViewZ56C_();waLogInitFiltersZ55_();body.innerHTML='<tr><td colspan="8"><span class="log-btn-spinner-z57a" aria-hidden="true"></span> טוען...</td></tr>';
+  const body=$('#waLogBodyZ55B');if(!body)return;
+  logButtonBusyZ57A_(button,true,'מרענן...');waLogApplyRoleViewZ56C_();waLogInitFiltersZ55_();
+  const serial=++waLogSerialQ149,scope=String(state.activeEventId||''),token=state.session?.token;
+  waLogRowsZ55=[];body.innerHTML='<tr><td colspan="8"><span class="log-btn-spinner-z57a" aria-hidden="true"></span> טוען...</td></tr>';
   const filters={eventId:$('#waLogEventZ55B')?.value||'',environment:$('#waLogEnvironmentZ55B')?.value||'',status:$('#waLogStatusZ55B')?.value||'',fromDate:$('#waLogFromZ55B')?.value||'',toDate:$('#waLogToZ55B')?.value||'',search:$('#waLogSearchZ55B')?.value||'',limit:500};
-  try{const d=await API.request('listWhatsAppLogZ55',{filters});waLogRowsZ55=d.rows||[];renderWhatsAppLogZ55_(d);}catch(e){body.innerHTML=`<tr><td colspan="9" class="error">${esc(e.message)}</td></tr>`;}finally{logButtonBusyZ57A_(button,false);updateLogClearFilterStateZ57A_('wa');}
+  const current=()=>serial===waLogSerialQ149&&token===state.session?.token&&scope===String(state.activeEventId||'')&&filters.eventId===($('#waLogEventZ55B')?.value||'');
+  try{const d=await API.request('listWhatsAppLogZ55',{filters});if(!current())return;waLogRowsZ55=d.rows||[];renderWhatsAppLogZ55_(d);}
+  catch(e){if(current())body.innerHTML=`<tr><td colspan="8" class="error">${esc(e.message)}</td></tr>`;}
+  finally{logButtonBusyZ57A_(button,false);if(current())updateLogClearFilterStateZ57A_('wa');}
 }
 function waLogSortValueZ55B_(r,key){if(key==='eventName')return waLogEventNameZ55_(r.eventId);if(key==='createdAt')return String(r.createdAt||'');return String(r[key]||'');}
 function sortedWhatsAppLogZ55B_(){const {key,dir}=state.waLogSort||{key:'createdAt',dir:'desc'},mul=dir==='asc'?1:-1;return [...waLogRowsZ55].sort((a,b)=>waLogSortValueZ55B_(a,key).localeCompare(waLogSortValueZ55B_(b,key),'he',{numeric:true,sensitivity:'base'})*mul);}
@@ -3835,7 +4210,7 @@ function updateWhatsAppLogSortUIZ55B_(){
   $$('#page-whatsappLog td[data-col]').forEach(td=>td.classList.toggle('sorted-col',td.dataset.col===state.waLogSort.key));
 }
 function setWhatsAppLogSortZ55B_(key){if(state.waLogSort.key===key)state.waLogSort.dir=state.waLogSort.dir==='asc'?'desc':'asc';else state.waLogSort={key,dir:'asc'};renderWhatsAppLogZ55_({summary:waLogSummaryFromRowsZ55B_(),truncated:waLogRowsZ55.length>=500,canPurge:state.session?.role==='Admin'});}
-function waLogSummaryFromRowsZ55B_(){const rows=waLogRowsZ55;return {total:rows.length,metaAccepted:rows.filter(r=>r.status==='META_ACCEPTED').length,pending:rows.filter(r=>['META_ACCEPTED','SENT'].includes(r.status)).length,delivered:rows.filter(r=>['DELIVERED','READ'].includes(r.status)).length,read:rows.filter(r=>r.status==='READ').length,failed:rows.filter(r=>['API_FAILED','FAILED'].includes(r.status)).length};}
+function waLogSummaryFromRowsZ55B_(){const rows=waLogRowsZ55;return {total:rows.length,metaAccepted:rows.filter(r=>r.status==='META_ACCEPTED').length,pending:rows.filter(r=>['META_ACCEPTED','SENT'].includes(r.status)).length,delivered:rows.filter(r=>['DELIVERED','READ'].includes(r.status)).length,read:rows.filter(r=>r.status==='READ').length,failed:rows.filter(r=>['API_FAILED','FAILED','PRE_SEND_FAILED'].includes(r.status)).length};}
 function formatWaLogDateTimeZ56B1_(value){
   const raw=String(value||'').trim();if(!raw)return '';
   // WhatsAppLog stores ISO-8601 UTC instants. Convert only for display.
@@ -3860,7 +4235,7 @@ function waLogCardFilterD5D_(kind){
 }
 function waLogRowsForCardD5D_(rows){
   const kind=String($('#waLogStatusZ55B')?.dataset.cardFilter||'');if(!kind)return rows;
-  const groups={pending:['META_ACCEPTED','SENT'],delivered:['DELIVERED','READ'],read:['READ'],failed:['API_FAILED','FAILED']};
+  const groups={pending:['META_ACCEPTED','SENT'],delivered:['DELIVERED','READ'],read:['READ'],failed:['API_FAILED','FAILED','PRE_SEND_FAILED']};
   return rows.filter(r=>(groups[kind]||[]).includes(String(r.status||'')));
 }
 async function retryFailedWhatsAppLogD5D55Z22_(r,button){
@@ -3906,11 +4281,18 @@ let eventCostSortZ58A={key:'date',dir:'desc'};
 function moneyZ58_(v){return '₪'+Number(v||0).toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function eventCostEventNameZ58_(id){return state.events.find(e=>String(e.id||e.eventId)===String(id))?.name||id||'';}
 function eventCostIsManagerZ58A_(){return state.session?.role==='EventManager';}
-async function loadEventCostsZ58_(button){const body=$('#eventCostsBodyZ58');if(!body)return;const requestFIX61=++eventCostsRequestFIX61;logButtonBusyZ57A_(button,true,'מרענן...');body.innerHTML='<tr><td colspan="8"><span class="log-btn-spinner-z57a"></span> טוען...</td></tr>';try{const sel=$('#eventCostsEventZ58'),eid=sel?.dataset.userSelected==='true'?(sel.value||''):(state.activeEventId||'');const d=await API.request('eventCostsContextZ58',{eventId:eid});if(requestFIX61!==eventCostsRequestFIX61)return;eventCostsDataZ58=d;renderEventCostsZ58_(d);}catch(e){if(requestFIX61===eventCostsRequestFIX61)body.innerHTML=`<tr><td colspan="8" class="error">${esc(e.message)}</td></tr>`;}finally{logButtonBusyZ57A_(button,false);}}
-function eventCostUnifiedRowsZ58A_(){if(!eventCostsDataZ58)return[];const manual=(eventCostsDataZ58.manualRows||[]).map(r=>({...r,source:'MANUAL',sourceLabel:'ידני'}));const wa=(eventCostsDataZ58.whatsAppRows||[]).map(r=>({id:'WA:'+String(r.messageId||''),eventId:r.eventId,date:String(r.createdAt||'').slice(0,10),createdAt:r.createdAt,category:'WhatsApp',description:r.templateDisplayName||r.templateName||'WhatsApp',amount:Number(r.estimatedIls||0),costType:'ESTIMATED',notes:'',source:'WHATSAPP',sourceLabel:'אוטומטי',templateName:r.templateName||'',templateCategory:r.templateCategory||r.category||'',messageId:r.messageId||''}));return manual.concat(wa);}
+async function loadEventCostsZ58_(button){const body=$('#eventCostsBodyZ58');if(!body)return;const requestFIX61=++eventCostsRequestFIX61;logButtonBusyZ57A_(button,true,'מרענן...');body.innerHTML='<tr><td colspan="8"><span class="log-btn-spinner-z57a"></span> טוען...</td></tr>';try{const sel=$('#eventCostsEventZ58'),eid=sel?.dataset.userSelected==='true'?(sel.value||''):(state.activeEventId||'');const d=await API.request('eventCostsContextZ58',{eventId:eid});if(requestFIX61!==eventCostsRequestFIX61)return;eventCostsDataZ58=d;renderEventCostsZ58_(d);eventCostCalculationStatusQ145_(d);}catch(e){if(requestFIX61===eventCostsRequestFIX61)body.innerHTML=`<tr><td colspan="8" class="error">${esc(e.message)}</td></tr>`;}finally{logButtonBusyZ57A_(button,false);}}
+function eventCostWaGroupsQ135_(rows){
+ const groups=new Map(),labels={invitation:'הזמנה לאירוע',rsvp_update:'תזכורת לאישור הגעה',table_update:'עדכון שולחן',table_payment_update:'עדכון שולחן ותשלום',thank_you:'תודה למשתתפים'};
+ for(const r of rows){const purpose=r.purpose||'',type=labels[purpose]?purpose:'template:'+String(r.templateName||r.templateDisplayName||''),date=String(r.sentDate||''),key=JSON.stringify([String(r.eventId),date,type]);let g=groups.get(key);
+ if(!g){g={id:'WA:'+key,eventId:r.eventId,purpose:purpose,date,createdAt:'',category:'WhatsApp',description:labels[purpose]||r.templateDisplayName||r.templateName||'הודעה',amount:0,quantity:0,pendingCountQ142:0,pricingReasonsQ145:[],costType:'ESTIMATED',notes:'',source:'WHATSAPP',sourceLabel:'סיכום אוטומטי',templateName:'',templateCategory:'',messageIds:[],templateNames:[]};groups.set(key,g);}
+ if(r.pricingPendingQ142){g.pendingCountQ142+=Number(r.recipientCount)||1;if(r.pricingReasonQ145)g.pricingReasonsQ145.push({guestId:r.guestId,...r.pricingReasonQ145});}else g.amount+=Number(r.estimatedIls||0);g.quantity+=Number(r.recipientCount)||1;g.messageIds.push(r.messageId);if(!g.templateNames.includes(r.templateDisplayName||r.templateName))g.templateNames.push(r.templateDisplayName||r.templateName);g.templateName=g.templateNames.join(', ');g.notes=g.quantity+' הודעות'+(g.pendingCountQ142?' · חסר אומדן: '+g.pendingCountQ142:'');
+ }return [...groups.values()];
+}
+function eventCostUnifiedRowsZ58A_(){if(!eventCostsDataZ58)return[];const manual=(eventCostsDataZ58.manualRows||[]).map(r=>({...r,source:'MANUAL',sourceLabel:'ידני'}));return manual.concat(eventCostWaGroupsQ135_([...(eventCostsDataZ58.whatsAppRows||[]),...(eventCostsDataZ58.unpricedWhatsAppRowsQ142||[])]));}
 function eventCostFilteredRowsZ58A_(){let a=eventCostUnifiedRowsZ58A_();const cat=$('#eventCostsCategoryZ58C')?.value||'',type=$('#eventCostsTypeZ58C')?.value||'',from=$('#eventCostsFromZ58C')?.value||'',to=$('#eventCostsToZ58C')?.value||'',q=String($('#eventCostsSearchZ58C')?.value||'').trim().toLowerCase();if(cat)a=a.filter(r=>r.category===cat);if(type)a=a.filter(r=>type==='WHATSAPP'?r.source==='WHATSAPP':r.costType===type&&r.source!=='WHATSAPP');if(from)a=a.filter(r=>String(r.date||'')>=from);if(to)a=a.filter(r=>String(r.date||'')<=to);if(q)a=a.filter(r=>[r.category,r.description,r.notes].some(v=>String(v||'').toLowerCase().includes(q)));const {key,dir}=eventCostSortZ58A,m=dir==='asc'?1:-1;return a.sort((x,y)=>{const A=key==='amount'?Number(x.amount||0):String(x[key]||''),B=key==='amount'?Number(y.amount||0):String(y[key]||'');return(typeof A==='number'?A-B:String(A).localeCompare(String(B),'he',{numeric:true,sensitivity:'base'}))*m;});}
 function updateEventCostClearZ58A_(){const active=(!!$('#eventCostsEventZ58')?.value)||['eventCostsCategoryZ58C','eventCostsTypeZ58C','eventCostsFromZ58C','eventCostsToZ58C','eventCostsSearchZ58C'].some(id=>String($('#'+id)?.value||'').trim());const b=$('#eventCostsClearZ58C');if(b){b.classList.toggle('filters-active-z57a',active);b.setAttribute('aria-pressed',String(active));b.title=active?'נקה את הסינון הפעיל':'אין סינון פעיל';}}
-function renderEventCostsRowsZ58A_(){const rows=eventCostFilteredRowsZ58A_(),manager=eventCostIsManagerZ58A_(),b=$('#eventCostsBodyZ58');if(!b)return;const totals={total:0,actual:0,expected:0,wa:0};rows.forEach(r=>{const amount=Number(r.amount||0);totals.total+=amount;if(r.source==='WHATSAPP')totals.wa+=amount;else if(r.costType==='EXPECTED')totals.expected+=amount;else totals.actual+=amount;});[['#eventCostsTotalZ58',totals.total],['#eventCostsActualZ58C',totals.actual],['#eventCostsExpectedZ58C',totals.expected],['#eventCostsWaZ58',totals.wa]].forEach(([id,n])=>{const el=$(id);if(el)el.textContent=moneyZ58_(n);});b.innerHTML=rows.map(r=>`<tr data-cost-detail-id="${esc(r.id)}" title="לחיצה כפולה לפרטי העלות"><td>${esc(formatWaLogDateTimeZ56B1_(r.createdAt||r.date))}</td><td>${esc(r.category||'')}</td><td title="${esc(r.description||'')}">${esc(r.description||'')}</td><td><b>${moneyZ58_(r.amount)}</b></td><td>${r.source==='WHATSAPP'?'משוערת':(r.costType==='EXPECTED'?'צפויה':'בפועל')}</td><td class="event-cost-admin-tech-z58a">${esc(r.sourceLabel||'')}</td><td title="${esc(r.notes||'')}">${esc(r.notes||'')}</td><td>${r.source==='WHATSAPP'?'—':`<button type="button" class="ui-icon-btn-z58d4 edit event-cost-edit-z58" title="עריכה" aria-label="עריכה" data-id="${esc(r.id)}">✎</button> <button type="button" class="ui-icon-btn-z58d4 delete event-cost-delete-z58" title="מחיקה" aria-label="מחיקה" data-id="${esc(r.id)}">🗑</button>`}</td></tr>`).join('')||'<tr><td colspan="8" class="empty-cell">אין הוצאות בהתאם לסינון.</td></tr>';$('#page-eventCosts')?.classList.toggle('event-cost-manager-z58a',manager);const n=$('#eventCostsNoticeZ58C');if(n)n.textContent=`מוצגות ${rows.length} מתוך ${eventCostUnifiedRowsZ58A_().length} רשומות`;$$('#page-eventCosts th[data-cost-sort]').forEach(th=>{const on=th.dataset.costSort===eventCostSortZ58A.key;th.classList.toggle('sorted',on);const sp=th.querySelector('span');if(sp)sp.textContent=on?(eventCostSortZ58A.dir==='asc'?'↑':'↓'):'↕';});const byEvent=$('#eventCostsByEventZ58');if(byEvent&&eventCostsDataZ58?.canSeeAll&&!eventCostsDataZ58?.selectedEventId){const grouped=new Map();rows.forEach(r=>{const id=String(r.eventId||'');if(!grouped.has(id))grouped.set(id,{manual:0,whatsapp:0,total:0});const g=grouped.get(id),amount=Number(r.amount||0);g.total+=amount;if(r.source==='WHATSAPP')g.whatsapp+=amount;else g.manual+=amount;});byEvent.innerHTML=[...grouped].map(([id,v])=>`<tr><td>${esc(eventCostEventNameZ58_(id))}</td><td>${moneyZ58_(v.manual)}</td><td>${moneyZ58_(v.whatsapp)}</td><td><b>${moneyZ58_(v.total)}</b></td></tr>`).join('');}updateEventCostClearZ58A_();}
+function renderEventCostsRowsZ58A_(){const rows=eventCostFilteredRowsZ58A_(),manager=eventCostIsManagerZ58A_(),b=$('#eventCostsBodyZ58');if(!b)return;const totals={total:0,actual:0,expected:0,wa:0};rows.forEach(r=>{const amount=Number(r.amount||0);totals.total+=amount;if(r.source==='WHATSAPP')totals.wa+=amount;else if(r.costType==='EXPECTED')totals.expected+=amount;else totals.actual+=amount;});[['#eventCostsTotalZ58',totals.total],['#eventCostsActualZ58C',totals.actual],['#eventCostsExpectedZ58C',totals.expected],['#eventCostsWaZ58',totals.wa]].forEach(([id,n])=>{const el=$(id);if(el){const partial=rows.some(r=>r.pendingCountQ142>0);el.textContent=moneyZ58_(n)+(partial&&['#eventCostsTotalZ58','#eventCostsWaZ58'].includes(id)?' (חלקי)':'');el.title=partial&&['#eventCostsTotalZ58','#eventCostsWaZ58'].includes(id)?'הסכום כולל רק הודעות שכבר חושב עבורן אומדן':'';}});b.innerHTML=rows.map(r=>`<tr data-cost-detail-id="${esc(r.id)}" title="לחיצה כפולה לפרטי העלות"><td>${esc((r.source==='WHATSAPP'?formatDateHE_(r.date):formatWaLogDateTimeZ56B1_(r.createdAt||r.date)))}</td><td>${esc(r.category||'')}</td><td title="${esc(r.description||'')}">${esc(r.description||'')}</td><td><b>${r.source==='WHATSAPP'?eventCostAmountQ142_(r):moneyZ58_(r.amount)}</b></td><td>${r.source==='WHATSAPP'?(r.pendingCountQ142?'חסר אומדן':'משוערת'):(r.costType==='EXPECTED'?'צפויה':'בפועל')}</td><td class="event-cost-admin-tech-z58a">${esc(r.sourceLabel||'')}</td><td title="${esc(r.notes||'')}">${esc(r.notes||'')}</td><td>${r.source==='WHATSAPP'?'—':`<button type="button" class="ui-icon-btn-z58d4 edit event-cost-edit-z58" title="עריכה" aria-label="עריכה" data-id="${esc(r.id)}">✎</button> <button type="button" class="ui-icon-btn-z58d4 delete event-cost-delete-z58" title="מחיקה" aria-label="מחיקה" data-id="${esc(r.id)}">🗑</button>`}</td></tr>`).join('')||'<tr><td colspan="8" class="empty-cell">אין הוצאות בהתאם לסינון.</td></tr>';$('#page-eventCosts')?.classList.toggle('event-cost-manager-z58a',manager);const n=$('#eventCostsNoticeZ58C');if(n)n.textContent=`מוצגות ${rows.length} מתוך ${eventCostUnifiedRowsZ58A_().length} רשומות`+(eventCostsDataZ58?.unpricedWhatsAppCount?' · '+eventCostsDataZ58.unpricedWhatsAppCount+' הודעות כבר כלולות בכמויות; חישוב העלות שלהן טרם הושלם. הסכומים חלקיים':'');$$('#page-eventCosts th[data-cost-sort]').forEach(th=>{const on=th.dataset.costSort===eventCostSortZ58A.key;th.classList.toggle('sorted',on);const sp=th.querySelector('span');if(sp)sp.textContent=on?(eventCostSortZ58A.dir==='asc'?'↑':'↓'):'↕';});eventCostHighlightColumnQ134_();const byEvent=$('#eventCostsByEventZ58');if(byEvent&&eventCostsDataZ58?.canSeeAll&&!eventCostsDataZ58?.selectedEventId){const grouped=new Map();rows.forEach(r=>{const id=String(r.eventId||'');if(!grouped.has(id))grouped.set(id,{manual:0,whatsapp:0,total:0,pending:0});const g=grouped.get(id),amount=Number(r.amount||0);g.pending+=Number(r.pendingCountQ142)||0;g.total+=amount;if(r.source==='WHATSAPP')g.whatsapp+=amount;else g.manual+=amount;});byEvent.innerHTML=[...grouped].map(([id,v])=>`<tr><td>${esc(eventCostEventNameZ58_(id))}</td><td>${moneyZ58_(v.manual)}</td><td>${moneyZ58_(v.whatsapp)}${v.pending?' (חלקי)':''}</td><td><b>${moneyZ58_(v.total)}${v.pending?' (חלקי)':''}</b></td></tr>`).join('');}updateEventCostClearZ58A_();}
 function renderEventCostsZ58_(d){const sel=$('#eventCostsEventZ58'),keep=sel?.dataset.userSelected==='true'?(sel.value||''):(state.activeEventId||'');if(sel){const all=d.canSeeAll?'<option value="">כל האירועים</option>':'';sel.innerHTML=all+(d.events||[]).map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');sel.value=(d.events||[]).some(e=>String(e.id)===String(keep))?keep:(d.canSeeAll?'':String(d.events?.[0]?.id||''));}$('#eventCostsTotalZ58').textContent=moneyZ58_(d.summary?.totalIls);$('#eventCostsActualZ58C').textContent=moneyZ58_(d.summary?.actualIls);$('#eventCostsExpectedZ58C').textContent=moneyZ58_(d.summary?.expectedIls);$('#eventCostsWaZ58').textContent=moneyZ58_(d.summary?.whatsappIls);const cs=$('#eventCostsCategoryZ58C'),old=cs?.value||'';if(cs){const names=[...new Set((d.categories||[]).map(c=>c.name).concat(['WhatsApp']))];cs.innerHTML='<option value="">כל הקטגוריות</option>'+names.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');cs.value=names.includes(old)?old:'';}const allWrap=$('#eventCostsByEventWrapZ58');if(allWrap){allWrap.hidden=!(d.canSeeAll&&!d.selectedEventId);$('#eventCostsByEventZ58').innerHTML=(d.byEvent||[]).map(x=>`<tr><td>${esc(x.eventName)}</td><td>${moneyZ58_(x.manual)}</td><td>${moneyZ58_(x.whatsapp)}</td><td><b>${moneyZ58_(x.total)}</b></td></tr>`).join('');}renderEventCostsRowsZ58A_();}
 function eventCostDialogZ58_(r={}){
  const d=eventCostsDataZ58;if(!d)return;
@@ -3954,11 +4336,15 @@ function eventCostTemplateNameFIX61_(r){
  return /[א-ת]/.test(String(r.description||''))?r.description:'הודעת WhatsApp';
 }
 function eventCostDetailsFIX61_(r){
- const wa=r.source==='WHATSAPP';
+ const wa=r.source==='WHATSAPP',admin=state.session?.role==='Admin';
  const fields=[['אירוע',eventCostEventNameZ58_(r.eventId)],['תאריך',formatWaLogDateTimeZ56B1_(r.createdAt||r.date)],['קטגוריה',r.category]];
- if(wa){fields.push(['שם התבנית',eventCostTemplateNameFIX61_(r)],['סיווג הודעה',waLogCategoryLabelF59_(r.templateCategory||r.messageCategory)],['מצב העלות','עלות משוערת']);}
- else{fields.push(['תיאור',r.description],['מצב ההוצאה',r.costType==='EXPECTED'?'צפויה':'בפועל'],['הערות',r.notes||'—']);}
- modal(`<div class="cost-detail-fix60 cost-detail-fix61" dir="rtl"><h2>${wa?'פרטי עלות WhatsApp':'פרטי הוצאה'}</h2><dl>${fields.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${esc(v??'')}</dd></div>`).join('')}</dl><div class="cost-detail-amount-fix61"><span>סכום ${wa?'משוער':'ההוצאה'}</span><strong>${moneyZ58_(r.amount)}</strong></div><button type="button" class="ui-btn-z58d4 secondary" onclick="closeModal()">סגירה</button></div>`);
+ if(wa&&r.pendingCountQ142)fields.push(['הודעות עם אומדן מחושב',r.quantity-r.pendingCountQ142],['הודעות ממתינות לחישוב',r.pendingCountQ142]);
+ if(wa){fields.push(['כמות הודעות',r.quantity],['סוג הודעה',r.description],['שם התבנית',eventCostTemplateNameFIX61_(r)],['מצב העלות',r.pendingCountQ142?'ממתינה להשלמת חישוב עבור '+r.pendingCountQ142+' הודעות':'עלות משוערת']);}
+ if(wa&&admin)fields.push(['סיווג הודעה',waLogCategoryLabelF59_(r.templateCategory||r.messageCategory)]);
+ if(wa&&admin){const audit=eventCostsDataZ58?.costAuditQ143?.find(x=>String(x.eventId)===String(r.eventId)&&x.date===r.date&&x.purpose===r.purpose);if(audit)fields.push(['רשומות ביומן לפי תאריך יצירת ההודעה',audit.journalRows],['הודעות PROD ייחודיות',audit.uniqueMessages],['שליחות PROD ממסך בדיקה — כלולות בעלויות',audit.testScreenProductionRows],['רשומות ללא מזהה הודעה',audit.missingMessageIds],['רשומות כפולות של אותו מזהה',audit.duplicateRows],['רשומות בסביבת TEST — מוחרגות',audit.testEnvironmentRows],['רשומות ללא סביבה מזוהה — מוחרגות',audit.unknownEnvironmentRows],['הודעות עם תיעוד מסירה או קריאה ביום זה',audit.deliveredOnDate]);}
+ if(!wa){fields.push(['תיאור',r.description],['מצב ההוצאה',r.costType==='EXPECTED'?'צפויה':'בפועל'],['הערות',r.notes||'—']);}
+ if(wa&&r.pricingReasonsQ145?.length){const reasons=new Map();r.pricingReasonsQ145.forEach(x=>reasons.set(eventCostReasonLabelQ146_(x),(reasons.get(eventCostReasonLabelQ146_(x))||0)+1));for(const [text,count] of reasons)fields.push(['סיבת חוסר אומדן · '+count+' הודעות',text]);}
+ modal(`<div class="cost-detail-fix60 cost-detail-fix61" dir="rtl"><h2>${wa?'פרטי עלות WhatsApp':'פרטי הוצאה'}</h2><dl>${fields.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${esc(v??'')}</dd></div>`).join('')}</dl><div class="cost-detail-amount-fix61"><span>סכום ${wa?'משוער':'ההוצאה'}</span><strong>${wa?eventCostAmountQ142_(r):moneyZ58_(r.amount)}</strong></div><button type="button" class="ui-btn-z58d4 secondary" onclick="closeModal()">סגירה</button></div>`);
 }
 
 document.addEventListener('dblclick',e=>{const tr=e.target?.closest?.('#eventCostsBodyZ58 tr[data-cost-detail-id]');if(!tr||e.target.closest('button'))return;const r=eventCostUnifiedRowsZ58A_().find(x=>String(x.id)===String(tr.dataset.costDetailId));if(r)eventCostDetailsFIX61_(r);});
@@ -4067,20 +4453,114 @@ let waMonitorSnapshotQ17=null,waMonitorSerialQ17=0;
 let waRecoveryCheckBusyQ22=false,waRecoveryResumeBusyQ27=false;
 function waCloseInterruptedQ22_(){document.querySelector('#waInterruptedQ22')?.remove();}
 function waInterruptedHtmlQ22_(data){
+  const production=Array.isArray(data?.productionItemsQ110)?data.productionItemsQ110:[];
   const items=Array.isArray(data?.items)?data.items:[];
-  return `<section class="wa-interrupted-panel-q22" role="dialog" aria-modal="true" aria-labelledby="waInterruptedTitleQ22" dir="rtl"><h2 id="waInterruptedTitleQ22">${items.length?'נמצאה שליחה שטרם הושלמה':'בדיקת שליחות שלא הושלמו'}</h2><p>ייתכן שהחלון נסגר, שהתקשורת נותקה או שהתהליך עדיין פועל בחלון אחר. פתיחת המערכת אינה שולחת הודעות.</p>${data?.unavailable?'<p role="alert">לא ניתן לאמת חלק מרשומות השליחה. יש לפנות למנהל המערכת.</p>':''}${items.map(r=>`<article><h3>${esc(r.templateName||'שליחת בדיקה')} · ${esc(state.events.find(e=>String(e.id||e.eventId)===r.eventId)?.name||'אירוע')}</h3><p>נבחרו ${esc(r.total)} · התקבלו ב־Meta ${esc(r.accepted)} · נדחו ${esc(r.failed)}</p><p><strong>${esc(r.remaining)} הודעות טרם הועברו לטיפול.</strong>${r.uncertain?` עוד ${esc(r.uncertain)} הודעות עדיין בטיפול או שתוצאתן אינה ודאית.`:''}</p>${r.retryPendingQ51?`<p><strong>${esc(r.retryPendingQ51)} הודעות ממתינות לניסיון חוזר לאחר דחיית קצב.</strong></p>`:''}${r.reason?`<p role="status">${esc(r.reason)}</p>`:''}${r.requiresSettlementQ46?`<button type="button" class="primary" data-settle-q46="${esc(r.id)}" data-event-q46="${esc(r.eventId)}">אמת וסדר תוצאות ללא שליחה</button>`:''}<button type="button" class="primary" data-resume-q22="${esc(r.id)}" data-event-q22="${esc(r.eventId)}" ${r.canResume?'':'disabled'}>${r.canResume?(r.retryPendingQ51?`המשך טיפול ב־${esc(r.retryPendingQ51)} הודעות ממתינות${r.remaining?` והשלמת ${esc(r.remaining)} שנותרו`:''}`:`המשך עם ${esc(r.remaining)} ההודעות שנותרו`):'המשך השליחה חסום עד לאימות'}</button></article>`).join('')}<p class="muted">הודעות שכבר הועברו לטיפול אינן נשלחות שוב. „התקבלו ב־Meta” אינו אישור מסירה לטלפון.</p><p class="muted">״אמת וסדר״ אינו שולח הודעות. רק לחיצה נפרדת על המשך זמין תשלח את היתרה ותפתח חלון התקדמות.</p><p id="waInterruptedStatusQ22" role="status" aria-live="polite"></p><div class="actions"><button type="button" data-refresh-q22>בדוק שוב</button><button type="button" data-close-q22>סגור לעת עתה</button></div></section>`;
+  return `<section class="wa-interrupted-panel-q22" role="dialog" aria-modal="true" aria-labelledby="waInterruptedTitleQ22" dir="rtl"><h2 id="waInterruptedTitleQ22">${items.length||production.length?'נמצאה שליחה שטרם הושלמה':'בדיקת שליחות שלא הושלמו'}</h2><p>ייתכן שהחלון נסגר, שהתקשורת נותקה או שהתהליך עדיין פועל בחלון אחר. פתיחת המערכת אינה שולחת הודעות.</p>${data?.unavailable?'<p role="alert">לא ניתן לאמת חלק מרשומות השליחה. יש לפנות למנהל המערכת.</p>':''}${production.map(r=>`<article><h3>שליחה רגילה · ${esc(state.events.find(e=>String(e.id||e.eventId)===r.eventId)?.name||'אירוע')}</h3><p>נבחרו ${esc(r.total)}${r.completed!==null?` · טופלו ${esc(r.completed)}`:''}</p>${r.remaining!==null?`<p><strong>${esc(r.remaining)} הודעות טרם הועברו לטיפול.</strong></p>`:''}${r.reason?`<p role="status">${esc(r.reason)}</p>`:''}${r.canFinish?`<button type="button" class="primary" data-finish-prod-q110="${esc(r.id)}" data-event-prod-q110="${esc(r.eventId)}">אמת וסיים מסע ללא שליחה</button>`:`<button type="button" class="primary" data-resume-prod-q110="${esc(r.id)}" data-event-prod-q110="${esc(r.eventId)}" ${r.canResume?'':'disabled'}>${r.canResume?`המשך עם ${esc(r.remaining)} ההודעות שנותרו`:'המשך השליחה חסום עד לאימות'}</button>`}</article>`).join('')}${items.map(r=>`<article><h3>${esc(r.templateName||'שליחת בדיקה')} · ${esc(state.events.find(e=>String(e.id||e.eventId)===r.eventId)?.name||'אירוע')}</h3><p>נבחרו ${esc(r.total)} · התקבלו ב־Meta ${esc(r.accepted)} · נדחו ${esc(r.failed)}</p><p><strong>${esc(r.remaining)} הודעות טרם הועברו לטיפול.</strong>${r.uncertain?` עוד ${esc(r.uncertain)} הודעות עדיין בטיפול או שתוצאתן אינה ודאית.`:''}</p>${r.retryPendingQ51?`<p><strong>${esc(r.retryPendingQ51)} הודעות ממתינות לניסיון חוזר לאחר דחיית קצב.</strong></p>`:''}${r.reason?`<p role="status">${esc(r.reason)}</p>`:''}${r.requiresSettlementQ46?`<button type="button" class="primary" data-settle-q46="${esc(r.id)}" data-event-q46="${esc(r.eventId)}">אמת וסדר תוצאות ללא שליחה</button>`:''}<button type="button" class="primary" data-resume-q22="${esc(r.id)}" data-event-q22="${esc(r.eventId)}" ${r.canResume?'':'disabled'}>${r.canResume?(r.retryPendingQ51?`המשך טיפול ב־${esc(r.retryPendingQ51)} הודעות ממתינות${r.remaining?` והשלמת ${esc(r.remaining)} שנותרו`:''}`:`המשך עם ${esc(r.remaining)} ההודעות שנותרו`):'המשך השליחה חסום עד לאימות'}</button></article>`).join('')}<p class="muted">הודעות שכבר הועברו לטיפול אינן נשלחות שוב. „התקבלו ב־Meta” אינו אישור מסירה לטלפון.</p><p class="muted">״אמת וסדר״ אינו שולח הודעות. רק לחיצה נפרדת על המשך זמין תשלח את היתרה ותפתח חלון התקדמות.</p><p id="waInterruptedStatusQ22" role="status" aria-live="polite"></p><div class="actions"><button type="button" data-refresh-q22>בדוק שוב</button><button type="button" data-close-q22>סגור לעת עתה</button></div></section>`;
 }
+// A recovery-button click is the send approval. Preparation opens progress immediately.
+async function waResumeProductionDirectQ111_(resume){
+  const token=state.session?.token,eid=String(state.activeEventId),ownerId=String(state.session?.id||state.session?.userId||'');
+  if(!['Admin','EventManager'].includes(state.session?.role)||resume?.sessionTokenQ110!==token||resume.eventId!==eid||!resume.safe||!Array.isArray(resume.remainingGuestIds)||resume.remainingGuestIds.length!==resume.remainingCount||resume.remainingCount<1||new Set(resume.remainingGuestIds).size!==resume.remainingCount)throw Error('פרטי חידוש השליחה אינם תקינים');
+  const totals=resume.resumeTotalsQ112;
+  if(!totals||totals.total!==resume.plannedCount||totals.attempted!==resume.completedCount||!Number.isSafeInteger(totals.accepted)||!Number.isSafeInteger(totals.failed)||totals.accepted<0||totals.failed<0||totals.accepted+totals.failed!==totals.attempted||totals.attempted+resume.remainingCount!==totals.total||totals.messageEvidenceQ48?.available!==true||!Array.isArray(totals.messageEvidenceQ48.messageIds)||totals.messageEvidenceQ48.messageIds.length!==totals.accepted||new Set(totals.messageEvidenceQ48.messageIds).size!==totals.accepted)throw Error('לא התקבלו מונים מצטברים מאומתים; יש לבדוק שוב את המסע');
+  const current=()=>state.session?.token===token&&String(state.activeEventId)===eid;
+  const box=document.createElement('div');box.innerHTML='<progress max="100" value="0"></progress><span>מכין המשך שליחה…</span>';
+  box.waProgressQ33=waProgressStateQ33_(resume.remainingCount,0,0,0,false);
+  const stop=document.createElement('button'),journal=document.createElement('button');
+  journal.onclick=()=>showPage('whatsappLog');
+  let stopped=false,requestStop=null,done=0,ok=0,failed=0,uncertain=false,dispatchAttempted=false;
+  const started=performance.now(),progress=waBulkProgressWindowZ22_(box,stop,journal,'המשך שליחת WhatsApp',resume.remainingCount,'PRODUCTION',false,totals);
+  stop.onclick=()=>{if(stopped)return;stopped=true;stop.disabled=true;stop.setAttribute('aria-busy','true');progress.setStopStateQ25('pending','מבקש עצירה…');if(requestStop)void requestStop();};
+  try{
+    // Preparation and every revalidation remain read-only with respect to dispatch.
+    const prepared=await API.request('prepareWhatsAppSendF14Z9',{eventId:eid,templateId:resume.templateId});
+    const settings=await API.request('getWhatsAppDispatchSettingsFIX67',{});
+    if(!current())throw Error('המשתמש או האירוע השתנו; לא מתחילים מנה נוספת');
+    const size=Number(settings?.batchSize),concurrency=Number(settings?.concurrency),pause=Number(settings?.pauseSeconds??5);
+    if(settings?.productionLifecycleReadyQ107!==true||!Number.isSafeInteger(size)||size<1||size>20||!Number.isSafeInteger(concurrency)||concurrency<1||concurrency>5||!Number.isSafeInteger(pause)||pause<0||pause>60)throw Error('הגדרות השליחה אינן זמינות או אינן תקינות');
+    const fresh=await API.request('previewWhatsAppCampaignResumeFIX59',{eventId:eid});
+    if(!current()||!fresh?.safe||fresh.campaignId!==resume.campaignId||fresh.templateId!==resume.templateId||fresh.mediaId!==resume.mediaId||fresh.completedCount!==resume.completedCount||fresh.remainingCount!==resume.remainingCount||JSON.stringify(fresh.remainingGuestIds)!==JSON.stringify(resume.remainingGuestIds))throw Error('מצב המסע השתנה; יש לפתוח שוב את חלון ההתאוששות');
+    const messageIds=new Set(totals.messageEvidenceQ48.messageIds),total=resume.remainingCount;
+    for(let offset=0,batch=1;offset<total&&!stopped;offset+=size,batch++){
+      if(!current())throw Error('המשתמש או האירוע השתנו; לא מתחילים מנה נוספת');
+      const chunk=resume.remainingGuestIds.slice(offset,offset+size),baseline={done,ok,failed},priorIds=new Set(messageIds);
+      dispatchAttempted=true;
+      const result=await waRunProductionLogicalQ106_({eventId:eid,campaignId:resume.campaignId,progressId:'prod'+Date.now().toString(36)+Math.random().toString(36).slice(2,14),items:chunk.map(guestId=>({guestId})),templateId:resume.templateId,mediaId:resume.mediaId,costEstimate:prepared.costEstimate},{
+        ownerId,current,
+        onProgress:s=>{
+          if(s.results.some(r=>r.accepted&&priorIds.has(r.messageId)))throw Error('מזהה הודעה כפול בין מנות; החידוש נעצר');
+          done=baseline.done+s.processed;ok=baseline.ok+s.accepted;failed=baseline.failed+s.failed;
+          box.waProgressQ33=waProgressStateQ33_(total,done,ok,failed,s.phase==='ERROR');
+          box.querySelector('progress').value=Math.round(done*100/total);box.querySelector('span').textContent=`טופלו ${done} מתוך ${total}`;
+          s.results.filter(r=>r.accepted).forEach(r=>progress.addMessageId(r.messageId));
+        },
+        onStopReady:fn=>{requestStop=fn;if(fn&&stopped)void fn();},onStopState:(phase,message)=>progress.setStopStateQ25(phase,message)
+      });
+      if(result.phase==='ERROR'||result.uncertain||result.journalCommitted!==true)throw Error(result.error||'תוצאת המנה אינה ודאית; אין לשלוח שוב');
+      result.results.filter(r=>r.accepted).forEach(r=>messageIds.add(r.messageId));
+      stopped=stopped||result.stopped===true;
+      dispatchAttempted=false;
+      if(done<total&&!stopped)await waPauseBetweenBatchesF14Z7_(box,done,total,batch+1,Math.ceil(total/size),started,pause*1000,()=>!stopped&&current());
+    }
+    if(!current())throw Error('המשתמש או האירוע השתנו; המצב נשמר בשרת');
+    if(stopped){
+      const closed=await API.request('stopProductionCampaignQ104',{eventId:eid,campaignId:resume.campaignId,expectedProcessed:resume.completedCount+done});
+      if(closed?.stopped!==true||closed.sent!==0||closed.processed!==resume.completedCount+done||closed.canceled!==total-done||closed.total!==resume.plannedCount)throw Error('סיום העצירה לא אומת');
+      progress.setStopStateQ25('accepted','השליחה נעצרה לבקשתך; היתרה בוטלה ללא שליחה.');
+    }else{
+      if(done!==total)throw Error('החידוש לא הושלם; אין לפתוח מסע חדש');
+      const closed=await API.request('finishWhatsAppCampaignFIX59',{campaignId:resume.campaignId},{timeoutMs:30000});
+      if(closed?.finished!==true)throw Error('סיום המסע לא אומת; יש לבדוק ביומן');
+    }
+    box.waProgressQ33=waProgressStateQ33_(total,done,ok,failed,false);
+    progress.finish(stopped?`נעצר לאחר ${done} מתוך ${total}`:`טופלו ${done} מתוך ${total}`,!!(failed||stopped),false,{canceled:stopped});
+  }catch(e){
+    uncertain=dispatchAttempted;
+    box.waProgressQ33=waProgressStateQ33_(resume.remainingCount,done,ok,failed,uncertain);
+    progress.finish('המשך השליחה נעצר: '+String(e?.message||e)+'. המצב נשמר בשרת; אין לשלוח שוב לפני בדיקה.',true);
+  }finally{stop.disabled=true;requestStop=null;}
+}
+
 async function waOfferInterruptedQ22_(manual=false){
   if(waRecoveryCheckBusyQ22||waRecoveryResumeBusyQ27||!['Admin','EventManager'].includes(state.session?.role))return;
   waRecoveryCheckBusyQ22=true;const token=state.session.token;
   try{
-    const data=await API.request('listWhatsAppRecoveryQ22',{});
+    const checks=await Promise.allSettled([API.request('listWhatsAppRecoveryQ22',{}),API.request('listWhatsAppProductionRecoveryQ110',{})]);
+    const test=checks[0].status==='fulfilled'?checks[0].value:null,production=checks[1].status==='fulfilled'?checks[1].value:null;
+    const data={items:Array.isArray(test?.items)?test.items:[],productionItemsQ110:Array.isArray(production?.items)?production.items:[],unavailable:!test||!production||!!test.unavailable||!!production.unavailable};
     if(state.session?.token!==token)return;
     if(!data||!Array.isArray(data.items))throw new Error('לא התקבלה תשובה תקינה לבדיקת השליחות');
-    if(!data.items.length&&!data.unavailable){waCloseInterruptedQ22_();if(manual)showToast('לא נמצאה שליחת TEST פתוחה שתועדה מגרסה Q22.','success');return;}
+    if(!data.items.length&&!data.productionItemsQ110.length&&!data.unavailable){waCloseInterruptedQ22_();if(manual)showToast('לא נמצאה שליחת WhatsApp פתוחה.','success');return;}
     waCloseInterruptedQ22_();const root=document.createElement('div');root.id='waInterruptedQ22';root.className='wa-interrupted-q22';root.innerHTML=waInterruptedHtmlQ22_(data);document.body.appendChild(root);
     root.querySelector('[data-close-q22]').onclick=()=>{if(!waRecoveryResumeBusyQ27)waCloseInterruptedQ22_();};
     root.querySelector('[data-refresh-q22]').onclick=()=>waOfferInterruptedQ22_(true);
+    root.querySelectorAll('[data-resume-prod-q110],[data-finish-prod-q110]').forEach(button=>button.onclick=async()=>{
+      if(waRecoveryResumeBusyQ27||button.disabled)return;
+      const finishing=!!button.dataset.finishProdQ110,id=button.dataset.resumeProdQ110||button.dataset.finishProdQ110,eid=button.dataset.eventProdQ110;
+      const expected=data.productionItemsQ110.find(r=>r.id===id&&r.eventId===eid);
+      if(!expected||(finishing?!expected.canFinish:!expected.canResume))return;
+      waRecoveryResumeBusyQ27=true;button.disabled=true;
+      const oldTextQ111=button.textContent;button.setAttribute?.('aria-busy','true');
+      button.innerHTML='<span class="seating-spinner-v171" aria-hidden="true"></span> מכין המשך שליחה…';
+      const output=root.querySelector('#waInterruptedStatusQ22');output.textContent='מאמת מצב מסע מול השרת…';
+      try{
+        const fresh=await API.request('previewWhatsAppCampaignResumeFIX59',{eventId:eid});
+        if(state.session?.token!==token)return;
+        if(!fresh?.safe||fresh.campaignId!==id||fresh.completedCount!==expected.completed||fresh.remainingCount!==expected.remaining||!Array.isArray(fresh.remainingGuestIds)||fresh.remainingGuestIds.length!==fresh.remainingCount)throw Error('מצב המסע השתנה; לחץ ״בדוק שוב״');
+        if(finishing){
+          if(fresh.remainingCount!==0)throw Error('עדיין נותרו הודעות; אין לסגור את המסע');
+          const done=await API.request('finishWhatsAppCampaignFIX59',{campaignId:id});
+          if(done?.finished!==true)throw Error('סיום המסע לא אומת');
+          if(state.session?.token===token){waCloseInterruptedQ22_();showToast('המסע הסתיים ללא שליחה נוספת.','success');}
+        }else{
+          if(!state.events.some(e=>String(e.id||e.eventId)===eid))throw Error('האירוע אינו זמין');
+          setCurrentEvent_(eid);
+          waCloseInterruptedQ22_();
+          await waResumeProductionDirectQ111_({...fresh,eventId:eid,sessionTokenQ110:token});
+        }
+      }catch(e){if(state.session?.token===token&&root.isConnected)output.textContent=String(e?.message||e);}
+      finally{waRecoveryResumeBusyQ27=false;if(root.isConnected){button.disabled=false;button.textContent=oldTextQ111;button.setAttribute?.('aria-busy','false');}}
+    });
     root.querySelectorAll('[data-settle-q46]').forEach(button=>button.onclick=async()=>{
       if(waRecoveryResumeBusyQ27||button.disabled||state.session?.role!=='Admin')return;
       const item=data.items.find(r=>r.id===button.dataset.settleQ46&&r.eventId===button.dataset.eventQ46);
@@ -4192,7 +4672,8 @@ function waMonitorLocalIssuesQ17_(eventId){
 function waMonitorRenderQ17_(r,local){
   const time=v=>{const d=new Date(v);return Number.isNaN(d.getTime())?'לא ידוע':d.toLocaleString('he-IL',{timeZone:'Asia/Jerusalem'});};
   const dur=v=>waFormatElapsedF14V_(Number(v)||0),safe=v=>esc(String(v??''));
-  const box=(title,body)=>'<section class="admin-section"><h2>'+title+'</h2>'+body+'</section>';
+  const mainQ138=new Set(['תמונת מצב','מה דורש טיפול','מנגנון שליחה פעיל','רכיב שליחה חסר','ניסיונות שאורכבו ללא תוצאה ודאית','אצוות שליחה רגילה שדורשות בדיקה','ניסיון שנכשל לפני שליחה','הסדרת אצווה עם תוצאות ידועות','עיבוד אישורי מסירה']);
+  const box=(title,body)=>(mainQ138.has(title)||body.includes('<button')||title==='אצוות PROD ללא סיום מאומת')?'<section class="admin-section"><h2>'+title+'</h2>'+body+'</section>':'<details class="admin-section"><summary>'+title+'</summary>'+body+'</details>';
   const table=(headers,rows)=>'<div style="overflow-x:auto"><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(cells=>'<tr>'+cells.map(v=>'<td>'+v+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
   const deliveryTimingQ24=t=>{
     if(!t)return '';
@@ -4202,11 +4683,19 @@ function waMonitorRenderQ17_(r,local){
     return '<h4>מדידות מסירה אוטומטיות</h4>'+table(['עד המסירה הראשונה שתועדה','עד מסירת כל ההודעות'],[[measured(t.firstDeliveryMs),all]])+'<p>'+safe(reasons[t.state]||'המדידה אינה זמינה.')+(t.confirmed!==null&&t.confirmed!==undefined?' אישורי מסירה: '+safe(t.confirmed)+' מתוך '+safe(t.selected)+'.':'')+'</p>'+(t.startedAt?'<p>תחילת המדידה בשרת: '+safe(time(t.startedAt))+'.</p>':'')+'<p class="muted">הזמנים משוערים מתחילת הטיפול במנה הראשונה בשרת, לפי אישורי המסירה של WhatsApp ובדיוק של כשנייה. הם כוללים את ההמתנות בין המנות. עדכון הדוח תלוי בהגעת האישורים ובסנכרון היומן. זמן לחיצה והכנת הממשק לפני בקשת המנה הראשונה אינם כלולים.</p>';
   };
   const outcome={RETRY_WAIT_Q51:'ממתינה לניסיון חוזר',COMPLETED:'המנה הושלמה',STOPPED:'המנה נעצרה',BLOCKED:'נחסם לפני שליחה',ERROR:'שגיאה — יש לבדוק תוצאות'};
-  let html='<p>עודכן: '+safe(time(r.checkedAt))+' · אירוע: '+safe(r.eventId)+' · גרסת שרת: '+safe(r.serverVersion)+'</p>';
+  const recoveryKnownQ138=r.sections?.recovery==='ok',heldQ138=(r.archivedProductionQ102||[]).reduce((n,x)=>n+(Number(x.heldGuestCount)||0),0);
+  let html=box('תמונת מצב','<p><strong>'+(recoveryKnownQ138?(r.productionWorkersQ106?.length?'מתבצעת שליחה':r.globalPendingKeys?'יש ניסיון שליחה שדורש טיפול':heldQ138?'יש רשומות חסומות מניסיון ישן':'לא נמצאה חסימת התאוששות פעילה'):'מצב ההתאוששות אינו זמין')+'</strong></p><p>'+(heldQ138?'נמצאו '+safe(heldQ138)+' שיוכים לרשומות חסומות. פתח את פירוט הארכיון למטה כדי לראות את המוזמנים ולהשוות ליומן.':'בדוק את ההתראות לפני התחלת שליחה.')+'</p>');
+  html+='<p>עודכן: '+safe(time(r.checkedAt))+' · אירוע: '+safe(r.eventId)+' · גרסת שרת: '+safe(r.serverVersion)+'</p>';
   const unavailable=Object.entries(r.sections||{}).filter(([k,v])=>v!=='ok').map(([k])=>({journal:'יומן',runs:'אצוות',recovery:'התאוששות'}[k]||k));
   if(unavailable.length)html+='<p class="error" role="alert">נתונים לא זמינים: '+safe(unavailable.join(', '))+'. אין לפרש נתונים חסרים כאפס תקלות.</p>';
-  html+=box('מה דורש טיפול',r.sections?.recovery==='ok'?'<p><strong>מפתחות חסימה פעילים במערכת: '+safe(r.globalPendingKeys)+'</strong></p>'+(r.globalPendingKeys?'<p class="error">קיימת חסימת התאוששות. יש לפתוח את מסך הבדיקות ולבצע בדיקת מצב ללא שליחה. גם חסימה מאירוע אחר יכולה למנוע שליחה.</p>':'<p>לא נמצאה חסימה פעילה בזמן הבדיקה. הדבר אינו פותר תוצאה לא ידועה מניסיון קודם.</p>'):'<p>מצב החסימות אינו ידוע.</p>');
+  if(r.productionEngineReadyQ106===false)html+=box('רכיב שליחה חסר','<p class="error">יש להוסיף לפרויקט את WhatsAppProductionEngineQ106.gs ולעדכן את הפריסה. אין להתחיל שליחה עד שהרכיב זמין.</p>');
+  if(r.productionWorkersQ106?.length)html+=box('מנגנון שליחה פעיל',table(['מסע','מנת התקדמות','תחילת טיפול','נבחרו למנה'],r.productionWorkersQ106.map(x=>[safe(x.campaignId||'לא זמין'),safe(x.progressId||'לא זמין'),safe(time(x.createdAt)),safe(x.requested??'לא זמין')]))+'<p>אין לסגור מסע או לשחרר חסימות בזמן שהמנגנון פעיל. בקשת עצירה נמסרת דרך מסך השליחה.</p>');
+  html+=box('מה דורש טיפול',r.sections?.recovery==='ok'?'<p><strong>מפתחות חסימה פעילים במערכת: '+safe(r.globalPendingKeys)+'</strong></p>'+(r.globalPendingKeys?'<p class="error">קיימת חסימת התאוששות. יש לבדוק את פרטי האצוות בדוח זה לפני כל שליחה נוספת. גם חסימה מאירוע אחר יכולה למנוע שליחה.</p>':'<p>לא נמצאה חסימת מנה פעילה בזמן הבדיקה. חסימות ארכיון, אם קיימות, מוצגות בנפרד למטה.</p>'):'<p>מצב החסימות אינו ידוע.</p>');
+  if(r.productionPendingQ100?.batches?.length)html+=box('אצוות PROD ללא סיום מאומת',table(['אצווה','נוצרה','סך הכול','תוצאות שנשמרו'],r.productionPendingQ100.batches.map(x=>[safe(x.batchId),safe(time(x.createdAt)),safe(x.total),safe(Object.entries(x.counts||{}).map(([key,n])=>key+': '+n).join(' · '))]))+'<p>DISPATCHING מציין שאין תוצאה סופית שמורה; אין להסיק מכך שההודעה לא נשלחה.</p>');
   if(r.pairRetryQ51?.items?.length)html+=box('ניסיונות חוזרים שמורים — TEST',table(['שליחה','ממתינות','בביצוע / לא ודאי','ממתינות לשמירת תוצאה','אושרו לאחר חזרה','נדחו סופית','ניסיונות'],r.pairRetryQ51.items.map(x=>[safe(x.id||'לא זמין'),safe(x.waiting??'?'),safe(x.inFlight??'?'),safe(x.staged??'?'),safe(x.accepted??'?'),safe(x.failed??'?'),safe(x.attempts??'?')])));
+  if(r.archiveCandidateQ102)html+=box('סגירת ניסיון ללא תוצאה ודאית','<p>נמצא מסע של 40 רשומות: 20 טופלו בתיעוד המסע, ול־20 תוצאה לא ודאית. אפשר לשמור את כל נתוני הניסיון בארכיון ולסגור את המסע ללא שליחה. כל 40 רשומות המוזמנים מהמסע יישארו חסומות לשליחה רגילה למניעת כפילויות. בדיקה חדשה תתבצע ברשומות אחרות.</p><button type="button" class="secondary" id="waArchiveProductionQ102">ארכב וסגור ללא שליחה</button>');
+  if(r.stoppableCampaignQ104)html+=box('סגירת מסע עם תוצאות מאומתות','<p>טופלו '+safe(r.stoppableCampaignQ104.processed)+' מתוך '+safe(r.stoppableCampaignQ104.total)+'. ניתן לבטל את המשך המסע ולסגור אותו לאחר אימות נוסף, ללא שליחה. התיעוד יישמר; לא תיווצר יתרה להמשך אוטומטי.</p><button type="button" class="secondary" id="waStopKnownCampaignQ104">בטל המשך וסגור ללא שליחה</button>');
+  if(r.archivedProductionQ102?.length)html+=box('ניסיונות שאורכבו ללא תוצאה ודאית',table(['אצווה','מועד ארכוב','רשומות חסומות לשליחה רגילה'],r.archivedProductionQ102.map(x=>[safe(x.batchId),safe(time(x.archivedAt)),safe(x.heldGuestCount)+' <button type="button" class="secondary" data-archive-q138="'+safe(x.batchId)+'">הצג מוזמנים והשוואה ליומן</button><div data-archive-result-q138="'+safe(x.batchId)+'" aria-live="polite"></div>']))+'<p>הארכוב אינו אישור שההודעות התקבלו או שלא נשלחו. אין ניסיון חוזר אוטומטי לרשומות אלו.</p>');
   if(r.pending?.length)html+=box('אצוות פעילות באירוע',table(['אצווה','נוצרה','מצבים שנשמרו'],r.pending.map(p=>[safe(p.batchId),safe(time(p.createdAt)),safe(Object.entries(p.counts||{}).map(([k,v])=>k+': '+v).join(' · ')+(p.retryQ50?.phase==='WAITING'?' · '+p.retryQ50.pending+' ממתינות לניסיון חוזר':''))])));
   html+=box('מצב הודעות בטווח היומן',r.sections?.journal==='ok'?'<p>נבדקו '+safe(r.scannedRows)+' רשומות אחרונות במערכת; '+safe(r.eventRows)+' שייכות לאירוע הנבחר. תוצאות לא ידועות עשויות להיות גם מניסיונות שכבר הופסקו.</p>'+table(['מצב','כמות'],Object.entries(r.statuses||{}).map(([k,v])=>[safe(k),safe(v)])):'<p>היומן אינו זמין.</p>');
   html+=box('שגיאות ותוצאות לא ודאיות ביומן',r.errors?.length?table(['זמן','אצווה','מצב','HTTP / קוד','סיבה ומה לעשות'],r.errors.map(e=>[safe(time(e.at)),safe(e.batchId),safe(e.status),safe(e.httpStatus+' / '+(e.errorCode||'לא נשמר')),safe(e.errorMessage||'לא נשמר פירוט')+'<br>'+safe(e.status==='UNKNOWN'?'אין אישור לתוצאת השליחה; יש לבדוק התאוששות ולא לבצע ניסיון חוזר אוטומטי.':'בדוק את פרטי השגיאה ביומן לפני החלטה על ניסיון נוסף.')])):'<p>לא נמצאו שגיאות בטווח שנטען, או שהיומן אינו זמין.</p>');
@@ -4222,7 +4711,7 @@ function waMonitorRenderQ17_(r,local){
   if(r.beforeDispatchQ29?.candidate)html+=box('ניסיון שנכשל לפני שליחה','<p>נמצא ניסיון הבדיקה של 40 הודעות שנכשל בגלל רכיב שרת חסר, לפני תחילת השליחה. אפשר לסגור אותו לאחר אימות נוסף בשרת. ההיסטוריה תישמר בגיבוי ולא יישלחו הודעות.</p><button type="button" class="primary" id="waCloseBeforeDispatchQ29" '+(r.runtimeQ29?.ready?'':'disabled')+'>סגור את הניסיון שנכשל ללא שליחה</button><p id="waCloseBeforeDispatchStatusQ29" role="status" aria-live="polite"></p>');
   if(r.knownPartialQ30?.items?.length)html+=box('הסדרת אצווה עם תוצאות ידועות',r.knownPartialQ30.items.map(x=>'<p>אושרו '+safe(x.accepted)+' · נדחו '+safe(x.failed)+' · טרם נשלחו '+safe(x.remaining)+'. ההסדרה שומרת גיבוי ומשחררת רק את ההודעות שלא נשלחו להמשך מפורש. אין כאן שליחת הודעות.</p><button type="button" class="primary" data-partial-q30="'+safe(x.id)+'">אמת תוצאות והסדר את היתרה ללא שליחה</button>').join('')+'<p id="waPartialStatusQ30" role="status" aria-live="polite"></p>');
   const kind={MONITOR_WRITE:'שמירת היסטוריית הניטור נכשלה',NETWORK:'כשל תקשורת',RESPONSE_BODY:'קריאת תשובה נכשלה',NON_JSON:'תשובה לא תקינה',API_ERROR:'השרת החזיר שגיאה',VERSION_MISMATCH:'אי־התאמת גרסאות'};
-  html+=box('כשלים שנצפו בדפדפן הזה',local===null?'<p>האחסון המקומי אינו זמין או אינו תקין; לא ניתן לבדוק כשלים קודמים בדפדפן הזה.</p>':local.length?table(['זמן','פעולה','סוג'],local.map(e=>[safe(time(e.at)),safe(e.action),safe(kind[e.kind]||e.kind)])):'<p>אין כשלים שמורים לאירוע זה בדפדפן הזה. התיעוד מקומי ומוגבל ל־20 הכשלים האחרונים.</p>');
+  html+=box('כשלים שנצפו בדפדפן הזה',local===null?'<p>האחסון המקומי אינו זמין או אינו תקין; לא ניתן לבדוק כשלים קודמים בדפדפן הזה.</p>':local.length?table(['זמן','פעולה','סוג','הסבר'],local.map(e=>[safe(time(e.at)),safe(e.action),safe(kind[e.kind]||e.kind),safe(e.detail||'לא נשמר הסבר בניסיון זה')])):'<p>אין כשלים שמורים לאירוע זה בדפדפן הזה. התיעוד מקומי ומוגבל ל־20 הכשלים האחרונים.</p>');
   if(typeof waTimingLocalRowsQ35_==='function'){const timingsQ35=waTimingReportQ35_(waTimingLocalRowsQ35_(r.eventId));if(timingsQ35.batches.length)html+=waTimingHtmlQ35_(timingsQ35);}
   const measuredQ44=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0?safe((v/1000).toFixed(2)+' שנ׳'):'לא נמדד';
   if(typeof waDeliveryTimingHtmlQ53_==='function'&&typeof waDeliveryTimingReportQ53_==='function')html+=waDeliveryTimingHtmlQ53_(waDeliveryTimingReportQ53_(r.eventId));
@@ -4231,6 +4720,14 @@ function waMonitorRenderQ17_(r,local){
     html+=box('תחזוקת אישורי מסירה','<p>מנגנוני תחזוקה זמינים לחשבון המבצע: '+safe(Number.isSafeInteger(health.triggerCount)?health.triggerCount:'לא זמין')+'</p><p>ריצת תחזוקה אחרונה: '+safe(stateLabel)+(run?' · '+safe(time(run.at))+' · רשומות תור שנוקו: '+safe(run.cleaned===null?'לא נמדד':run.cleaned):'')+'</p><p>התחזוקה מנקה אישורים שכבר עובדו. היא אינה שולחת הודעות.</p>');
   }
   if(r.deliveryProcessingQ45)html+=box('עיבוד אישורי מסירה','<p>אישורים בתור הקבלה: '+safe(r.deliveryProcessingQ45.queuedCallbacks)+' · '+safe(r.deliveryProcessingQ45.blockedByBatch===true?'העיבוד ממתין לסיום כתיבת אצווה':r.deliveryProcessingQ45.blockedByBatch===false?'אין חסימת עיבוד מצד אצווה':'מצב חסימה לא זמין')+(Number.isSafeInteger(r.deliveryProcessingQ45.awaitingCleanupQ54)?' · אישורים שכבר עובדו וממתינים לניקוי: '+safe(r.deliveryProcessingQ45.awaitingCleanupQ54):'')+'</p><p>ניתן לעבד אישורים שכבר התקבלו ללא שליחת הודעות וללא שחרור יתרה. הפעולה מטפלת בתור אישורי המסירה של המערכת; המונים כאן מסוננים לאירוע הנבחר.</p><button type="button" id="waDeliverySyncQ45" class="secondary">עדכן אישורי מסירה בלבד</button><p id="waDeliverySyncStatusQ45" role="status"></p>');
+  if(r.productionTimingQ105){
+    const d=v=>typeof v==='number'&&Number.isFinite(v)?safe((v/1000).toFixed(2)+' שנ׳'):'לא נמדד',samples=r.productionTimingQ105.samples||[];
+    html+=box('זמני טיפול בקבוצות שליחה רגילות',samples.length?table(['זמן','הודעות','מנגנון השליחה בשרת','Meta','שמירת יומן','אימות וסיום','הכנה תחת נעילה','קישורי RSVP'],samples.map(x=>[safe(time(x.at)),safe(x.count),...['totalMs','metaMs','waLogWriteMs','cleanupMs','reservationMs','rsvpMs'].map(k=>d(x.measurements?.[k]))]))+'<p class="muted">'+safe(r.productionTimingQ105.notice||'')+'</p>':'<p>אין כרגע מדידות זמינות של מסלול השליחה הרגיל. אין בכך מדד לביצועים או לתקינות.</p>');
+  }
+  if(r.productionLogicalTimingsQ106?.samples?.length){
+    const d=v=>typeof v==='number'&&Number.isFinite(v)?safe((v/1000).toFixed(2)+' שנ׳'):'לא נמדד';
+    html+=box('זמני מנות שליחה בשרת',table(['זמן','נבחרו למנה','טופלו','מצב','הכנה משותפת','כל המנה בשרת'],r.productionLogicalTimingsQ106.samples.map(x=>[safe(time(x.at)),safe(x.requested),safe(x.processed),safe(x.phase),d(x.timing?.preparationMs),d(x.timing?.totalMs)]))+'<p>'+safe(r.productionLogicalTimingsQ106.notice||'')+'</p>');
+  }
   const detailsQ44=(r.runs||[]).filter(x=>x.dispatchDetailsQ44?.scope==='REAL_TEST_DISPATCH');
   html+=box('פירוט שלבי השליחה האמיתית',detailsQ44.length?'<p>מדידות מנות בדיקה שנשמרו החל מ־Q44. יש להשוות עם מדידות המעבר בין המנות. נתון חסר אינו אפס.</p>'+detailsQ44.map(x=>{
     const d=x.dispatchDetailsQ44;
@@ -4243,6 +4740,34 @@ function waMonitorRenderQ17_(r,local){
   return html+'<p class="muted">'+safe(r.notice)+'</p>';
 }
 let waBeforeDispatchUiBusyQ29=false;
+let waStopKnownBusyQ104=false;
+async function waStopKnownCampaignUiQ104_(){
+  const c=waMonitorSnapshotQ17?.server?.stoppableCampaignQ104;
+  if(waStopKnownBusyQ104||state.session?.role!=='Admin'||!c||c.eventId!==String(state.activeEventId))return;
+  const token=state.session.token;waStopKnownBusyQ104=true;
+  try{
+    await guestBulkActionDialogQ80_({title:'ביטול המשך מסע שליחה',message:`טופלו ${c.processed} מתוך ${c.total}. המשך המסע יבוטל ללא שליחת ${c.canceled} ההודעות שנותרו. תיעוד המסע יישמר, ולא תוצע יתרה אוטומטית.`,confirmText:'בטל המשך וסגור ללא שליחה',successText:'המשך המסע בוטל ללא שליחה.',onConfirm:async()=>{
+      if(state.session?.token!==token||String(state.activeEventId)!==c.eventId)throw Error('האירוע או ההתחברות השתנו');
+      const r=await API.request('stopProductionCampaignQ104',{eventId:c.eventId,campaignId:c.campaignId,expectedProcessed:c.processed});
+      if(r?.stopped!==true||r.sent!==0||r.processed!==c.processed||r.canceled!==c.canceled)throw Error('סגירת המסע לא אומתה; יש לרענן ניטור');
+    }});
+    if(state.session?.token===token&&String(state.activeEventId)===c.eventId)await loadWhatsAppMonitorQ17_();
+  }finally{waStopKnownBusyQ104=false;}
+}
+let waArchiveUiBusyQ102=false;
+async function waArchiveProductionUiQ102_(){
+  const c=waMonitorSnapshotQ17?.server?.archiveCandidateQ102;
+  if(waArchiveUiBusyQ102||state.session?.role!=='Admin'||!c||c.eventId!==String(state.activeEventId))return;
+  const token=state.session.token;waArchiveUiBusyQ102=true;
+  try{
+    await guestBulkActionDialogQ80_({title:'ארכוב ניסיון שליחה לא ודאי',message:'יישמר גיבוי מאומת וכל 40 רשומות המוזמנים מהניסיון יישארו חסומות לשליחה רגילה. המסע ייסגר ללא שליחה וללא סימון שהושלם. אישורי קבלה שלא ניתן לשייך יישארו שמורים. לבדיקה חדשה יהיה צורך ברשומות אחרות.',confirmText:'ארכב וסגור ללא שליחה',successText:'הניסיון אורכב ללא שליחה. רשומותיו נשארו חסומות לשליחה רגילה.',onConfirm:async()=>{
+      if(state.session?.token!==token||String(state.activeEventId)!==c.eventId)throw Error('האירוע או ההתחברות השתנו');
+      const r=await API.request('archiveUnresolvedProductionQ102',{eventId:c.eventId,batchId:c.batchId,checksum:c.checksum,acknowledgement:'ARCHIVE_UNKNOWN_KEEP_GUEST_HOLD_NO_RESEND'});
+      if(r?.archived!==true||r.sent!==0||r.heldGuestCount!==40)throw Error('הארכוב לא אומת; יש לרענן ניטור ללא שליחה');
+    }});
+    if(state.session?.token===token&&String(state.activeEventId)===c.eventId)await loadWhatsAppMonitorQ17_();
+  }finally{waArchiveUiBusyQ102=false;}
+}
 async function waCloseBeforeDispatchUiQ29_(button){
   const candidate=waMonitorSnapshotQ17?.server?.beforeDispatchQ29?.candidate;
   if(waBeforeDispatchUiBusyQ29||button.disabled||state.session?.role!=='Admin'||!candidate||candidate.eventId!==String(state.activeEventId)||!waMonitorSnapshotQ17?.server?.runtimeQ29?.ready)return;
@@ -4293,6 +4818,10 @@ async function waDeliverySyncUiQ45_(button){
 }
 document.addEventListener('click',e=>{
   if(state.session?.role!=='Admin')return;
+  const archiveQ138=e.target?.closest?.('[data-archive-q138]');if(archiveQ138)void waArchiveInspectUiQ138_(archiveQ138);
+  const reviewQ139=e.target?.closest?.('[data-review-archive-q139]');if(reviewQ139)void waArchiveReleaseUiQ139_(reviewQ139);
+  if(e.target?.closest?.('#waStopKnownCampaignQ104'))void waStopKnownCampaignUiQ104_();
+  if(e.target?.closest?.('#waArchiveProductionQ102'))void waArchiveProductionUiQ102_();
   const syncQ45=e.target?.closest?.('#waDeliverySyncQ45');if(syncQ45)void waDeliverySyncUiQ45_(syncQ45);
   const partialQ30=e.target?.closest?.('[data-partial-q30]');if(partialQ30)void waResolvePartialUiQ30_(partialQ30);
   const closeBeforeQ29=e.target?.closest?.('#waCloseBeforeDispatchQ29');if(closeBeforeQ29)void waCloseBeforeDispatchUiQ29_(closeBeforeQ29);
@@ -4305,3 +4834,70 @@ document.addEventListener('click',e=>{
 });
 
 if(typeof sessionActivityInstallQ31_==='function')sessionActivityInstallQ31_();
+
+function eventCostHighlightColumnQ134_(){
+ const table=document.querySelector('#page-eventCosts .cost-table-z58d4');if(!table)return;
+ const headers=[...table.querySelectorAll('thead th')],index=headers.findIndex(th=>th.dataset.costSort===eventCostSortZ58A.key);
+ table.querySelectorAll('tbody tr').forEach(row=>{[...row.cells].forEach((cell,i)=>cell.classList.toggle('cost-sorted-column-q134',cell.colSpan===1&&i===index));});
+}
+
+async function waArchiveInspectUiQ138_(button){
+  if(button.disabled||state.session?.role!=='Admin')return;
+  const eventId=String(state.activeEventId),token=state.session.token,batchId=button.dataset.archiveQ138;
+  const out=Array.from(document.querySelectorAll('[data-archive-result-q138]')).find(x=>x.dataset.archiveResultQ138===batchId);
+  if(!out)return;button.disabled=true;button.textContent='בודק ארכיון ויומן…';button.setAttribute('aria-busy','true');
+  try{
+    const r=await API.request('inspectArchivedWhatsAppQ138',{eventId,batchId});
+    if(state.session?.token!==token||String(state.activeEventId)!==eventId||!out.isConnected)return;
+    out.innerHTML='<p>נמצאו '+esc(String(r.matched))+' רשומות עם תיעוד תואם מתוך '+esc(String(r.total))+'.</p><p>'+esc(r.notice)+'</p><div style="overflow-x:auto"><table><thead><tr><th>מוזמן</th><th>בעת הארכוב</th><th>תיעוד ביומן המסע</th><th>מועד התיעוד האחרון</th><th>הסדרת חסימה</th></tr></thead><tbody>'+r.rows.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.archiveProgress)+'</td><td>'+esc(x.journalStatus)+'</td><td>'+esc(x.lastAt?new Date(x.lastAt).toLocaleString('he-IL',{timeZone:'Asia/Jerusalem'}):'—')+'</td><td>'+waArchiveReviewCellQ139_(r,x)+'</td></tr>').join('')+'</tbody></table></div>';
+    if(waMonitorSnapshotQ17?.server?.eventId===eventId){waMonitorSnapshotQ17.archiveEvidenceQ138=waMonitorSnapshotQ17.archiveEvidenceQ138||{};waMonitorSnapshotQ17.archiveEvidenceQ138[batchId]=r;}
+  }catch(error){if(out.isConnected&&state.session?.token===token&&String(state.activeEventId)===eventId)out.textContent='הבדיקה לא הושלמה: '+(error.message||String(error));}
+  finally{button.disabled=false;button.textContent='הצג מוזמנים והשוואה ליומן';button.setAttribute('aria-busy','false');}
+}
+
+function waArchiveReviewCellQ139_(report,row){
+  if(!row.held)return '<strong>החסימה הוסרה ידנית בארכיון זה</strong><p>'+esc(row.manualReviewQ139?.reason||'')+'</p>';
+  if(!row.canReviewQ139)return 'החסימה נשמרת — קיים תיעוד או שנדרשת בדיקה נוספת';
+  return '<details><summary>בדיקה ידנית לרשומה זו</summary><p>יש לבדוק בטלפון וביומן את הניסיון הישן. היעדר רישום אינו הוכחה שלא נשלח. האישור מאפשר ניסיון חדש ועלול להביא להודעה כפולה.</p><label>תיעוד הבדיקה (לפחות 10 תווים)<textarea data-review-reason-q139 maxlength="500" rows="3"></textarea></label><label><input type="checkbox" data-review-ack-q139> בדקתי ידנית ואני מאשר להסיר את חסימת הארכיון לרשומה זו, למרות אי-הוודאות והאפשרות לכפילות.</label><button type="button" class="secondary" data-review-archive-q139="'+esc(report.batchId)+'" data-guest-q139="'+esc(row.guestId)+'">אשר הסדרה ללא שליחה</button><p data-review-status-q139 role="status"></p></details>';
+}
+async function waArchiveReleaseUiQ139_(button){
+  if(button.disabled||state.session?.role!=='Admin')return;
+  const details=button.closest('details'),status=details.querySelector('[data-review-status-q139]'),reason=details.querySelector('[data-review-reason-q139]').value.trim(),ack=details.querySelector('[data-review-ack-q139]').checked;
+  if(!ack||reason.length<10){status.textContent='יש לתעד את הבדיקה ולסמן אישור מפורש.';return;}
+  const batchId=button.dataset.reviewArchiveQ139,guestId=button.dataset.guestQ139,eventId=String(state.activeEventId),token=state.session.token;
+  const report=waMonitorSnapshotQ17?.archiveEvidenceQ138?.[batchId];if(!report?.revisionQ139){status.textContent='יש לטעון מחדש את פירוט הארכיון.';return;}
+  button.disabled=true;button.textContent='שומר הסדרה…';button.setAttribute('aria-busy','true');
+  try{
+    const result=await API.request('releaseArchivedGuestQ139',{eventId,batchId,guestId,revision:report.revisionQ139,reason,acknowledgement:'MANUAL_PHONE_CHECK_ALLOW_NEW_ATTEMPT'});
+    if(state.session?.token!==token||String(state.activeEventId)!==eventId)return;
+    if(result.released!==true||result.sent!==0)throw Error('לא התקבל אישור הסדרה תקין');
+    status.textContent='ההסדרה נשמרה. לא נשלחה הודעה. רענן ניטור ורשימת מוזמנים לפני ניסיון חדש.';
+    delete waMonitorSnapshotQ17.archiveEvidenceQ138[batchId];
+    document.querySelectorAll('[data-review-archive-q139]').forEach(b=>b.disabled=true);
+  }catch(error){if(state.session?.token===token&&String(state.activeEventId)===eventId)status.textContent='ההסדרה לא אומתה: '+(error.message||String(error))+' יש לרענן ניטור לפני פעולה נוספת.';}
+  finally{button.textContent='יש לרענן ניטור';button.setAttribute('aria-busy','false');}
+}
+
+function waSingleRequestIdQ141_(){
+  return globalThis.crypto?.randomUUID?globalThis.crypto.randomUUID():'S141_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
+}
+
+function eventCostAmountQ142_(row){
+  if(!row.pendingCountQ142)return moneyZ58_(row.amount);
+  if(row.pendingCountQ142===row.quantity)return 'ממתין לחישוב';
+  return moneyZ58_(row.amount)+' (חלקי)';
+}
+
+function eventCostCalculationStatusQ145_(data){
+ const box=$('#eventCostsCalculationQ145');if(!box)return;
+ const remaining=data.unpricedWhatsAppRowsQ142||[],update=data.pricingUpdate||{},groups=new Map();
+ remaining.forEach(r=>{const text=eventCostReasonLabelQ146_(r.pricingReasonQ145);groups.set(text,(groups.get(text)||0)+1);});
+ const written=Number(update.written)||0,excluded=Number(data.excludedFailedWhatsAppCountQ155)||0;
+ box.innerHTML='<strong>'+(written?'הושלם אומדן עבור '+written+' הודעות. ':remaining.length?'לא נוספו אומדנים ברענון זה. ':'')+(remaining.length?'חסר אומדן ל־'+remaining.length+' הודעות.':'כל ההודעות המוצגות בעלויות כוללות אומדן.')+'</strong>'+(groups.size?'<ul>'+[...groups].map(([reason,count])=>'<li>'+esc(String(count))+' הודעות: '+esc(reason)+'</li>').join('')+'</ul>':'')+(excluded?'<p>'+esc(String(excluded))+' הודעות שנכשלו אינן כלולות באומדן העלויות. פרטי הכשל מופיעים ביומן WhatsApp.</p>':'')+'<p class="muted">הפעולה מחשבת אומדנים בלבד, עד 500 הודעות בכל הפעלה. אינה שולחת הודעות ואינה משנה את יומן השליחה.</p>';
+}
+
+function eventCostReasonLabelQ146_(reason){
+ if(typeof state!=='undefined'&&state.session?.role==='Admin')return reason?.text||'לא התקבל פירוט סיבת החוסר';
+ const labels={READY:'אפשר להשלים את אומדן העלות באמצעות כפתור הרענון והחישוב.',FAILED:'קיים תיעוד של כשל בשליחה או במסירה. העלות דורשת בדיקה.',UNKNOWN:'תוצאת השליחה טרם הובהרה. העלות דורשת בדיקה.',MISSING_CATEGORY:'חסר נתון תמחור של ההודעה. נדרשת בדיקת מנהל מערכת.',CATEGORY:'נתוני התמחור של ההודעה דורשים בדיקת מנהל מערכת.',DESTINATION:'לא זמין תעריף ליעד השליחה. נדרשת בדיקת מנהל מערכת.',CONFLICT:'פרטי ההודעה דורשים בדיקת מנהל מערכת לפני חישוב העלות.',LEDGER_REVIEW:'רישום העלות דורש בדיקת מנהל מערכת.',RATE:'חסר תעריף תקין לחישוב. נדרשת בדיקת מנהל מערכת.',CALCULATION_ERROR:'חישוב העלות לא הושלם. אפשר לנסות שוב באמצעות כפתור הרענון והחישוב.',DEFERRED:'השלמת האומדן נדחתה זמנית. אפשר לנסות שוב לאחר סיום הפעולות במערכת.'};
+ return labels[reason?.code]||'לא ניתן להשלים כרגע את האומדן. נדרשת בדיקת מנהל מערכת.';
+}

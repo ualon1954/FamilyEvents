@@ -1,0 +1,39 @@
+/* Responsive guest message control; scoped to the guest list only. */
+#page-guests{width:100%;max-width:none;margin-inline:0;padding-inline:clamp(12px,1.5vw,28px);box-sizing:border-box}
+#page-guests [hidden]{display:none!important}
+#page-guests .guest-area-a19,#page-guests .guest-table-area-a19,#page-guests #guestFiltersA5{width:100%;max-width:none;box-sizing:border-box}
+#page-guests .guest-table-area-a19{overflow-x:auto!important}
+#guestMessageControlQ114{margin:16px 0;padding:16px;border:1px solid var(--line);border-radius:15px;background:var(--card)}
+.gm-toolbar-q114{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.gm-toolbar-q114 label{display:grid;gap:6px;font-weight:700;min-width:200px}.gm-toolbar-q114 select{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);font:inherit}
+#guestMessageNoticeQ114{font-size:.88rem;color:var(--muted);margin:10px 0;line-height:1.6}
+#guestMessageCardsQ114{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.gm-summary-q114{display:flex;flex-direction:column;gap:8px;align-items:flex-start;min-height:75px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--card2);color:var(--text);cursor:pointer}.gm-summary-q114 strong{font-size:1.6rem}.gm-summary-q114.active{outline:2px solid var(--accent);outline-offset:1px}.gm-summary-q114:disabled{cursor:default;opacity:.6}
+.gm-status-q114{font:inherit;font-size:.88rem;font-weight:700;padding:7px 9px;border:1px solid var(--line);border-radius:20px;background:var(--card2);color:var(--text);cursor:pointer;max-width:100%;white-space:normal;line-height:1.35}.gm-status-q114:focus-visible,.gm-summary-q114:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.gm-NEVER{color:var(--muted)}.gm-PROCESSING,.gm-PENDING,.gm-REVIEW{color:#d8a647}.gm-DELIVERED,.gm-READ{color:var(--ok)}.gm-FAILED{color:var(--danger)}
+.gm-history-summary-q114{list-style:none;padding:0;display:grid;gap:8px}.gm-history-summary-q114 li{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px;border-bottom:1px solid var(--line)}.gm-history-summary-q114 small{grid-column:1/-1;color:var(--muted)}.gm-history-list-q114{max-height:42vh;overflow:auto}.gm-history-list-q114 article{padding:10px 0;border-bottom:1px solid var(--line)}.gm-history-list-q114 p{white-space:normal;overflow-wrap:anywhere}
+@media(min-width:901px){
+ #page-guests .guests-table{display:table!important;width:100%;table-layout:fixed;min-width:880px!important}
+ #page-guests .guests-table thead{display:table-header-group!important}#page-guests .guests-table thead tr,#page-guests .guests-table tbody tr{display:table-row!important}
+ #page-guests .guests-table tbody{display:table-row-group!important}#page-guests .guests-table th,#page-guests .guests-table td{display:table-cell!important;padding:9px 6px!important;vertical-align:middle;white-space:normal;overflow-wrap:break-word;box-sizing:border-box}
+ #page-guests .guests-table td::before{display:none!important}
+ #page-guests .guests-table th[data-col="name"]{width:17%!important}#page-guests .guests-table th[data-col="phone"]{width:11%!important}
+ #page-guests .guests-table th[data-col="side"]{width:5%!important}#page-guests .guests-table th[data-col="group"]{width:7%!important}
+ #page-guests .guests-table th[data-col="invitedCount"],#page-guests .guests-table th[data-col="confirmedCount"]{width:4%!important}
+ #page-guests .guests-table th[data-col="rsvpStatus"]{width:10%!important}#page-guests .guests-table th[data-col="seating"]{width:12%!important}
+ #page-guests .guests-table th[data-col="messageState"]{width:15%!important;background:rgba(77,163,255,.12)}#page-guests .guests-table th[data-col="send"]{width:4%!important}#page-guests .guests-table th[data-col="actions"]{width:11%!important}
+ #page-guests .guests-table td[data-col="phone"]{direction:ltr;white-space:nowrap;overflow-wrap:normal}
+}
+@media(min-width:901px) and (max-width:1399px){#page-guests .guests-table [data-col="side"],#page-guests .guests-table [data-col="group"]{display:none!important}#page-guests .guests-table{font-size:.88rem}}
+@media(min-width:901px) and (max-width:1199px){#page-guests .guests-table [data-col="invitedCount"],#page-guests .guests-table [data-col="confirmedCount"]{display:none!important}}
+@media(max-width:1200px){#guestMessageCardsQ114{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){#page-guests .guests-table td[data-col="messageState"]{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px}#page-guests .guests-table td[data-col="messageState"]::before{content:'מצב הודעה';font-weight:700;color:var(--muted)}.gm-toolbar-q114 label{flex:1;min-width:180px}}
+@media(max-width:560px){#guestMessageCardsQ114{grid-template-columns:repeat(2,minmax(0,1fr))}.gm-toolbar-q114 label,.gm-toolbar-q114 button{width:100%;min-width:0}#guestMessageControlQ114{padding:12px}.gm-summary-q114{padding:10px}}
+
+#page-guests .guests-table [hidden]{display:none!important}
+
+#modal .modal:has(#gmHistoryQ114){width:min(780px,94vw);max-height:90vh;overflow:auto}
+
+/* Q115 — human-readable history, with technical evidence for Admin only. */
+.gm-history-intro-q115{color:var(--muted);line-height:1.6}.gm-history-warning-q115{padding:13px 15px;border:1px solid rgba(216,166,71,.4);border-radius:12px;background:rgba(216,166,71,.08);line-height:1.6}.gm-history-warning-q115 strong{color:#d8a647}.gm-history-warning-q115 p{margin:6px 0 0}
+.gm-history-entry-head-q115{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.gm-history-entry-q115 time{display:block;color:var(--muted);font-size:.87rem;margin:6px 0}.gm-history-entry-q115 p{margin:7px 0;line-height:1.7}.gm-older-q115>summary,.gm-tech-q115>summary{cursor:pointer;padding:11px 0;color:var(--accent);font-weight:700}.gm-tech-q115{margin-top:7px}.gm-tech-q115 dl{display:grid;grid-template-columns:auto 1fr;gap:8px}.gm-tech-q115 dd{margin:0;overflow-wrap:anywhere}.gm-tech-q115 pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:10px;background:var(--card2);border-radius:8px;font-size:.85rem}
+#gmHistoryQ114 .gm-history-summary-q114{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}#gmHistoryQ114 .gm-history-summary-q114 li{border:1px solid var(--line);border-radius:12px;padding:13px;grid-template-columns:1fr}#gmHistoryQ114 .gm-history-summary-q114 li small{line-height:1.6}#gmHistoryQ114 .gm-history-list-q114{max-height:38vh}
+@media(max-width:600px){#gmHistoryQ114 .gm-history-summary-q114{grid-template-columns:1fr}.gm-history-entry-head-q115{align-items:flex-start}}

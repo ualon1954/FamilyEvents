@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q65 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q170 */
 const SESSION_CONFIG = Object.freeze({
   SESSION_KEY: "events_management_session",
   SESSION_HOURS: 1
@@ -15,7 +15,7 @@ async function sessionActivityFlushQ31_(){
   if(sessionActivityFlightQ31)return sessionActivityFlightQ31;
   if(!sessionActivityAtQ31||sessionActivityAtQ31<=sessionActivityAckQ31||now-sessionActivityAtQ31>120000||now-sessionActivityLastTryQ31<60000&&session.expiresAt-now>60000)return;
   const token=session.token,activity=sessionActivityAtQ31;sessionActivityLastTryQ31=now;
-  const flight=API.request('touchSessionActivityQ31',{token,activityAgeMsQ31:Math.max(0,now-activity)},{skipActivityQ31:true}).then(r=>{
+  const flight=API.request('touchSessionActivityQ31',{token,activityAgeMsQ31:Math.max(0,now-activity)},{skipActivityQ31:true,timeoutMs:10000}).then(r=>{
     if(state.session?.token!==token)return;
     if(!Number.isFinite(r.sessionExpiresAtQ31)||r.sessionExpiresAtQ31<=Date.now())throw new Error('Session activity acknowledgement invalid');
     state.session.expiresAt=r.sessionExpiresAtQ31;state.session.idleMinutesQ32=r.idleMinutesQ32;sessionActivityAckQ31=activity;saveSession();

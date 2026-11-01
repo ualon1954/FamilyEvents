@@ -1,11 +1,11 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q65 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q170 */
 // Compact browser-side failures only. Never store request payloads or credentials.
-function waRecordClientIssueQ17_(action,kind,httpStatus){
+function waRecordClientIssueQ17_(action,kind,httpStatus,detail){
   try{
-    if(typeof state==='undefined'||state.session?.role!=='Admin')return;
+    if(typeof state==='undefined'||!state.session)return;
     const key='wa_client_issues_q17';let rows=[];
     try{const value=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(value))rows=value;}catch(ignore){}
-    rows.push({at:new Date().toISOString(),eventId:String(state.activeEventId||''),action:String(action||'').slice(0,80),kind:String(kind||'').slice(0,40),httpStatus:Number(httpStatus)||0});
+    rows.push({at:new Date().toISOString(),eventId:String(state.activeEventId||''),action:String(action||'').slice(0,80),kind:String(kind||'').slice(0,40),httpStatus:Number(httpStatus)||0,...(detail?{detail:String(detail).slice(0,600)}:{})});
     localStorage.setItem(key,JSON.stringify(rows.slice(-20)));
   }catch(ignore){}
 }
@@ -16,11 +16,14 @@ const API = {
     markQ35('apiEnteredAt');
     if(action!=='login'&&action!=='touchSessionActivityQ31'&&!options.skipActivityQ31&&typeof sessionActivityFlushQ31_==='function')await sessionActivityFlushQ31_().catch(()=>{});
     const body={action, ...payload};
+    if(['sendAnyTemplateToGuest','sendAnyTemplateToGuestF14Z32','sendOneInvitationV1190A14'].includes(action)&&!body.requestIdQ140){
+      body.requestIdQ140=globalThis.crypto?.randomUUID?globalThis.crypto.randomUUID():'S140_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);
+    }
     if(state?.session?.token && !body.token) body.token=state.session.token;
     if (!APP_CONFIG.API_URL || APP_CONFIG.API_URL.includes("PASTE_")) {
       throw new Error("כתובת ה-API אינה מוגדרת ב-config.js. יש להכניס את כתובת ה-Web App של Apps Script.");
     }
-    const isSendAction = action === "sendOneInvitationV1190A14" || action === "sendInvitationBatchF14U" || action === "sendAnyTemplateTestBatchD5D49" || action === "sendAnyTemplateToGuest" || action === "sendOneInvitationToTestNumberA19P2F8";
+    const isSendAction = action === "sendAnyTemplateToGuestF14Z32" || action === "sendOneInvitationV1190A14" || action === "sendInvitationBatchF14U" || action === "sendProductionLogicalBatchQ106" || action === "sendAnyTemplateTestBatchD5D49" || action === "sendAnyTemplateToGuest" || action === "sendOneInvitationToTestNumberA19P2F8";
     let res;
     const timeoutMs=Number(options?.timeoutMs)||0;
     const controller=timeoutMs>0?new AbortController():null;
@@ -69,7 +72,7 @@ const API = {
       error.deliveryUncertain = ambiguous;
       throw error;
     }
-    if (!data.ok){waRecordClientIssueQ17_(action,'API_ERROR',res.status);throw new Error(data.error || data.message || "שגיאת API לא ידועה");}
+    if (!data.ok){const error=new Error(data.error || data.message || 'שגיאת API לא ידועה');error.retryableQ141=data.retryableQ141===true&&data.sendStageQ137==='PRECHECK';error.serverResponseQ137=true;error.sendStageQ137=data.sendStageQ137;error.deliveryUncertain=isSendAction&&data.sendStageQ137!=='PRECHECK';waRecordClientIssueQ17_(action,'API_ERROR',res.status,error.message);throw error;}
     return data;
   }
 };

@@ -19,3 +19,6 @@ payment.html
 privacy.html
 rsvp.html
 js/whatsapp-simulation-q42.js
+
+js/guest-messages-q114.js
+css/guest-messages-q114.css

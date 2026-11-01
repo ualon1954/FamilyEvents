@@ -1,0 +1,19 @@
+#page-guests #guestUpdatedQ67,#managerDashboardQ123 .dash-updated-q124{display:inline-flex;align-items:center;gap:8px;background:var(--card2);color:var(--text);border:0;border-inline-start:3px solid var(--accent);border-radius:10px;padding:10px 13px;font-size:.88rem;font-weight:700;min-height:42px;line-height:1.4;margin:0}
+#page-guests #guestUpdatedQ67 strong,#managerDashboardQ123 .dash-updated-q124 strong{color:var(--accent);font:inherit;font-weight:800;white-space:nowrap;unicode-bidi:isolate}
+#page-guests #guestRefreshQ67,#managerDashboardQ123 .dash-refresh-q124{display:inline-grid;place-items:center;width:42px;min-width:42px;height:42px;padding:9px!important;border:1px solid var(--line)!important;border-radius:10px;background:var(--card2)!important;color:var(--accent)!important;cursor:pointer;flex-shrink:0}
+#page-guests #guestRefreshQ67:disabled,#managerDashboardQ123 .dash-refresh-q124:disabled{opacity:.65;cursor:wait}
+#guestRefreshQ67[aria-busy=true] svg,.dash-refresh-q124[aria-busy=true] svg{animation:refresh-spin-q128 1s linear infinite}
+@keyframes refresh-spin-q128{to{transform:rotate(360deg)}}
+@media(max-width:420px){#page-guests #guestUpdatedQ67,#managerDashboardQ123 .dash-updated-q124{font-size:.76rem;gap:5px;padding:8px}}
+@media(prefers-reduced-motion:reduce){#guestRefreshQ67[aria-busy=true] svg,.dash-refresh-q124[aria-busy=true] svg{animation:none}}
+
+/* Q130: labeled refresh and adjacent update stamp. */
+#page-guests #guestRefreshQ67,#managerDashboardQ123 .dash-refresh-q124{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:auto;min-width:112px;min-height:42px;height:auto;padding:9px 13px!important;white-space:nowrap;font:inherit;font-weight:700}
+.dash-refresh-group-q130{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px}
+.dash-section-heading-q130{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px;margin-bottom:10px}
+.dash-section-heading-q130 h2{margin:0}.dash-section-heading-q130 p{font-size:.8rem;margin:0;line-height:1.5}
+@media(max-width:700px){#managerDashboardQ123 .dash-head-q123{flex-wrap:wrap}.dash-refresh-group-q130{justify-content:flex-start;max-width:100%}}
+
+/* Q131: refresh button precedes the timestamp on the right, as in Guests. */
+#managerDashboardQ123 .dash-refresh-group-q130{direction:rtl}
+#managerDashboardQ123 .dash-refresh-group-q130 .dash-refresh-q124{order:-1}

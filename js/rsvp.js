@@ -1,4 +1,5 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q65 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q170 */
+function rsvpEventTimeQ169_(value){const m=String(value||'').trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);return m&&Number(m[1])<24&&Number(m[2])<60?m[1].padStart(2,'0')+':'+m[2]:'';}
 (async function(){
  const themeButton=document.getElementById('theme-toggle');
  const THEME_KEY='events_rsvp_theme';
@@ -39,8 +40,10 @@
  try{
   let data=await call({action:'rsvpContextV1189A3',key});out.replaceChildren();
   out.append(el('h2',data.event.name));
-  if(data.event.date){const p=el('p','תאריך: '),date=el('span',undefined,'event-date'),raw=String(data.event.date),m=raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/);date.dir='ltr';date.textContent=m?`${m[3]}/${m[2]}/${m[1]}`:raw;p.append(date);out.append(p)}
-  if(data.event.venue)out.append(el('p','מקום: '+data.event.venue));
+  const eventTimeQ169=rsvpEventTimeQ169_(data.event.eventTime);
+  const eventDetailQ170=(label,text,kind,dir)=>{const item=el('span',undefined,'event-detail-q170');item.append(el('span',label,'event-label-q170'));const value=el('strong',text,'event-value-q170 '+(kind||''));if(dir)value.dir=dir;item.append(value);return item;};
+  if(data.event.date||eventTimeQ169){const p=el('p',undefined,'event-details-q170');if(data.event.date){const raw=String(data.event.date),m=raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:T.*)?$/);p.append(eventDetailQ170('תאריך:',m?`${m[3]}/${m[2]}/${m[1]}`:raw,'event-date','ltr'));}if(eventTimeQ169)p.append(eventDetailQ170('שעה:',eventTimeQ169,'event-time','ltr'));out.append(p);}
+  if(data.event.venue||data.event.navigationAddress){const venue=String(data.event.venue||'').trim(),address=String(data.event.navigationAddress||'').trim(),place=[venue,address&&address!==venue?address:''].filter(Boolean).join(' · '),p=el('p',undefined,'event-details-q170 event-place-q170');p.append(eventDetailQ170('מקום:',place));out.append(p);}
   const area=el('section',undefined,'rsvp-area');out.append(area);
   let isClosed=false;
   let currentView="form";

@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q65 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q170 */
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Hebrew",sans-serif;background:var(--bg);color:var(--text)}
 body.light{--bg:#f5f7fa;--card:#fff;--card2:#eef2f6;--text:#18212b;--muted:#65727e;--line:#d8dee4}
@@ -1416,22 +1416,20 @@ button[aria-busy="true"]{cursor:wait;opacity:.82}
   #page-whatsappLog .wa-log-table-z55 th:nth-child(7){width:9%}
   #page-whatsappLog .wa-log-table-z55 th:nth-child(8){width:11%}
 }
-/* Z56C — simplified operational WhatsApp log for EventManager only. */
-#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(7),
-#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 td:nth-child(7),
-#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(8),
-#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 td:nth-child(8),
-#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(9),
-#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 td:nth-child(9){display:none!important}
+/* Q108 — hide the technical environment by identity, retain delivery status. */
+#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th[data-wa-sort="environment"],
+#page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 td[data-col="environment"]{display:none!important}
 #page-whatsappLog .wa-log-manager-hidden-z56c{display:none!important}
 @media(min-width:1101px){
- #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(1){width:16%}
- #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(2){width:20%}
- #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(3){width:16%}
- #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(4){width:16%}
- #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(5){width:20%}
- #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th:nth-child(7){width:12%}
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th[data-wa-sort="createdAt"]{width:16%}
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th[data-wa-sort="eventName"]{width:17%}
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th[data-wa-sort="guestName"]{width:19%}
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th[data-wa-sort="phone"]{width:13%}
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th[data-wa-sort="templateName"]{width:13%}
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th[data-wa-sort="category"]{width:10%}
+ #page-whatsappLog.wa-log-manager-z56c .wa-log-table-z55 th[data-wa-sort="status"]{width:12%}
 }
+
 
 
 /* V1.1.90A19P2F14Z57A — Activity Log aligned with WhatsApp Log, without summary cards */
@@ -2050,6 +2048,9 @@ body.light #modal .wa-template-picker-fix7>select{color-scheme:light}
 body.light #modal .wa-template-picker-fix7>select option{background:white;color:#17202c}
 #modal .wa-template-loading-fix8{display:block;min-height:18px;font-size:12px;color:var(--muted);text-align:right}
 #modal .wa-template-loading-fix8[hidden]{display:none!important;min-height:0}
+#modal .wa-template-loading-fix8:not([hidden])::before{content:'';display:inline-block;width:12px;height:12px;margin-inline-end:7px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;vertical-align:middle;animation:wa-template-spin-q99 .8s linear infinite}
+@keyframes wa-template-spin-q99{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#modal .wa-template-loading-fix8:not([hidden])::before{animation:none}}
 
 .wa-bulk-v13{width:min(580px,100%);border-radius:22px;padding:26px}
 .wa-bulk-v13 h2{margin:0 0 18px}
@@ -2171,3 +2172,56 @@ body.light .system-number-field-q20 input{color-scheme:light}
 #waSimPanelQ42 dl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px}
 #waSimPanelQ42 dd{margin:0;text-align:left;white-space:nowrap}
 #waSimPanelQ42 [hidden]{display:none!important}
+
+.guest-refresh-q67{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:12px 0}.guest-refresh-q67 button{display:inline-flex;align-items:center;gap:6px}.guest-refresh-q67 [hidden]{display:none}
+
+/* Q68: prominent guest refresh controls, dark/light and narrow screens. */
+#page-guests .guest-refresh-q67{gap:14px;margin:16px 0 20px}
+#page-guests #guestUpdatedQ67{display:inline-flex;align-items:center;min-height:46px;box-sizing:border-box;padding:10px 16px;border:1px solid var(--line);border-inline-start:4px solid var(--accent);border-radius:12px;background:var(--card2);color:var(--text);font-size:1.05rem;font-weight:750;line-height:1.6;font-variant-numeric:tabular-nums}
+#page-guests #guestRefreshQ67{min-height:46px;padding:10px 20px;border:1px solid #2777c7!important;border-radius:12px;background:#1765ad!important;color:#fff!important;font-size:1rem;font-weight:750;box-shadow:0 3px 9px #0002;transition:background .15s,box-shadow .15s}
+#page-guests #guestRefreshQ67:hover:not(:disabled){background:#12538f!important;box-shadow:0 4px 12px #0003}
+#page-guests #guestRefreshQ67:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+#page-guests #guestRefreshQ67:disabled{opacity:.7;cursor:wait;box-shadow:none}
+@media(max-width:560px){#page-guests .guest-refresh-q67{gap:10px}#page-guests #guestUpdatedQ67{width:100%;font-size:1rem;padding:10px 12px}}
+
+#page-guests #guestUpdatedQ67{gap:8px;flex-wrap:wrap}#page-guests .guest-updated-value-q71{color:#74bcff;font-weight:850}body.light #page-guests .guest-updated-value-q71{color:#075ca8}
+
+.table-form-error-q72{display:block;margin-top:8px;padding:10px 12px;border:1px solid var(--danger);border-radius:9px;background:var(--card2);color:var(--danger);font-size:.95rem;font-weight:650;line-height:1.5;overflow-wrap:anywhere}.table-form-error-q72[hidden]{display:none}#tableForm input[aria-invalid="true"]{border-color:var(--danger);outline-color:var(--danger)}
+
+.table-form-success-q73{grid-column:1/-1;padding:12px 15px;border:1px solid var(--ok);border-radius:10px;background:var(--card2);color:var(--ok);font-weight:750;line-height:1.5}.table-form-success-q73[hidden]{display:none}
+
+.table-action-dialog-q74{box-sizing:border-box;border-top:4px solid var(--danger);max-height:calc(100dvh - 32px);overflow:auto}.table-action-icon-q74{font-size:1.8rem;color:var(--danger);margin-bottom:10px}.table-action-dialog-q74 p{overflow-wrap:anywhere}
+
+.table-action-dialog-q74.is-success-q75{border-top-color:var(--ok)}.table-action-dialog-q74.is-success-q75 .table-action-icon-q74,.table-action-dialog-q74.is-success-q75 h3{color:var(--ok)}
+
+.bulk-name-q80{display:block;font-weight:650;line-height:1.6}.bulk-name-q80 input{display:block;box-sizing:border-box;width:100%;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--text)}#resetAllSeatingV170{border-color:var(--accent)!important}
+
+/* Q89: diagnostic controls and inline batch bar are reserved for system administration. */
+.wa-test-panel-d5d55j .wa-pending-diagnostic-fix67[hidden],
+.wa-test-panel-d5d55j.wa-manager-test-q89 #waTestProgressF14C{display:none!important}
+
+/* Q96: retain the hidden progress data source while showing only one send-progress screen. */
+.wa-manager-real-q96 #waRealProgressF14C{display:none!important}
+.wa-manager-progress-q96 [data-delivery-summary]:empty{display:none}
+.wa-manager-progress-q96 .wa-delivery-fix24:has([data-delivery-summary]:empty){display:none}
+
+#page-whatsappLog .wa-log-datetime-q133{display:grid;gap:4px;font-size:.8rem;color:var(--muted);min-width:0}#page-whatsappLog .wa-log-datetime-q133 input{width:100%;min-width:0;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px;direction:ltr;color-scheme:dark}body.light #page-whatsappLog .wa-log-datetime-q133 input{color-scheme:light}
+
+/* Q134: selected sort column remains visible across striping and row hover. */
+#page-eventCosts .cost-table-z58d4 td.cost-sorted-column-q134{background:rgba(35,136,245,.12)}
+#page-eventCosts .cost-table-z58d4 tr:hover td.cost-sorted-column-q134{background:rgba(35,136,245,.20)}
+body.light #page-eventCosts .cost-table-z58d4 td.cost-sorted-column-q134{background:rgba(35,136,245,.09)}
+body.light #page-eventCosts .cost-table-z58d4 tr:hover td.cost-sorted-column-q134{background:rgba(35,136,245,.16)}
+
+/* Q143: cost state and pending counts must remain readable on every width. */
+#page-eventCosts .cost-table-z58d4 td:nth-child(4),
+#page-eventCosts .cost-table-z58d4 td:nth-child(5),
+#page-eventCosts .cost-table-z58d4 td:nth-child(7){white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.5;vertical-align:middle}
+#page-eventCosts .cost-table-z58d4 td:nth-child(4) b{display:block;font-variant-numeric:tabular-nums}
+#page-eventCosts .cost-table-z58d4 th:nth-child(4){width:15%}
+#page-eventCosts .cost-table-z58d4 th:nth-child(7){width:16%}
+@media(max-width:1100px){#page-eventCosts .cost-table-z58d4{min-width:950px}#page-eventCosts .table-wrap{overflow-x:auto}}
+
+/* Q153: busy reset remains readable while the action is disabled. */
+#eventResetCommitQ148[aria-busy="true"]{display:inline-flex;align-items:center;justify-content:center;gap:.45em;opacity:1;cursor:wait;color:var(--text);background:var(--panel);border:1px solid var(--accent)}
+#eventResetCommitQ148[aria-busy="true"] .seating-spinner-v171{flex:0 0 auto;color:var(--accent);margin-inline-end:0}
