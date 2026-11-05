@@ -2282,3 +2282,18 @@ body.light #guestFiltersA5 .guest-record-limit-q181 input{color-scheme:light}
 #eventForm .event-lookup-add-q200{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;min-width:0;min-height:36px;height:36px;max-width:100%;padding:7px 13px;margin:0;border:1px solid var(--line);border-radius:9px;background:var(--card2);color:var(--accent);font:inherit;font-size:.88rem;font-weight:700;cursor:pointer}
 #eventForm .event-lookup-add-q200:hover{border-color:var(--accent)}
 .event-lookup-view-q200{max-width:680px;display:grid;gap:8px}.event-lookup-view-row-q200{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;border:1px solid var(--line);border-radius:9px;background:var(--card2)}.event-lookup-active-q200{color:#4ade80;font-size:.85rem}body.light .event-lookup-active-q200{color:#15803d}
+
+/* Q205 table capacity and occupancy */
+#page-seating .table-seats-q205{color:#55a7ff;font-weight:700}
+#page-seating .table-occupied-q205{color:#ff6b6b;font-weight:700}
+#page-seating .table-free-q205{color:#45d483;font-weight:700}
+#page-seating .edit-table{background:#187744;color:#fff;border-color:#249357}
+#page-seating .edit-table:hover{background:#126137}
+[data-theme="light"] #page-seating .table-seats-q205{color:#1769c2}
+[data-theme="light"] #page-seating .table-occupied-q205{color:#bd2525}
+[data-theme="light"] #page-seating .table-free-q205{color:#13783d}
+
+#page-seating #deleteAllEventTablesV1190A10[hidden]{display:none!important}
+
+/* Q207 collapsible event cost filters, all viewport widths */
+#eventCostsFiltersZ58C:not(.filters-open-a5){display:none!important}

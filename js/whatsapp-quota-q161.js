@@ -10,13 +10,17 @@ const quotaApiQ161=API.request.bind(API);
 function quotaSummaryTextQ161_(){const valid=quotaKeyQ161===JSON.stringify([state.session?.token,String(state.activeEventId)]),q=quotaStateQ161;return valid&&!q?.error&&q?'מכסת האירוע: '+q.limit+' · נוצלו: '+q.used+' · יתרה זמינה: '+q.remaining+(q.reserved?' · שמורות לטיפול: '+q.reserved:''):'יתרת המכסה אינה זמינה כרגע';}
 function quotaSummaryMarkupQ161_(){return '<p data-quota-summary-q161 role="status" class="quota-modal-q161">'+esc(quotaSummaryTextQ161_())+'</p>';}
 async function quotaEnsureQ161_(count){const eventId=String(state.activeEventId),token=state.session.token;const r=await quotaApiQ161('getEventWhatsAppQuotaQ161',{eventId});if(state.session?.token!==token||String(state.activeEventId)!==eventId)throw Error('האירוע או ההתחברות השתנו. יש לפתוח מחדש את חלון השליחה');quotaStateQ161=r.quota;quotaUpdatedQ195.set(JSON.stringify([state.session?.token,String(state.activeEventId)]),new Date());quotaKeyQ161=JSON.stringify([token,eventId]);quotaRenderQ161_();if(count>r.quota.remaining)throw Error('אין מספיק יתרה במכסת ההודעות: נבחרו '+count+' הודעות, והיתרה היא '+r.quota.remaining+'. יש לפנות למנהל המערכת להגדלת המכסה.');}
+function quotaErrorTextQ206_(error){
+ const message=String(error||'');
+ return /שירות גיליונות|Service Spreadsheets|Spreadsheets.*(?:failed|error)/i.test(message)?'לא ניתן לטעון כרגע את המכסה מ־Google Sheets. לחצו על רענון כדי לנסות שוב. אם השגיאה חוזרת, יש לבדוק את זמינות מסד הנתונים והרשאות הגישה.':message;
+}
 function quotaRenderQ161_(){
  document.querySelectorAll('[data-quota-summary-q161]').forEach(node=>node.textContent=quotaSummaryTextQ161_());
  const host=document.getElementById('eventWhatsAppQuotaQ161');if(!host)return;
  const allowed=['Admin','EventManager'].includes(state.session?.role)&&!!state.activeEventId;host.hidden=!allowed;if(!allowed)return;
  const q=quotaStateQ161,valid=quotaKeyQ161===JSON.stringify([state.session.token,String(state.activeEventId)]),admin=state.session.role==='Admin';
  host.innerHTML='<div class="quota-heading-q161"><strong>מכסת הודעות לאירוע</strong>'+quotaRefreshMarkupQ195_()+'</div>'+
- (!valid?'<p role="status">טוען מכסה…</p>':q?.error?'<p class="quota-warning-q161" role="alert">'+esc(q.error)+'</p>':
+ (!valid?'<p role="status">טוען מכסה…</p>':q?.error?'<p class="quota-warning-q161" role="alert">'+esc(quotaErrorTextQ206_(q.error))+'</p>':
  '<div class="quota-values-q161"><span>מכסה <b>'+q.limit+'</b></span><span>נוצלו <b class="quota-used-q192">'+q.used+'</b></span><span class="'+(q.remaining===0?'quota-warning-q161':'')+'">יתרה זמינה <b class="quota-remaining-q192">'+q.remaining+'</b></span>'+(q.reserved?'<span>שמורות לטיפול <b>'+q.reserved+'</b></span>':'')+'</div>'+
  (q.remaining===0?'<p class="quota-warning-q161">אין יתרה זמינה לשליחה. '+(admin?'יש להגדיל את המכסה.':'יש לפנות למנהל המערכת להגדלת המכסה.')+'</p>':'')+
  '<details class="quota-help-q194"><summary>מידע על המכסה</summary><small>הניצול כולל גם הודעות קודמות של האירוע ומתבסס על הודעות שהתקבלו לשליחה ב־WhatsApp, הודעות שנכשלו אינן צורכות מכסה, גם אם הכשל נרשם לאחר הקבלה לשליחה. הודעות שבטיפול או שתוצאתן אינה ודאית שומרות מקום במכסה. זו מכסת הודעות, ולא סכום החיוב.</small></details>'+ 

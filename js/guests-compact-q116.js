@@ -49,6 +49,7 @@
  bar.append(filters);
  const tableFieldQ201=get('guestTableFilterV174')?.closest('label');
  if(tableFieldQ201)tableFieldQ201.after(get('guestMessagePurposeQ114').closest('label'),get('guestMessageStatusQ114').closest('label'));
+ get('guestMessageStatusQ114').closest('label').after(get('guestSendFilterA19P2F6').closest('label'));
  const loading=get('guestMessageLoadingQ190'),messageStatus=get('guestMessageStatusQ114');if(loading&&messageStatus)messageStatus.closest('label').append(loading);
 
  function filterHint(){const active=[...filters.querySelectorAll('select')].filter(s=>s.id!=='guestMessagePurposeQ114'&&s.value).map(s=>(names[s.id]||'סינון')+': '+s.options[s.selectedIndex].text);toggle.querySelector('span').textContent=(filters.classList.contains('filters-open-a5')?'הסתר סינון נוסף':'סינון נוסף')+(active.length?' ('+active.length+')':'');toggle.title=active.join(' • ');}
