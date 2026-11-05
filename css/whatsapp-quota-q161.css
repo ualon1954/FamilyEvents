@@ -1,3 +1,45 @@
 #eventWhatsAppQuotaQ161{padding:14px 18px;margin:0 0 16px;border:1px solid var(--border,#344357);border-inline-start:4px solid #4a9ef5;border-radius:14px;background:var(--card,var(--panel,#18212c));color:var(--text);font-size:.9rem}.quota-heading-q161,.quota-values-q161,#quotaFormQ161{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.quota-heading-q161{justify-content:space-between;margin-bottom:10px}.quota-heading-q161 button{padding:7px 12px}.quota-values-q161{margin-bottom:8px}.quota-values-q161 b{font-size:1.2rem;color:#459df5;margin-inline-start:6px}.quota-warning-q161{color:#e58c38;font-weight:600}#eventWhatsAppQuotaQ161 small{display:block;color:var(--muted);line-height:1.6}#quotaFormQ161{margin-top:12px}#quotaLimitQ161{width:150px;background:var(--input-bg,var(--bg));color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px}#eventWhatsAppQuotaQ161[hidden]{display:none}@media(max-width:540px){#eventWhatsAppQuotaQ161{padding:12px}.quota-values-q161{gap:10px 18px}#quotaFormQ161{gap:8px}#quotaLimitQ161{width:100px}}
 
 .quota-modal-q161{padding:10px 12px;border:1px solid var(--border,#344357);border-radius:10px;background:var(--bg);color:var(--text);font-weight:600;line-height:1.6}
+
+.quota-values-q161 b.quota-used-q192{color:#f87171}
+.quota-values-q161 b.quota-remaining-q192{color:#4ade80}
+body.light .quota-values-q161 b.quota-used-q192{color:#b91c1c}
+body.light .quota-values-q161 b.quota-remaining-q192{color:#15803d}
+
+/* Q194 compact quota strip; explanations and editing open on demand. */
+#eventWhatsAppQuotaQ161{display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px;padding:9px 14px;margin-bottom:12px;font-size:.85rem}
+#eventWhatsAppQuotaQ161 .quota-heading-q161{display:contents}
+#eventWhatsAppQuotaQ161 .quota-heading-q161 strong{order:0;white-space:nowrap}
+#eventWhatsAppQuotaQ161 .quota-values-q161{order:1;gap:14px;margin:0}
+#eventWhatsAppQuotaQ161 .quota-values-q161 b{font-size:1.1rem}
+#eventWhatsAppQuotaQ161 details{order:2}
+#eventWhatsAppQuotaQ161 details summary{cursor:pointer;color:var(--muted);padding:5px 0;white-space:nowrap}
+#eventWhatsAppQuotaQ161 details[open]{flex-basis:100%;order:5}
+#eventWhatsAppQuotaQ161 details small{margin-top:6px;max-width:1100px}
+#eventWhatsAppQuotaQ161 .quota-edit-q194 form{margin-top:6px}
+#eventWhatsAppQuotaQ161 #quotaRefreshQ161{order:4;margin-inline-start:auto;padding:5px 10px;font-size:.8rem;min-height:30px}
+#eventWhatsAppQuotaQ161>p{order:3;margin:0}
+@media(max-width:600px){#eventWhatsAppQuotaQ161{gap:6px 12px}#eventWhatsAppQuotaQ161 .quota-values-q161{flex-basis:100%;gap:10px 16px}#eventWhatsAppQuotaQ161 #quotaRefreshQ161{margin-inline-start:auto}}
+
+#eventWhatsAppQuotaQ161 .quota-refresh-q195{order:4;margin-inline-start:auto;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+#eventWhatsAppQuotaQ161 .quota-refresh-q195 #quotaRefreshQ161{display:inline-flex;align-items:center;gap:6px;margin:0;min-height:36px;padding:6px 12px}
+#eventWhatsAppQuotaQ161 #quotaUpdatedQ195{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 10px;border:1px solid var(--line);border-inline-start:3px solid var(--accent);border-radius:9px;background:var(--card2);color:var(--text);font-variant-numeric:tabular-nums;font-size:.85rem;line-height:1.5}
+#eventWhatsAppQuotaQ161 .guest-updated-value-q71{color:#74bcff;font-weight:850}
+body.light #eventWhatsAppQuotaQ161 .guest-updated-value-q71{color:#075ca8}
+
+#eventWhatsAppQuotaQ161 #quotaUpdatedQ195 strong{color:#74bcff;font-weight:850}
+body.light #eventWhatsAppQuotaQ161 #quotaUpdatedQ195 strong{color:#075ca8}
+
+/* Q196: refresh precedes its timestamp in RTL, with a busy indicator. */
+#eventWhatsAppQuotaQ161 .quota-refresh-q195{direction:rtl}
+#eventWhatsAppQuotaQ161 .quota-refresh-q195 #quotaRefreshQ161{order:0}
+#eventWhatsAppQuotaQ161 .quota-refresh-q195 #quotaUpdatedQ195{order:1}
+#eventWhatsAppQuotaQ161 #quotaRefreshQ161[aria-busy="true"] svg{animation:refresh-spin-q128 1s linear infinite;transform-origin:center}
+@media(prefers-reduced-motion:reduce){#eventWhatsAppQuotaQ161 #quotaRefreshQ161[aria-busy="true"] svg{animation:none}}
+
+/* Q197: quota refresh matches the shared blue labeled refresh control. */
+#eventWhatsAppQuotaQ161 .quota-refresh-q195 #quotaRefreshQ161{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-width:112px;min-height:42px;height:auto;padding:9px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card2);color:var(--accent);font:inherit;font-weight:750;white-space:nowrap;cursor:pointer}
+#eventWhatsAppQuotaQ161 .quota-refresh-q195 #quotaRefreshQ161 svg{width:23px;height:23px;flex-shrink:0;stroke:currentColor}
+#eventWhatsAppQuotaQ161 .quota-refresh-q195 #quotaRefreshQ161:hover:not(:disabled){border-color:var(--accent)}
+#eventWhatsAppQuotaQ161 .quota-refresh-q195 #quotaRefreshQ161:disabled{opacity:.65;cursor:wait}

@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q174 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q181 */
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Hebrew",sans-serif;background:var(--bg);color:var(--text)}
 body.light{--bg:#f5f7fa;--card:#fff;--card2:#eef2f6;--text:#18212b;--muted:#65727e;--line:#d8dee4}
@@ -2225,3 +2225,60 @@ body.light #page-eventCosts .cost-table-z58d4 tr:hover td.cost-sorted-column-q13
 /* Q153: busy reset remains readable while the action is disabled. */
 #eventResetCommitQ148[aria-busy="true"]{display:inline-flex;align-items:center;justify-content:center;gap:.45em;opacity:1;cursor:wait;color:var(--text);background:var(--panel);border:1px solid var(--accent)}
 #eventResetCommitQ148[aria-busy="true"] .seating-spinner-v171{flex:0 0 auto;color:var(--accent);margin-inline-end:0}
+
+/* Q180 — shared modal field themes, including Chrome saved-field autofill.
+   Expense modal lives outside #page-eventCosts, so it must own its tokens. */
+#modal .modal{--form-field-bg-q180:var(--bg);color-scheme:dark}
+body.light #modal .modal{color-scheme:light}
+#modal .modal input:is(:-webkit-autofill,:autofill),
+#modal .modal textarea:is(:-webkit-autofill,:autofill){
+  -webkit-box-shadow:0 0 0 1000px var(--form-field-bg-q180) inset!important;
+  box-shadow:0 0 0 1000px var(--form-field-bg-q180) inset!important;
+  -webkit-text-fill-color:var(--text)!important;
+  color:var(--text)!important;caret-color:var(--text)!important;
+}
+#modal .event-cost-modal-z58d4{
+  --cost-input:#0c1520;--cost-border:#52657c;
+  --cost-panel:var(--card2);--form-field-bg-q180:var(--cost-input);
+}
+body.light #modal .event-cost-modal-z58d4{
+  --cost-input:#f4f7fb;--cost-border:#8b9caf;
+}
+#eventCostFormZ58 label>span{color:var(--text)}
+#eventCostFormZ58 input::placeholder,#eventCostFormZ58 textarea::placeholder{color:var(--muted);opacity:1;font-weight:400}
+#eventCostFormZ58 select,#eventCostFormZ58 input:not([type=hidden]){min-height:46px}
+#eventCostFormZ58 textarea{min-height:90px}
+#eventCostFormZ58 select option{background:var(--cost-input);color:var(--text)}
+#eventCostFormZ58 .cost-pricing-z58d4{background:var(--card2)}
+body.light #modal .event-cost-modal-z58d4 .cost-dialog-head-z58d4{background:var(--card2)}
+/* Override the legacy total field's fixed dark colors in both themes. */
+#eventCostFormZ58 input[name="unitCost"]{
+  background-color:var(--cost-input)!important;color:var(--text)!important;
+  -webkit-text-fill-color:var(--text)!important;border-color:var(--cost-border)!important;
+}
+#eventCostFormZ58 input[name="unitCost"]:focus{border-color:var(--accent)!important}
+
+/* Q181 — optional custom result cap, independent of table pagination. */
+#guestFiltersA5 .guest-record-limit-q181{display:grid;gap:4px;margin:0;min-width:130px;color:var(--muted);font-size:.8rem;align-content:start}
+#guestFiltersA5 .guest-record-limit-q181 input{width:100%;box-sizing:border-box;min-height:42px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);font:inherit;font-size:1rem;direction:ltr;text-align:right;color-scheme:dark}
+body.light #guestFiltersA5 .guest-record-limit-q181 input{color-scheme:light}
+#guestFiltersA5 .guest-record-limit-q181 input:focus{outline:2px solid var(--accent);outline-offset:1px}
+#guestFiltersA5 .guest-record-limit-q181 input[aria-invalid="true"]{border-color:var(--danger)}
+
+#guestMessageLoadingQ190{display:inline-flex;align-items:center;gap:6px;font-size:.9rem;color:var(--accent)}
+#guestMessageLoadingQ190[hidden]{display:none}
+.guest-message-spinner-q190{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-inline-end-color:transparent;border-radius:50%;animation:seating-spin-v171 .8s linear infinite}
+@media(prefers-reduced-motion:reduce){.guest-message-spinner-q190{animation:none}}
+
+.event-lookup-list-q198{display:grid;gap:10px;margin-block:14px}.event-lookup-row-q198{display:flex;align-items:center;gap:14px}.event-lookup-row-q198>input{flex:1;min-width:0}.event-editor-tab-d55o[hidden]{display:none!important}
+
+/* Q200 catalog editor: vertical content with a compact add action. */
+#eventForm .event-editor-pane-d55o[data-tab="sides"],#eventForm .event-editor-pane-d55o[data-tab="groups"]{display:block}
+#eventForm .event-editor-pane-d55o[data-tab="sides"]>p,#eventForm .event-editor-pane-d55o[data-tab="groups"]>p{margin:0 0 12px;max-width:760px;line-height:1.6}
+#eventForm .event-lookup-list-q198{max-width:680px;margin:0 0 12px;gap:8px}
+#eventForm .event-lookup-row-q198{gap:12px}
+#eventForm .event-lookup-row-q198>input{height:40px;box-sizing:border-box}
+#eventForm .event-lookup-row-q198 .check-label{margin:0;white-space:nowrap}
+#eventForm .event-lookup-add-q200{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;min-width:0;min-height:36px;height:36px;max-width:100%;padding:7px 13px;margin:0;border:1px solid var(--line);border-radius:9px;background:var(--card2);color:var(--accent);font:inherit;font-size:.88rem;font-weight:700;cursor:pointer}
+#eventForm .event-lookup-add-q200:hover{border-color:var(--accent)}
+.event-lookup-view-q200{max-width:680px;display:grid;gap:8px}.event-lookup-view-row-q200{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;border:1px solid var(--line);border-radius:9px;background:var(--card2)}.event-lookup-active-q200{color:#4ade80;font-size:.85rem}body.light .event-lookup-active-q200{color:#15803d}

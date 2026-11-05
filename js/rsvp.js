@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q174 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q203 */
 function rsvpEventTimeQ169_(value){const m=String(value||'').trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);return m&&Number(m[1])<24&&Number(m[2])<60?m[1].padStart(2,'0')+':'+m[2]:'';}
 function rsvpInitialChoiceQ171_(guest){const s=String(guest?.rsvpStatus||'');return ['Confirmed','Declined'].includes(s)||s==='Pending'&&guest?.hasRespondedQ171===true?s:null;}
 (async function(){
@@ -96,11 +96,11 @@ function rsvpInitialChoiceQ171_(guest){const s=String(guest?.rsvpStatus||'');ret
    form.append(question,choices,field,save,message);area.replaceChildren(form);if(selected)choose(selected);else{field.hidden=true;save.disabled=true;save.title='יש לבחור אחת מאפשרויות ההגעה לפני שליחת התשובה'}
    form.onsubmit=async e=>{e.preventDefault();if(!selected||isClosed||saveBusy)return;const n=selected==='Confirmed'?Number(count.value):0;
     if(selected==='Confirmed'&&(!Number.isInteger(n)||n<1||n>Number(data.guest.invitedCount))){message.replaceChildren(el('p','יש להזין מספר משתתפים תקין בין 1 ל־'+data.guest.invitedCount,'error'));count.focus();return}
-    saveBusy=true;save.disabled=true;save.setAttribute('aria-busy','true');save.title='';save.textContent='שולח…';buttons.forEach(b=>b.disabled=true);message.replaceChildren(loading('שולח תשובה…'));
+    saveBusy=true;save.disabled=true;save.setAttribute('aria-busy','true');save.title='';save.textContent='שולח…';buttons.forEach(b=>b.disabled=true);message.replaceChildren();
     try{const r=await call({action:'rsvpSaveV1189A3',key,status:selected,count:n});savedCount=n||1;
      // Same-origin localhost tabs receive this signal immediately; focus refresh is a fallback.
      try{localStorage.setItem('events_rsvp_updated_v1189a4',JSON.stringify({eventId:r.eventId,guestId:r.guestId,at:Date.now()}))}catch(_){}
-     data.guest.rsvpStatus=selected;data.guest.confirmedCount=n;data.guest.hasRespondedQ171=true;lastSavedStatus=selected;lastSavedNumber=n;registeredViewQ173_();
+     data.guest.rsvpStatus=selected;data.guest.confirmedCount=n;data.guest.hasRespondedQ171=true;lastSavedStatus=selected;lastSavedNumber=n;resultView(selected,n);
     }catch(err){if(/מועד אישור ההגעה הסתיים/.test(err.message||'')){await refreshContext(true);if(data.closed)await closedView();else message.replaceChildren(el('p',err.message,'error'));return}message.replaceChildren(el('p',err.message||'השמירה נכשלה','error'));save.disabled=false;save.textContent='שליחת תשובה';buttons.forEach(b=>b.disabled=false)}
     finally{saveBusy=false;save.setAttribute('aria-busy','false');if(contextQueued){contextQueued=false;refreshContext()}}
    };

@@ -6,7 +6,7 @@
  const more=document.createElement('details');more.className='guest-more-q116';
  const summary=document.createElement('summary');summary.textContent='פעולות נוספות';more.append(summary);
  const menu=document.createElement('div');menu.className='guest-more-menu-q116';more.append(menu);
- ['guestWhatsAppTestBulkF14C','guestTemplateBtn','guestExportBtn','guestImportBtn','resetAllSeatingV170','resetEventGuestsV1190A10'].forEach(id=>{if(get(id))menu.append(get(id));});
+ ['guestWhatsAppTestBulkF14C','guestTemplateBtn','guestExportBtn','guestSeatingPdfQ158','guestImportBtn','resetAllSeatingV170','resetEventGuestsV1190A10'].forEach(id=>{if(get(id))menu.append(get(id));});
  actions.append(more);
  menu.addEventListener('click',e=>{if(e.target.closest('button'))more.open=false;});
  document.addEventListener('click',e=>{if(!more.contains(e.target))more.open=false;});
@@ -42,8 +42,16 @@
  const info=document.createElement('details');info.className='guest-help-q116';const title=document.createElement('summary');title.textContent='מידע על מצבי ההודעות';info.append(title,help);message.append(info);
  get('guestFiltersToggleA5').querySelector('span').textContent='סינון נוסף';
  const filters=get('guestFiltersA5'),toggle=get('guestFiltersToggleA5');
- const names={sideFilter:'צד',groupFilter:'קבוצה',statusFilter:'אישור הגעה',guestSendFilterA19P2F6:'שליחה',guestSeatingFilterV174:'שיבוץ',guestTableFilterV174:'שולחן'};
- function filterHint(){const active=[...filters.querySelectorAll('select')].filter(s=>s.value).map(s=>(names[s.id]||'סינון')+': '+s.options[s.selectedIndex].text);toggle.querySelector('span').textContent=(filters.classList.contains('filters-open-a5')?'הסתר סינון נוסף':'סינון נוסף')+(active.length?' ('+active.length+')':'');toggle.title=active.join(' • ');}
+ const names={sideFilter:'צד',groupFilter:'קבוצה',statusFilter:'אישור הגעה',guestSendFilterA19P2F6:'שליחה',guestSeatingFilterV174:'שיבוץ',guestTableFilterV174:'שולחן',guestMessageStatusQ114:'מצב הודעה'};
+ // Keep the existing input nodes and listeners while sharing one responsive row.
+ Object.entries(names).forEach(([id,title])=>{const field=get(id);if(!field)return;const existing=field.closest('label');if(existing){existing.classList.add('guest-filter-field-q191');return;}const label=document.createElement('label');label.className='guest-filter-field-q191';label.htmlFor=id;const caption=document.createElement('span');caption.textContent=title;field.before(label);label.append(caption,field);});
+ const search=bar.querySelector('.search-field'),searchLabel=document.createElement('label');searchLabel.className='guest-filter-search-q191';searchLabel.htmlFor='guestSearch';const searchCaption=document.createElement('span');searchCaption.textContent='חיפוש';search.before(searchLabel);searchLabel.append(searchCaption,search);
+ bar.append(filters);
+ const tableFieldQ201=get('guestTableFilterV174')?.closest('label');
+ if(tableFieldQ201)tableFieldQ201.after(get('guestMessagePurposeQ114').closest('label'),get('guestMessageStatusQ114').closest('label'));
+ const loading=get('guestMessageLoadingQ190'),messageStatus=get('guestMessageStatusQ114');if(loading&&messageStatus)messageStatus.closest('label').append(loading);
+
+ function filterHint(){const active=[...filters.querySelectorAll('select')].filter(s=>s.id!=='guestMessagePurposeQ114'&&s.value).map(s=>(names[s.id]||'סינון')+': '+s.options[s.selectedIndex].text);toggle.querySelector('span').textContent=(filters.classList.contains('filters-open-a5')?'הסתר סינון נוסף':'סינון נוסף')+(active.length?' ('+active.length+')':'');toggle.title=active.join(' • ');}
  filters.addEventListener('change',filterHint);toggle.addEventListener('click',filterHint);
  get('clearGuestFiltersV180').addEventListener('click',()=>queueMicrotask(filterHint));
  if(typeof applyRole==='function')applyRole();

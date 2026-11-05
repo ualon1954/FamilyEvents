@@ -15,7 +15,7 @@ function gmKeyQ114_(c){return JSON.stringify([c.token,c.eventId,c.purpose]);}
 function gmAllowedQ114_(){return ['Admin','EventManager'].includes(state.session?.role);}
 function gmReadyQ114_(){return gmAllowedQ114_()&&gmCacheQ114.ready&&gmCacheQ114.key===gmKeyQ114_(gmContextQ114_());}
 function guestMessageRecordQ114_(g){return gmReadyQ114_()?gmCacheQ114.entries.get(String(g.guestId||g.id)):null;}
-function guestMessageMatchesQ114_(g){const f=document.getElementById('guestMessageStatusQ114')?.value||'';if(!f||!gmAllowedQ114_())return true;const r=guestMessageRecordQ114_(g);return !!r&&(r.status===f||f==='DELIVERED'&&r.status==='READ');}
+function guestMessageMatchesQ114_(g,f=document.getElementById('guestMessageStatusQ114')?.value||''){if(!f||!gmAllowedQ114_())return true;const r=guestMessageRecordQ114_(g);return !!r&&(r.status===f||f==='DELIVERED'&&r.status==='READ');}
 function guestMessageCellQ114_(g){
   if(!gmAllowedQ114_())return '';
   const r=guestMessageRecordQ114_(g),label=r?GM_STATUS_Q114[r.status]||'דורשת בירור':gmCacheQ114.error?'לא ניתן לאמת':'טוען מצב…';
@@ -45,8 +45,14 @@ function guestMessagesRenderQ114_(baseRows){
   const panel=document.getElementById('guestMessageControlQ114');if(!panel)return;panel.hidden=!gmAllowedQ114_();if(panel.hidden)return;
   const info=document.getElementById('guestMessageNoticeQ114'),status=document.getElementById('guestMessageStatusQ114'),ready=gmReadyQ114_(),filter=status.value;
   status.disabled=!ready;
+  const loadingQ190=!!state.activeEventId&&!ready&&(gmCacheQ114.loading||gmCacheQ114.key!==gmKeyQ114_(gmContextQ114_()));
+  status.setAttribute?.('aria-busy',String(loadingQ190));
+  const loadingHintQ190=document.getElementById('guestMessageLoadingQ190');
+  if(loadingHintQ190)loadingHintQ190.hidden=!loadingQ190;
+  // Keep the placeholder useful even when the status field is disabled.
+  if(status.options?.[0])status.options[0].textContent=loadingQ190?'טוען מצבי הודעות…':'כל המצבים';
   const button=document.getElementById('guestMessageRefreshQ114');button.disabled=gmCacheQ114.loading||!state.activeEventId;button.setAttribute('aria-busy',String(gmCacheQ114.loading));button.textContent=gmCacheQ114.loading?'טוען…':'רענן מצבי הודעות';
-  info.textContent=!state.activeEventId?'יש לבחור אירוע':gmCacheQ114.key!==gmKeyQ114_(gmContextQ114_())?'טוען מצבי הודעות…':gmCacheQ114.error?'לא ניתן לאמת מצבי הודעות כרגע. יש לרענן, ואם הבעיה נמשכת לפנות למנהל המערכת.'+(state.session?.role==='Admin'?' '+gmCacheQ114.error:''):gmCacheQ114.loading?'טוען מצבי הודעות…':ready?'מצבי הודעות רגילות בלבד · עודכן '+new Date(gmCacheQ114.checkedAt).toLocaleTimeString('he-IL')+' · הסיכומים לפי סינוני הרשימה, לפני סינון מצב ההודעה':'';
+  info.textContent=!state.activeEventId?'יש לבחור אירוע':gmCacheQ114.key!==gmKeyQ114_(gmContextQ114_())?'טוען מצבי הודעות…':gmCacheQ114.error?'לא ניתן לאמת מצבי הודעות כרגע. יש לרענן, ואם הבעיה נמשכת לפנות למנהל המערכת.'+(state.session?.role==='Admin'?' '+gmCacheQ114.error:''):gmCacheQ114.loading?'טוען מצבי הודעות…':ready?'מצבי הודעות רגילות בלבד · עודכן '+new Date(gmCacheQ114.checkedAt).toLocaleTimeString('he-IL')+' · הסיכומים לפי סינוני הרשימה, לפני סינון מצב ההודעה והגבלת מספר הרשומות':'';
   const cards=[['NEVER','טרם נשלחה'],['PROCESSING','בתהליך שליחה'],['PENDING','ממתינות למסירה'],['DELIVERED','נמסרו / נקראו'],['FAILED','נכשלו'],['REVIEW','דורשות בירור']];
   document.getElementById('guestMessageCardsQ114').innerHTML=cards.map(([key,label])=>{const n=ready?baseRows.filter(g=>{const r=guestMessageRecordQ114_(g);return r&&(r.status===key||key==='DELIVERED'&&r.status==='READ');}).length:'—';return `<button type="button" class="gm-summary-q114 gm-${key} ${filter===key?'active':''}" data-gm-filter-q114="${key}" ${ready&&n>0?'':'disabled'} aria-pressed="${filter===key}"><span>${label}</span><strong>${n}</strong></button>`;}).join('');
   const heading=document.querySelector('#page-guests th[data-col="messageState"]');if(heading)heading.textContent=({invitation:'מצב הזמנה',rsvp_update:'מצב תזכורת',table_update:'מצב עדכון שולחן',thank_you:'מצב הודעת תודה'})[gmContextQ114_().purpose]||'מצב הודעה';

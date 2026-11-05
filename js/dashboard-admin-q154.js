@@ -3,7 +3,7 @@ let dashAdminQ154={busy:false,at:'',error:'',token:''};
 function dashboardAdminOverviewQ154_(){
  if(state.session?.role!=='Admin')return '';
  if(dashAdminQ154.token!==state.session.token)dashAdminQ154={busy:false,at:'',error:'',token:state.session.token};
- const events=state.events||[],users=state.adminData.users||[],types=state.eventTypes||[],connections=state.adminData.whatsapp||[];
+ const events=(state.events||[]).filter(e=>!e.archivedAt),users=state.adminData.users||[],types=state.eventTypes||[],connections=state.adminData.whatsapp||[];
  const card=(label,count,action,tone)=>'<button type="button" class="dash-card-q123 '+tone+'" data-admin-dash-q154="'+action+'" '+(!count?'disabled':'')+'><span>'+label+'</span><strong>'+count+'</strong><small>'+(!count?'אין פריטים להצגה':'לניהול וצפייה ←')+'</small></button>';
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
  const date=e=>String(e.date||e.eventDate||'').slice(0,10);

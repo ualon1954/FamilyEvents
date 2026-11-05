@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q174 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q203 */
 // Only use a candidate returned by the current, event-scoped inspection.
 function waQuarantineCandidateFromInspectionQ9_(result,eventId){
   const c=result&&result.quarantineCandidate;
@@ -185,7 +185,9 @@ function showPage(name){
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function applyRole(){
+  if(typeof waDisplayNameRoleQ184_==='function')waDisplayNameRoleQ184_();
   const role=state.session?.role||'';
+  if(role!=='Admin'){const limitQ201=$('#guestRecordLimitQ181');if(limitQ201)limitQ201.value='';}
   $$('[data-role]').forEach(el=>el.style.display=(role===el.dataset.role?"":"none"));
   $$('[data-roles]').forEach(el=>el.style.display=String(el.dataset.roles||'').split(',').includes(role)?"":"none");
   const seatingPage=$('#page-seating');if(seatingPage)seatingPage.classList.toggle('seating-table-manager-z19',role==='TableManager');
@@ -553,6 +555,8 @@ function rebuildLookupIndex_(){
 }
 function lookupEventTypeId_(eventTypeId){return eventTypeId||activeEvent()?.eventTypeId||""}
 function activeLookup(kind,eventTypeId){
+  const eventQ198=activeEvent();
+  if((kind==='sides'||kind==='groups')&&eventQ198&&(!eventTypeId||String(eventTypeId)===String(eventQ198.eventTypeId)))return eventLookupRowsQ198_(eventQ198,kind).filter(x=>isTrue(x.active,true)).sort((a,b)=>(+a.sortOrder||0)-(+b.sortOrder||0));
   const scopeId=String(lookupEventTypeId_(eventTypeId)||'');
   if(kind==="sides")return state.lookupIndex?.sidesByType?.[scopeId]||[];
   if(kind==="groups")return state.lookupIndex?.groupsByType?.[scopeId]||[];
@@ -574,6 +578,8 @@ function lookupDisplay_(kind,x){
 }
 function optionHtml(kind,selected,eventTypeId){return activeLookup(kind,eventTypeId).map(x=>{const key=lookupKey_(kind,x);return `<option value="${esc(key)}" ${String(key)===String(selected)?"selected":""}>${esc(lookupDisplay_(kind,x))}</option>`}).join("")}
 function labelFor(kind,value,eventTypeId){
+  if((kind==='sides'||kind==='groups')&&activeEvent()&&(!eventTypeId||String(eventTypeId)===String(activeEvent().eventTypeId))){const item=eventLookupRowsQ198_(activeEvent(),kind).find(x=>lookupKey_(kind,x)===String(value)||String(x.value)===String(value));if(item)return lookupDisplay_(kind,item);}
+
   const scoped=kind==="sides"||kind==="groups",scopeId=scoped?String(lookupEventTypeId_(eventTypeId)||''):'';
   const key=`${kind}|${scopeId}|${String(value??'')}`;
   const indexed=state.lookupIndex?.labelMap?.[key];
@@ -583,7 +589,7 @@ function labelFor(kind,value,eventTypeId){
 function statusText(s){return labelFor("statuses",s)||s}
 function renderLookupFilters(){
   const side=$("#sideFilter"), group=$("#groupFilter"), status=$("#statusFilter"); if(!side)return;
-  const ev=activeEvent(),eventTypeId=String(ev?.eventTypeId||''),type=eventTypeById(eventTypeId),showSides=!!type&&isTrue(type.usesSides,false),showGroups=!!type&&isTrue(type.usesGroups,false);
+  const ev=activeEvent(),eventTypeId=String(ev?.eventTypeId||''),type=eventLookupTypeQ198_(ev),showSides=!!type&&isTrue(type.usesSides,false),showGroups=!!type&&isTrue(type.usesGroups,false);
   const sv=showSides?side.value:"",gv=showGroups?group.value:"",stv=status.value;
   side.hidden=!showSides;group.hidden=!showGroups;
   const sideHead=$(".guests-table th[data-sort=side]"),groupHead=$(".guests-table th[data-sort=group]");
@@ -614,10 +620,10 @@ function persistCurrentEvent_(){
 }
 function restoreCurrentEvent_(){
   const saved=localStorage.getItem(CURRENT_EVENT_KEY);
-  if(saved&&state.events.some(e=>eventKey_(e)===String(saved))){state.activeEventId=saved;return}
+  if(saved&&state.events.some(e=>!e.archivedAt&&eventKey_(e)===String(saved))){state.activeEventId=saved;return}
   const active=state.events.filter(e=>e.lifecycleStatus==="ACTIVE");
   if(active.length===1)state.activeEventId=eventKey_(active[0]);
-  else if(state.events.length===1)state.activeEventId=eventKey_(state.events[0]);
+  else if(state.events.filter(e=>!e.archivedAt).length===1)state.activeEventId=eventKey_(state.events.find(e=>!e.archivedAt));
   else state.activeEventId=null;
   persistCurrentEvent_();
 }
@@ -625,7 +631,7 @@ function currentEventLookupContext_(){
   const ev=activeEvent();
   if(!ev) return null;
   const eventTypeId=String(ev.eventTypeId||'');
-  const type=eventTypeById(eventTypeId);
+  const type=eventLookupTypeQ198_(ev);
   return {
     event:{id:eventKey_(ev),eventId:eventKey_(ev),name:ev.name,eventTypeId:eventTypeId},
     eventType:type,
@@ -636,7 +642,8 @@ function currentEventLookupContext_(){
 }
 
 function setCurrentEvent_(id){
-  const next=state.events.some(e=>eventKey_(e)===String(id))?String(id):null;
+  const next=state.events.some(e=>!e.archivedAt&&eventKey_(e)===String(id))?String(id):null;
+  if(next!==state.activeEventId){const recordLimit=$('#guestRecordLimitQ181');if(recordLimit)recordLimit.value='';}
   state.activeEventId=next;
   if(next)void eventImagesWarmD55S_(next);
   state.seating=null;
@@ -675,7 +682,7 @@ function setCurrentEvent_(id){
   void waOfferInterruptedQ22_();
 }
 function renderCurrentEventContext_(){
-  const optionRows=state.events.map(e=>{const key=eventKey_(e);return `<option value="${esc(key)}" ${key===String(state.activeEventId)?"selected":""}>${esc(e.name||"ללא שם")} — ${esc(lifecycleText(e.lifecycleStatus))}</option>`}).join("");
+  const optionRows=state.events.filter(e=>!e.archivedAt).map(e=>{const key=eventKey_(e);return `<option value="${esc(key)}" ${key===String(state.activeEventId)?"selected":""}>${esc(e.name||"ללא שם")} — ${esc(lifecycleText(e.lifecycleStatus))}</option>`}).join("");
   [$("#currentEventSelect"),$("#activeEventSelect")].filter(Boolean).forEach(sel=>{
     const previous=state.activeEventId||"";
     sel.innerHTML=`<option value="">בחר אירוע...</option>${optionRows}`;
@@ -801,24 +808,34 @@ function renderEventViewImagesD55Q(card,event){
     }
   }).catch(err=>{if(holder.isConnected)holder.textContent='טעינת התמונות נכשלה: '+(err.message||err);});
 }
+let eventArchiveViewQ175='current';
 function renderEvents(){
   const users=state.adminData.users||[];
   const userNameById=id=>users.find(u=>String(u.id)===String(id))?.name||'לא הוגדר';
   const userPhoneById=id=>displayUserPhone_(users.find(u=>String(u.id)===String(id))?.phone||'');
   const valueOrUnset=v=>String(v??'').trim()?esc(v):'לא הוגדר';
-  const tabs=[['general','כללי'],['images','תמונות'],['navigation','ניווט'],...(state.session.role==='TableManager'?[]:[['payment','תשלום']]),['rsvp','אישורי הגעה'],['messages','הודעות']];
+  const baseTabs=[['general','כללי'],['images','תמונות'],['navigation','ניווט'],...(state.session.role==='TableManager'?[]:[['payment','תשלום']]),['rsvp','אישורי הגעה'],['messages','הודעות']];
   const root=$('#eventsGrid');if(!root)return;
+  let archiveNav=document.getElementById('eventArchiveNavQ175');
+  if(!archiveNav){archiveNav=document.createElement('div');archiveNav.id='eventArchiveNavQ175';archiveNav.className='actions';archiveNav.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px';root.before(archiveNav);}
+  archiveNav.hidden=state.session.role!=='Admin';archiveNav.style.display=state.session.role==='Admin'?'flex':'none';
+  const archiveFilters=[['current','אירועים במערכת'],['expired','אירועים שפג תוקפם'],['archive','ארכיון']];
+  archiveNav.innerHTML=archiveFilters.map(([key,label])=>`<button type="button" class="${eventArchiveViewQ175===key?'primary':'secondary'}" data-archive-view-q175="${key}" aria-pressed="${eventArchiveViewQ175===key}">${label} (${state.events.filter(e=>key==='archive'?!!e.archivedAt:key==='expired'?!e.archivedAt&&e.canArchiveQ176===true:!e.archivedAt).length})</button>`).join('');
+  archiveNav.querySelectorAll('button').forEach(b=>b.onclick=()=>{eventArchiveViewQ175=b.dataset.archiveViewQ175;renderEvents();});
   // Keep selected tab when the shared render cycle refreshes an event.
   const previous=new Map(Array.from(root.querySelectorAll('.event-card[data-event]')).map(card=>[String(card.dataset.event),card.querySelector('.event-view-tab-d55q[aria-selected="true"]')?.dataset.tab||'general']));
-  root.innerHTML=state.events.map(e=>{
+  root.innerHTML=state.events.filter(e=>state.session.role==='Admin'&&eventArchiveViewQ175==='archive'?!!e.archivedAt:!e.archivedAt&&(eventArchiveViewQ175!=='expired'||e.canArchiveQ176===true)).map(e=>{
+    if(e.archivedAt)return `<article class="event-card"><header class="event-view-heading-d55q"><h3>${esc(e.name)}</h3><span class="event-view-status-d55q">בארכיון</span></header><p>תאריך האירוע: ${esc(String(e.date||'').slice(0,10))}</p><p>אורכב: ${esc(new Date(e.archivedAt).toLocaleString('he-IL'))}</p><p>נתוני האירוע שמורים במאגר נפרד ואינם נטענים למסכי העבודה.</p><button type="button" class="primary event-archive-q175" data-id="${esc(e.id)}">↶ שחזור אירוע</button></article>`;
     const manager=userNameById(e.rsvpManagerId)||e.rsvpContactName||'לא הוגדר';
     const phone=userPhoneById(e.rsvpManagerId)||displayUserPhone_(e.rsvpContactPhone||'')||'לא הוגדר';
     const tableManager=e.tableManagerId?userNameById(e.tableManagerId):'לא הוגדר';
+    const configQ200=eventLookupTypeQ198_(e);
+    const tabs=[...baseTabs,...(configQ200?.usesSides?[['sides','צד']]:[]),...(configQ200?.usesGroups?[['groups','קבוצה']]:[])];
     const remembered=previous.get(String(e.id))||'general';
     const selected=tabs.some(([id])=>id===remembered)?remembered:'general';
     const panel=(id,html)=>`<section class="event-view-pane-d55q" data-pane="${id}" role="tabpanel" ${selected===id?'':'hidden'}>${html}</section>`;
     return `<article class="event-card ${String(e.id)===String(state.activeEventId)?'active':''}" data-event="${esc(e.id)}">
-      <header class="event-view-heading-d55q"><h3><span class="event-view-icon-d55q" aria-hidden="true">${/חתונ|wedding/i.test(String(eventTypeName(e)))?'💍':'📖'}</span> ${esc(e.name)}</h3><span class="event-view-status-d55q">${isTrue(e.enabled,true)?'פעיל':'לא פעיל'}</span></header>
+      <header class="event-view-heading-d55q"><h3><span class="event-view-icon-d55q" aria-hidden="true">${/חתונ|wedding/i.test(String(eventTypeName(e)))?'💍':'📖'}</span> ${esc(e.name)}</h3><span class="event-view-status-d55q">${e.archivedAt?'בארכיון':isTrue(e.enabled,true)?'פעיל':'לא פעיל'}</span></header>
       <nav class="event-view-tabs-d55q" aria-label="לשוניות תצוגת אירוע" role="tablist">${tabs.map(([id,label])=>`<button type="button" class="event-view-tab-d55q" role="tab" data-tab="${id}" aria-selected="${selected===id}">${label}</button>`).join('')}</nav>
       ${panel('general',`<h4>פרטי האירוע</h4><p><b>סוג אירוע:</b> ${esc(eventTypeName(e))}</p><p><b>תאריך ושעה:</b> ${esc(formatEventDateTime_(e))}</p><p><b>מקום:</b> ${valueOrUnset(e.venue)}</p><p><b>אירוע פעיל:</b> ${isTrue(e.enabled,true)?'כן':'לא'} · <b>מצב:</b> ${esc(lifecycleText(e.lifecycleStatus))}</p><p><b>ניהול שולחנות:</b> ${isTrue(e.seatingEnabled,true)?'כן':'לא'}</p><p><b>מנהל שולחנות:</b> ${esc(tableManager)}</p>`)}
       ${panel('images','<h4>תמונות האירוע</h4><div class="event-view-images-d55q" role="status">טוען נתוני תמונות…</div>')}
@@ -826,16 +843,18 @@ function renderEvents(){
       ${panel('payment','<h4>הגדרות תשלום</h4><div class="event-view-payment-host-d55u" role="status">פתח את הלשונית לטעינת הגדרות התשלום.</div>')}
       ${panel('rsvp',`<h4>הגדרות אישור הגעה</h4><p><b>מועד סגירת אישור/שינוי הגעה:</b> ${e.rsvpDeadline?esc(formatRsvpDeadline_(e.rsvpDeadline)):'לא הוגדר'}</p><p><b>מנהל אחראי:</b> ${esc(manager)}</p><p><b>טלפון איש קשר:</b> ${esc(phone)}</p><p><b>הודעה לאחר תפוגה:</b> ${esc(e.rsvpClosedMessage||'לא הוגדרה')}</p>`)}
       ${panel('messages',`<h4>הודעות</h4><p><b>חתימת ההודעה:</b> ${valueOrUnset(e.messageSignature)}</p><p>תבניות WhatsApp והשליחה מנוהלות במסך ההודעות הקיים.</p>`)}
-      <div class="actions"><button class="primary edit-event event-action-btn-d55w" data-id="${esc(e.id)}"><span class="event-action-icon-d55w" aria-hidden="true">✎</span> עריכה</button><button class="danger delete-event event-action-btn-d55w" data-id="${esc(e.id)}"><svg class="event-action-icon-d55w" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14M10 10v7M14 10v7"/></svg> מחיקה</button></div>
+      ${configQ200?.usesSides?panel('sides',eventLookupViewQ200_(e,'sides')):''}
+      ${configQ200?.usesGroups?panel('groups',eventLookupViewQ200_(e,'groups')):''}
+      <div class="actions"><button ${e.archivedAt?'hidden':''} class="primary edit-event event-action-btn-d55w" data-id="${esc(e.id)}"><span class="event-action-icon-d55w" aria-hidden="true">✎</span> עריכה</button>${state.session.role==='Admin'&&e.canArchiveQ176===true?`<button class="secondary event-archive-q175 event-action-btn-d55w" data-id="${esc(e.id)}">${e.archivedAt?'↶ שחזור אירוע':'▣ ארכוב אירוע'}</button>`:''}</div>
     </article>`;
-  }).join('')||'<div class="empty">אין אירועים. צור אירוע ראשון.</div>';
+  }).join('')||'<div class="empty">אין אירועים בתצוגה הנבחרת.</div>';
   root.querySelectorAll('.event-card').forEach(card=>{
     const activate=id=>{
       card.querySelectorAll('.event-view-tab-d55q').forEach(btn=>btn.setAttribute('aria-selected',String(btn.dataset.tab===id)));
       card.querySelectorAll('.event-view-pane-d55q').forEach(p=>p.hidden=p.dataset.pane!==id);
       if(id==='images'){const event=state.events.find(e=>String(e.id)===String(card.dataset.event));if(event)renderEventViewImagesD55Q(card,event);}
       if(id==='payment'){void renderEventPaymentD55U_(card);}
-      const globalEdit=card.querySelector('.edit-event');if(globalEdit)globalEdit.hidden=id==='payment';
+      const globalEdit=card.querySelector('.edit-event');if(globalEdit)globalEdit.hidden=id==='payment'||!!state.events.find(e=>String(e.id)===String(card.dataset.event))?.archivedAt;
     };
     card.querySelectorAll('.event-view-tab-d55q').forEach(btn=>btn.addEventListener('click',()=>activate(btn.dataset.tab)));
     const activeTab=card.querySelector('.event-view-tab-d55q[aria-selected="true"]')?.dataset.tab;
@@ -845,37 +864,89 @@ function renderEvents(){
   });
 }
 
-function filteredGuests(ignoreMessageQ114=false){
-  const type=eventTypeById(activeEvent()?.eventTypeId),sideEnabled=!!type&&isTrue(type.usesSides,false),groupEnabled=!!type&&isTrue(type.usesGroups,false);
-  const q=$("#guestSearch").value.trim().toLowerCase(),side=sideEnabled?$("#sideFilter").value:"",group=groupEnabled?$("#groupFilter").value:"",status=$("#statusFilter").value;
-  const rows=state.guests.filter(g=>String(g.eventId)===String(state.activeEventId)&&(!q||(String(g.name||"")+" "+String(g.phone||"")).toLowerCase().includes(q))&&(!side||String(g.sideId||g.side)===String(side))&&(!group||String(g.groupId||g.group)===String(group))&&(!status||String(g.rsvpStatus||g.status)===String(status)));
-  const seatingOnQ165=canManageTables_(),seatingStatus=seatingOnQ165?($('#guestSeatingFilterV174')?.value||''):'',tableFilter=seatingOnQ165?($('#guestTableFilterV174')?.value||''):'',sendFilter=$('#guestSendFilterA19P2F6')?.value||'';
+function guestRecordLimitQ181_(){
+  if(state.session?.role&&state.session.role!=='Admin')return null;
+  const field=$('#guestRecordLimitQ181');if(!field)return null;
+  if(field.validity?.badInput)return -1;
+  const raw=String(field.value||'').trim();if(!raw)return null;
+  const n=Number(raw);return Number.isSafeInteger(n)&&n>0?n:-1;
+}
+function guestRecordLimitValidityQ181_(){
+  const field=$('#guestRecordLimitQ181');if(!field)return;
+  const invalid=guestRecordLimitQ181_()===-1;
+  field.setCustomValidity(invalid?'יש להזין מספר שלם גדול מאפס, או להשאיר ריק להצגת הכול':'');
+  field.setAttribute('aria-invalid',String(invalid));
+}
+function guestFilterValuesQ185_(){
+  const ids=['guestSearch','sideFilter','groupFilter','statusFilter','guestSeatingFilterV174','guestTableFilterV174','guestSendFilterA19P2F6','guestMessageStatusQ114'];
+  return Object.fromEntries(ids.map(id=>[id,String($('#'+id)?.value||'')]));
+}
+function guestMatchesFiltersQ185_(g,f){
+  if(String(g.eventId)!==String(state.activeEventId))return false;
+  const type=eventLookupTypeQ198_(activeEvent());
+  const q=f.guestSearch.trim().toLowerCase(),side=type&&isTrue(type.usesSides,false)?f.sideFilter:'',group=type&&isTrue(type.usesGroups,false)?f.groupFilter:'';
+  if(q&&!(String(g.name||'')+' '+String(g.phone||'')).toLowerCase().includes(q))return false;
+  if(side&&String(g.sideId||g.side)!==side)return false;
+  if(group&&String(g.groupId||g.group)!==group)return false;
+  if(f.statusFilter&&String(g.rsvpStatus||g.status)!==f.statusFilter)return false;
+  if(!guestMessageMatchesQ114_(g,f.guestMessageStatusQ114))return false;
+  if(f.guestSendFilterA19P2F6&&guestSendChecked(g)!==(f.guestSendFilterA19P2F6==='yes'))return false;
+  const enabled=canManageTables_(),seatingStatus=enabled?f.guestSeatingFilterV174:'',tableFilter=enabled?f.guestTableFilterV174:'';
+  if(!seatingStatus&&!tableFilter)return true;
   const st=state.seating?.eventId===String(state.activeEventId)?state.seating:null;
-  const filtered=rows.filter(g=>{
-    if(!ignoreMessageQ114&&!guestMessageMatchesQ114_(g))return false;
-    if(sendFilter && guestSendChecked(g)!==(sendFilter==='yes'))return false;
-    if(!seatingStatus&&!tableFilter)return true;
-    const sg=st?.guests.find(x=>String(x.guestId)===String(g.guestId||g.id));
-    if(seatingStatus==='UNASSIGNED'&&Number(g.confirmedCount)<=0)return false;
-    if(seatingStatus==='NOT_REQUIRED'&&Number(g.confirmedCount)>0)return false;
-    if(seatingStatus==='REMAINING'&&!(Number(g.confirmedCount)>Number(sg?.assignedCount||0)))return false;
-    if(seatingStatus==='UNASSIGNED' && sg && sg.seatingStatus!=='UNASSIGNED')return false;
-    if(seatingStatus&&seatingStatus!=='UNASSIGNED'&&seatingStatus!=='NOT_REQUIRED'&&seatingStatus!=='REMAINING'&&(!sg||sg.seatingStatus!==seatingStatus))return false;
-    if(tableFilter&&!st?.assignments.some(a=>String(a.guestId)===String(g.guestId||g.id)&&String(a.tableId)===tableFilter))return false;
-    return true;
-  });
+  const sg=st?.guests.find(x=>String(x.guestId)===String(g.guestId||g.id));
+  if(seatingStatus==='UNASSIGNED'&&Number(g.confirmedCount)<=0)return false;
+  if(seatingStatus==='NOT_REQUIRED'&&Number(g.confirmedCount)>0)return false;
+  if(seatingStatus==='REMAINING'&&!(Number(g.confirmedCount)>Number(sg?.assignedCount||0)))return false;
+  if(seatingStatus==='UNASSIGNED'&&sg&&sg.seatingStatus!=='UNASSIGNED')return false;
+  if(seatingStatus&&seatingStatus!=='UNASSIGNED'&&seatingStatus!=='NOT_REQUIRED'&&seatingStatus!=='REMAINING'&&(!sg||sg.seatingStatus!==seatingStatus))return false;
+  if(tableFilter&&!st?.assignments.some(a=>String(a.guestId)===String(g.guestId||g.id)&&String(a.tableId)===tableFilter))return false;
+  return true;
+}
+function renderGuestDynamicFiltersQ185_(){
+  // Rebuild lookup/table catalogs before faceting; static catalogs survive pruning.
+  const values=guestFilterValuesQ185_();
+  renderLookupFilters();
+  const guests=state.guests.filter(g=>String(g.eventId)===String(state.activeEventId));
+  const ids=['sideFilter','groupFilter','statusFilter','guestSeatingFilterV174','guestTableFilterV174','guestSendFilterA19P2F6','guestMessageStatusQ114'];
+  for(const id of ids){
+    const el=$('#'+id);
+    // Message readiness changes asynchronously; use this render's cache state.
+    if(id==='guestMessageStatusQ114'&&el&&typeof gmReadyQ114_==='function')el.disabled=!gmReadyQ114_();
+    if(!el||el.hidden||el.disabled)continue;
+    const dynamic=['sideFilter','groupFilter','statusFilter','guestTableFilterV174'].includes(id);
+    if(!dynamic&&!el.guestCatalogQ185)el.guestCatalogQ185=[...el.options].map(o=>({value:o.value,text:o.textContent}));
+    let catalog=dynamic?[...el.options].map(o=>({value:o.value,text:o.textContent})):el.guestCatalogQ185;
+    // Preserve a selected zero-result filter so sending cannot silently broaden.
+    const selected=values[id];
+    if(selected&&!catalog.some(o=>o.value===selected))catalog=catalog.concat({value:selected,text:selected});
+    const candidates=guests.filter(g=>guestMatchesFiltersQ185_(g,{...values,[id]:''}));
+    const choices=catalog.map(o=>({...o,available:!o.value||o.value===selected||candidates.some(g=>guestMatchesFiltersQ185_(g,{...values,[id]:o.value}))}));
+    // Hidden options retain programmatic card/dashboard selection without appearing in the menu.
+    el.innerHTML=choices.map(o=>'<option value="'+esc(o.value)+'"'+(o.available?'':' hidden')+'>'+esc(o.text)+'</option>').join('');
+    el.value=selected;
+  }
+}
+function filteredGuests(ignoreMessageQ114=false){
+  const filtersQ185=guestFilterValuesQ185_();if(ignoreMessageQ114)filtersQ185.guestMessageStatusQ114='';
+  const filtered=state.guests.filter(g=>guestMatchesFiltersQ185_(g,filtersQ185));
   const {key,dir}=state.guestSort,mul=dir==="asc"?1:-1;
-  return filtered.sort((a,b)=>{let av=a[key]??"",bv=b[key]??"";if(key==="invitedCount"||key==="confirmedCount")return((+av||0)-(+bv||0))*mul;if(key==="rsvpStatus"){av=statusText(av);bv=statusText(bv)}return String(av).localeCompare(String(bv),"he",{numeric:true,sensitivity:"base"})*mul});
+  const sorted=filtered.sort((a,b)=>{let av=a[key]??"",bv=b[key]??"";if(key==="invitedCount"||key==="confirmedCount")return((+av||0)-(+bv||0))*mul;if(key==="rsvpStatus"){av=statusText(av);bv=statusText(bv)}return String(av).localeCompare(String(bv),"he",{numeric:true,sensitivity:"base"})*mul});
+  // Message-cache loading needs the entire matching baseline before its own
+  // status filter; visible rows, exports and send selection use the limit.
+  const limit=ignoreMessageQ114?null:guestRecordLimitQ181_();
+  return limit===null?sorted:limit<0?[]:sorted.slice(0,limit);
 }
 function renderGuestStatsV178_(visible){
   const all=state.guests.filter(g=>String(g.eventId)===String(state.activeEventId));
   const statusEl=$('#guestCountStatusV178');
   if(statusEl){
-    const filters=['guestSearch','sideFilter','groupFilter','statusFilter','guestSeatingFilterV174','guestTableFilterV174','guestSendFilterA19P2F6','guestMessageStatusQ114'];
-    const active=filters.some(id=>!!$('#'+id)?.value);
+    const filters=['guestRecordLimitQ181','guestSearch','sideFilter','groupFilter','statusFilter','guestSeatingFilterV174','guestTableFilterV174','guestSendFilterA19P2F6','guestMessageStatusQ114'];
+    const limit=guestRecordLimitQ181_();
+    const active=limit===-1||filters.some(id=>!!$('#'+id)?.value);
     const clearButton=$('#clearGuestFiltersV180');
     if(clearButton){clearButton.classList.toggle('has-active-filters-v182',active);clearButton.setAttribute('aria-pressed',String(active));clearButton.title=active?'נקה את הסינונים הפעילים והחיפוש':'אין סינונים פעילים';}
-    statusEl.innerHTML='<span>מוצגות <b>'+visible.length+'</b> מתוך <b>'+all.length+'</b> רשומות</span>'+(active?'<span class="guest-filter-active-v178">סינון פעיל</span>':'');
+    statusEl.innerHTML='<span>מוצגות <b>'+visible.length+'</b> מתוך <b>'+all.length+'</b> רשומות</span>'+(active?'<span class="guest-filter-active-v178">סינון פעיל</span>':'')+(limit===-1?'<span class="error">יש להזין מספר רשומות שלם גדול מאפס, או להשאיר ריק להצגת הכול</span>':limit!==null?'<span>עד '+limit+' הרשומות הראשונות לפי הסינון והמיון הנוכחיים</span>':'');
   }
   const st=state.seating?.eventId===String(state.activeEventId)?state.seating:null;
   const byGuest=new Map((st?.guests||[]).map(g=>[String(g.guestId),g]));
@@ -992,10 +1063,12 @@ function rsvpSeatingNoticeHtmlQ65_(guest,status){
   return '<small class="rsvp-seating-notice-q64">'+esc(guest.rsvpSeatingNoticeQ64)+'</small>';
 }
 function renderGuests(){
+  guestRecordLimitValidityQ181_();
   renderGuestRefreshQ67_();
   closeGuestSeatingPopoverZ16_();
-  const type=eventTypeById(activeEvent()?.eventTypeId),showSides=!!type&&isTrue(type.usesSides,false),showGroups=!!type&&isTrue(type.usesGroups,false);
+  const type=eventLookupTypeQ198_(activeEvent()),showSides=!!type&&isTrue(type.usesSides,false),showGroups=!!type&&isTrue(type.usesGroups,false);
   renderGuestSeatingFiltersV174_();
+  renderGuestDynamicFiltersQ185_();
   const visibleGuestsV178=filteredGuests();
   renderGuestStatsV178_(visibleGuestsV178);
   guestMessagesRenderQ114_(filteredGuests(true));
@@ -1075,7 +1148,7 @@ function renderGuestImportPreview_(preview,showAll=false){
     <div class="import-summary"><span>שורות: <b>${s.total||0}</b></span><span class="ok-text">תקינות: <b>${s.clean??Math.max(0,(s.valid||0)-(s.warningRows||0))}</b></span><span class="warning-text">אזהרות: <b>${s.warningRows??s.warnings??0}</b></span><span class="error">שגיאות: <b>${s.errors||0}</b></span><span>הוספה: <b>${s.inserts||0}</b></span><span>עדכון: <b>${s.updates||0}</b></span></div>
     <div class="actions import-preview-filter-actions"><button type="button" class="secondary import-rows-action-a13" id="toggleGuestImportRowsBtn">${state.guestImportShowAll?"הצג חריגים בלבד":"הצג את כל הרשומות"}</button></div>
     <p class="muted">Preview בלבד — בשלב זה לא נשמרה אף רשומה. ${state.guestImportShowAll?`מוצגות כל ${allRows.length} הרשומות.`:`מוצגות רק שגיאות ואזהרות (${exceptionRows.length}).`}</p>
-    ${noExceptions?`<div class="empty-state ok-text">✓ כל ${allRows.length} הרשומות עברו בדיקה בהצלחה. לא נמצאו שגיאות או אזהרות.</div>`:`<div class="table-wrap import-preview-wrap"><table class="admin-table import-preview-table"><thead><tr><th>שורה</th><th>פעולה</th><th>שם</th><th>טלפון</th><th>פנייה אישית</th><th>צד</th><th>קבוצה</th><th>מוזמנים</th><th>אישרו</th><th>סטטוס</th><th>בדיקה</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.valid?(r.warnings?.length?"import-warning":"import-ok"):"import-error"}"><td>${r.sourceRow}</td><td>${r.action==="UPDATE"?"עדכון":"הוספה"}</td><td>${esc(r.guest?.name||"")}</td><td>${esc(r.guest?.phone||"")}</td><td>${esc(r.guest?.invitationGreeting||"")}</td><td>${esc(labelFor("sides",r.guest?.sideId||"",preview.event?.eventTypeId)||"")}</td><td>${esc(labelFor("groups",r.guest?.groupId||"",preview.event?.eventTypeId)||"")}</td><td>${r.guest?.invitedCount??""}</td><td>${r.guest?.confirmedCount??""}</td><td>${esc(statusText(r.guest?.rsvpStatus||""))}</td><td class="import-check">${esc(importIssueText_(r))}</td></tr>`).join("")}</tbody></table></div>`}
+    ${noExceptions?`<div class="empty-state ok-text">✓ כל ${allRows.length} הרשומות עברו בדיקה בהצלחה. לא נמצאו שגיאות או אזהרות.</div>`:`<div class="table-wrap import-preview-wrap"><table class="admin-table import-preview-table"><thead><tr><th>שורה</th><th>פעולה</th><th>שם</th><th>טלפון</th><th>פנייה אישית</th><th ${eventLookupTypeQ198_(activeEvent())?.usesSides?"":"hidden"}>צד</th><th ${eventLookupTypeQ198_(activeEvent())?.usesGroups?"":"hidden"}>קבוצה</th><th>מוזמנים</th><th>אישרו</th><th>סטטוס</th><th>בדיקה</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.valid?(r.warnings?.length?"import-warning":"import-ok"):"import-error"}"><td>${r.sourceRow}</td><td>${r.action==="UPDATE"?"עדכון":"הוספה"}</td><td>${esc(r.guest?.name||"")}</td><td>${esc(r.guest?.phone||"")}</td><td>${esc(r.guest?.invitationGreeting||"")}</td><td ${eventLookupTypeQ198_(activeEvent())?.usesSides?"":"hidden"}>${esc(labelFor("sides",r.guest?.sideId||"",preview.event?.eventTypeId)||"")}</td><td ${eventLookupTypeQ198_(activeEvent())?.usesGroups?"":"hidden"}>${esc(labelFor("groups",r.guest?.groupId||"",preview.event?.eventTypeId)||"")}</td><td>${r.guest?.invitedCount??""}</td><td>${r.guest?.confirmedCount??""}</td><td>${esc(statusText(r.guest?.rsvpStatus||""))}</td><td class="import-check">${esc(importIssueText_(r))}</td></tr>`).join("")}</tbody></table></div>`}
     ${hasBlockingErrors?`<div class="empty-state error">לא ניתן לאשר את הייבוא כל עוד קיימות ${errorRowCount===1?"שורה אחת עם שגיאה":`${errorRowCount} שורות עם שגיאות`}. יש לתקן את השגיאות בקובץ ולהעלות אותו מחדש.${importableCount>0?` ${importableCount} ${importableCount===1?"שורה תקינה/עם אזהרה תהיה ניתנת":"שורות תקינות/עם אזהרות יהיו ניתנות"} לייבוא לאחר התיקון.`:""}</div>`:""}
     <div id="guestImportCommitStatus" class="event-save-status" aria-live="polite"></div>
     <div class="actions"><button type="button" class="secondary" id="cancelGuestImportBtn">ביטול</button>${!hasBlockingErrors&&importableCount>0?`<button type="button" class="primary" id="commitGuestImportBtn">אישור וייבוא ${importableCount} שורות</button>`:""}</div>`);
@@ -1122,12 +1195,12 @@ async function handleGuestImportFile_(file){
       id:g.id||g.guestId||"",guestId:g.guestId||g.id||"",eventId:eventId,name:g.name||"",phone:g.phone||"",phoneNormalized:g.phoneNormalized||""
     }));
     const eventTypeId=String(ev.eventTypeId||"");
-    const eventType=(state.eventTypes||[]).find(t=>String(t.eventTypeId||t.id||"")===eventTypeId)||{};
+    const eventType=eventLookupTypeQ198_(ev)||{};
     const contextHint={
       eventId,event:{eventId,name:ev.name||"",eventTypeId},eventTypeId,eventType,
       usesSides:eventType.usesSides,usesGroups:eventType.usesGroups,
-      sides:(state.lookups?.sides||[]).filter(x=>String(x.eventTypeId||"")===eventTypeId),
-      groups:(state.lookups?.groups||[]).filter(x=>String(x.eventTypeId||"")===eventTypeId),
+      sides:eventLookupRowsQ198_(ev,'sides'),
+      groups:eventLookupRowsQ198_(ev,'groups'),
       statuses:(state.lookups?.statuses||[])
     };
     const previewRequestStarted=performance.now();
@@ -1353,7 +1426,9 @@ function eventForm(e={}){
       {id:"navigation",title:"ניווט"},
       {id:"payment",title:"תשלום"},
       {id:"rsvp",title:"אישורי הגעה"},
-      {id:"messages",title:"הודעות"}
+      {id:"messages",title:"הודעות"},
+      {id:"sides",title:"צד"},
+      {id:"groups",title:"קבוצה"}
     ];
     const typeNameD55O=String(types.find(t=>String(t.eventTypeId||t.id)===String(selectedType))?.name||"");
     const iconD55O=/חתונ|נישוא/.test(typeNameD55O)?"💍":/בר מצווה/.test(typeNameD55O)?"📖":/בת מצווה/.test(typeNameD55O)?"✦":"✦";
@@ -1485,6 +1560,7 @@ function eventForm(e={}){
   if(typeSelect && !e.id){
     typeSelect.onchange=()=>{const t=eventTypeById(typeSelect.value),cb=$("#eventForm [name=seatingEnabled]");if(cb&&t)cb.checked=isTrue(t.defaultSeatingEnabled,false)};
   }
+  installEventLookupsEditorQ198_(e);
   const managerSelect=$("#eventForm [name=rsvpManagerId]");
   const managerInfo=$("#rsvpManagerContact");
   const updateManager=()=>{
@@ -1521,6 +1597,7 @@ async function saveEventForm(ev){
   const fd=new FormData(form);
   const o=Object.fromEntries(fd);
   o.seatingEnabled=fd.has("seatingEnabled");
+  o.usesSides=fd.has("usesSides");o.usesGroups=fd.has("usesGroups");
   o.enabled=fd.has("enabled");
   if(state.session?.role==="Admin"){
     const assigned=[];
@@ -1576,7 +1653,7 @@ async function saveEventForm(ev){
     const serverMs=Number(r?.apiTiming?.totalMs||r?.timing?.totalMs||0);
 
     if(status){
-      status.textContent=`האירוע נשמר בהצלחה${serverMs?` · שרת ${serverMs}ms`:``} · סה"כ ${elapsed}ms`;
+      status.textContent='האירוע נשמר בהצלחה';
       status.className="event-save-status success";
     }
 
@@ -1605,12 +1682,12 @@ function guestForm(g={},forcedEventId=''){
   if(!ev){showToast('יש לבחור אירוע קודם','error');return;}
   const eventId=eventKey_(ev);
   const eventTypeId=String(ev.eventTypeId||'');
-  const type=eventTypeById(eventTypeId);
+  const type=eventLookupTypeQ198_(ev);
   if(!type){showToast('סוג האירוע לא נמצא בנתונים שנטענו. בצע Ctrl+F5.','error');return;}
   const showSides=isTrue(type.usesSides,false),showGroups=isTrue(type.usesGroups,false);
   // strict lookup only for the event type captured above; no active/global fallback. 
-  const scopedSides=showSides?strictScopedLookup_('sides',eventTypeId):[];
-  const scopedGroups=showGroups?strictScopedLookup_('groups',eventTypeId):[];
+  const scopedSides=showSides?eventLookupRowsQ198_(ev,'sides').filter(x=>isTrue(x.active,true)||String(x.sideId||x.id)===String(g.sideId)):[];
+  const scopedGroups=showGroups?eventLookupRowsQ198_(ev,'groups').filter(x=>isTrue(x.active,true)||String(x.groupId||x.id)===String(g.groupId)):[];
   const scopedOptionHtml=(kind,rows,selected)=>rows
     .map(x=>{const key=lookupKey_(kind,x);return `<option value="${esc(key)}" ${String(key)===String(selected)?"selected":""}>${esc(lookupDisplay_(kind,x))}</option>`})
     .join('');
@@ -1652,7 +1729,7 @@ function guestSeatingDetailsZ15_(g){
   return '<section class="guest-detail-seating-z15"><b>שיוך לשולחנות:</b><ul>'+items+'</ul></section>';
 }
 function guestDetails(g){
-  const type=eventTypeById(activeEvent()?.eventTypeId),parts=[],status=g.rsvpStatus||g.status||"Pending";
+  const type=eventLookupTypeQ198_(activeEvent()),parts=[],status=g.rsvpStatus||g.status||"Pending";
   if(type&&isTrue(type.usesSides,false))parts.push(`<b>צד:</b> ${esc(labelFor("sides",g.sideId||g.side,activeEvent()?.eventTypeId))}`);
   if(type&&isTrue(type.usesGroups,false))parts.push(`<b>קבוצה:</b> ${esc(labelFor("groups",g.groupId||g.group,activeEvent()?.eventTypeId))}`);
   modal(`<h2>${esc(g.name)}</h2><p><b>Guest ID:</b> ${esc(g.guestId||g.id)}</p><p><b>טלפון:</b> ${esc(g.phone)}</p>${parts.length?`<p>${parts.join(" | ")}</p>`:""}
@@ -2924,7 +3001,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
         const fix20ApiTotal=fix20Samples.reduce((n,x)=>n+x.apiMs,0);
         const fix20WaitTotal=fix20Waits.reduce((n,x)=>n+x,0);
         const fix20Rows=dispatchPhaseRowsFIX67+waPreparationRowsQ10_(fix20Samples)+waRsvpRowsQ11_(fix20Samples)+waMediaRowsQ12_(fix20Samples)+waChunkTimingRowsQ16_(fix20Samples)+'<dt>שמירת אבחון מרוכזת לאחר הפניות</dt><dd>'+waFormatElapsedF14V_(fix20Samples.reduce((n,x)=>n+(Number(x.diagnosticsMs)||0),0))+'</dd>'+Object.entries(fix20Keys).map(([key,label])=>`<dt>${esc(label)}</dt><dd>${fix20Samples.some(x=>typeof x.server?.[key]==='number')?waFormatElapsedF14V_(fix20Sum(key)):'לא נמדד בנפרד'}</dd>`).join('');
-        const fix20TimingHtml=`<div class="wa-timing-d37"><h3>FIX67Q174 — מדידת בקשות אצווה</h3><dl><dt>אצוות עם פירוט מדידה פרטני</dt><dd>${fix20Samples.filter(x=>x.server).length}/${fix20Samples.length}</dd><dt>טיפול בתור הניסיונות החוזרים, כולל המתנות ותקשורת</dt><dd>${waFormatElapsedF14V_(retryQueueMsQ51)}</dd><dt>קריאות API של המנות, כולל תקשורת</dt><dd>${waFormatElapsedF14V_(fix20RoundTrip)}</dd><dt>זמן פונקציית השליחה בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ServerTotal)}</dd><dt>זמן טיפול API בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ApiTotal)}</dd><dt>זמן מחוץ לטיפול API (הערכה)</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא ניתן לחשב ללא תשובת שרת':waFormatElapsedF14V_(Math.max(0,fix20RoundTrip-fix20ApiTotal))}</dd><dt>המתנה להגדרות לאחר אישור השליחה</dt><dd>${waFormatElapsedF14V_(settingsWaitMsQ10)}</dd><dt>השהיות בין מנות</dt><dd>${waFormatElapsedF14V_(fix20WaitTotal)}</dd><dt>המתנה מתוכננת לקצב טלפון הבדיקה בדפדפן</dt><dd>${waFormatElapsedF14V_(testRateBrowserWaitQ48)}</dd>${fix20Rows}</dl><p class="muted">רכיבי משנה עשויים לחפוף; אין לסכום אותם. נתוני שרת מתקבלים רק מהודעות שהחזירו תשובה.</p></div>`;
+        const fix20TimingHtml=`<div class="wa-timing-d37"><h3>FIX67Q203 — מדידת בקשות אצווה</h3><dl><dt>אצוות עם פירוט מדידה פרטני</dt><dd>${fix20Samples.filter(x=>x.server).length}/${fix20Samples.length}</dd><dt>טיפול בתור הניסיונות החוזרים, כולל המתנות ותקשורת</dt><dd>${waFormatElapsedF14V_(retryQueueMsQ51)}</dd><dt>קריאות API של המנות, כולל תקשורת</dt><dd>${waFormatElapsedF14V_(fix20RoundTrip)}</dd><dt>זמן פונקציית השליחה בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ServerTotal)}</dd><dt>זמן טיפול API בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ApiTotal)}</dd><dt>זמן מחוץ לטיפול API (הערכה)</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא ניתן לחשב ללא תשובת שרת':waFormatElapsedF14V_(Math.max(0,fix20RoundTrip-fix20ApiTotal))}</dd><dt>המתנה להגדרות לאחר אישור השליחה</dt><dd>${waFormatElapsedF14V_(settingsWaitMsQ10)}</dd><dt>השהיות בין מנות</dt><dd>${waFormatElapsedF14V_(fix20WaitTotal)}</dd><dt>המתנה מתוכננת לקצב טלפון הבדיקה בדפדפן</dt><dd>${waFormatElapsedF14V_(testRateBrowserWaitQ48)}</dd>${fix20Rows}</dl><p class="muted">רכיבי משנה עשויים לחפוף; אין לסכום אותם. נתוני שרת מתקבלים רק מהודעות שהחזירו תשובה.</p></div>`;
         console.info('[WA FIX20 PERF]',{samples:fix20Samples.length,roundTripMs:Math.round(fix20RoundTrip),serverMs:Math.round(fix20ServerTotal),apiMs:Math.round(fix20ApiTotal),waitMs:Math.round(fix20WaitTotal),breakdown:Object.fromEntries(Object.keys(fix20Keys).map(k=>[k,fix20Sum(k)]))});
         const timingHtml=`<div class="wa-timing-d37"><h3>פירוט זמנים — TEST</h3><dl><dt>קריאת API כולל תקשורת</dt><dd>${waFormatElapsedF14V_(roundTripMs)}</dd><dt>פירוט מהשרת</dt><dd>${serverTiming?'התקבל':'לא התקבל נתון'}</dd>${serverTiming}</dl><p class="muted">זמן קריאת API כולל זמן שרת, תקשורת והמתנה; אין לחבר אותו לזמני השרת.</p></div>`;
         console.info('[WA PERF] sendAnyTemplateToTestNumber',{roundTripMs:Math.round(roundTripMs),serverPerfAvailable:!!serverTiming});
@@ -3197,7 +3274,22 @@ async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestI
     finally{statusButtonQ141.disabled=false;statusButtonQ141.textContent='בדוק מצב';}
   };
   $('#waRealSendF14C').onclick=async()=>{if(templateBusyZ22Fix5||resumeInvalidQ110||singleGateQ140.busy||singleGateQ140.spent)return;const templateId=$('#waRealTemplateF14C').value;if(!templateId)return;const selectedTpl=waTemplateByIdF14G_(templatesF14Z35,templateId);
-    if(typeof quotaEnsureQ161_==='function'&&!resumeQ110){const b=$('#waRealSendF14C');if(b.dataset.quotaCheckingQ161==='1')return;b.dataset.quotaCheckingQ161='1';b.disabled=true;try{await quotaEnsureQ161_(eligible.length);}catch(error){if($('#waRealSendF14C')===b){const status=$('#waRealStatusF14C');status.textContent=error.message||String(error);status.className='wa-confirm-status-v1190a16 error';b.disabled=false;}delete b.dataset.quotaCheckingQ161;return;}delete b.dataset.quotaCheckingQ161;if($('#waRealSendF14C')!==b)return;b.disabled=false;}
+    if(typeof quotaEnsureQ161_==='function'&&!resumeQ110){
+      const b=$('#waRealSendF14C');if(b.dataset.quotaCheckingQ161==='1')return;
+      const selectQ183=$('#waRealTemplateF14C'),selectDisabledQ183=selectQ183?.disabled;
+      b.dataset.quotaCheckingQ161='1';b.setAttribute('aria-busy','true');
+      waSetSendingF14V_(b,true,'מכין אישור שליחה…');
+      if(selectQ183)selectQ183.disabled=true;
+      try{await quotaEnsureQ161_(eligible.length);}
+      catch(error){
+        if($('#waRealSendF14C')===b){const status=$('#waRealStatusF14C');status.textContent=error.message||String(error);status.className='wa-confirm-status-v1190a16 error';}
+        return;
+      }finally{
+        delete b.dataset.quotaCheckingQ161;b.removeAttribute('aria-busy');waSetSendingF14V_(b,false);
+        if($('#waRealSendF14C')===b){b.disabled=false;if(selectQ183)selectQ183.disabled=selectDisabledQ183;}
+      }
+      if($('#waRealSendF14C')!==b)return;
+    }
     if(!selectedTpl||String(selectedTpl.environment||'PRODUCTION').toUpperCase()!=='PRODUCTION'){const status=$('#waRealStatusF14C');status.textContent='תבנית TEST אינה מותרת במסך שליחה רגיל';status.className='wa-confirm-status-v1190a16 error';return;}
     // Do not repeat a network request before opening confirmation; the server
     // remains authoritative when the user actually confirms sending.
@@ -3230,33 +3322,6 @@ async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestI
         if(statusButtonQ141)statusButtonQ141.hidden=retry||e?.sendStageQ137==='PRECHECK';
       }
       return;}const confirmed=await waConfirmSendF14V_({title:'אישור שליחת WhatsApp',message:`לשלוח ${eligible.length} הודעות למספרי המוזמנים?`,details:`<b>כמות:</b> ${eligible.length} · <b>עלות משוערת:</b> ${esc(cost)}`});if(!confirmed)return;
-    if(waTemplatePurposeD5D55D_(selectedTpl)!=='invitation'){
-      const send=$('#waRealSendF14C'),close=$('#waRealCloseF14C'),stop=$('#waRealStopF14C'),box=$('#waRealProgressF14C'),status=$('#waRealStatusF14C');
-      const started=performance.now();let done=0,ok=0,fail=0,uncertain=false;
-      waSetSendingF14V_(send,true);close.disabled=true;stop.hidden=false;box.hidden=false;
-      $('#waRealJournalZ22').hidden=true;
-      const progress=waBulkProgressWindowZ22_(box,stop,$('#waRealJournalZ22'),'התקדמות שליחת WhatsApp',eligible.length);
-      for(const guest of eligible){
-        if(stopped)break;
-        box.querySelector('span').textContent=`שולח ${done+1} מתוך ${eligible.length}`;
-        try{
-          const result=await API.request('sendAnyTemplateToGuest',{eventId:state.activeEventId,guestId:guest.guestId||guest.id,templateId,environment:'PRODUCTION'});
-          if(result?.accepted){ok++;progress.addMessageId(result.messageId);}else fail++;
-        }catch(error){
-          // Network timeout is not proof of failure: do not automatically retry.
-          if(/timeout|network|fetch|תקשורת/i.test(String(error?.message||''))){uncertain=true;status.textContent='לא התקבלה תשובה ודאית מהשרת. יש לבדוק ביומן לפני שליחה נוספת.';break;}
-          fail++;console.error('[WA send] recipient failed',guest.guestId||guest.id,error);
-        }
-        done++;box.waProgressQ33=waProgressStateQ33_(eligible.length,done,ok,fail,uncertain);box.querySelector('progress').value=Math.round(done*100/eligible.length);
-      }
-      box.waProgressQ33=waProgressStateQ33_(eligible.length,done,ok,fail,uncertain);
-      const left=eligible.length-done;
-      status.innerHTML=adminD5D55Z22?(uncertain?'<p>קיימת הודעה שתוצאת שליחתה אינה ידועה; אין לשלוח אותה שוב לפני בדיקה ביומן.</p>':'')+waResultHtmlF14V_({ok,fail,left,elapsedMs:performance.now()-started,uncertain}):waManagerBulkResultQ97_({done,total:eligible.length,failed:fail,uncertain,stopped});
-      status.className='wa-confirm-status-v1190a16 '+(fail||uncertain||stopped?'error':'success');
-      box.querySelector('span').textContent=`טופלו ${done} מתוך ${eligible.length}`;
-      stop.hidden=true;$('#waRealJournalZ22').hidden=false;progress.finish(box.querySelector('span').textContent,!!(fail||uncertain||stopped),false,{canceled:stopped&&!uncertain});
-      waSetSendingF14V_(send,false);send.disabled=true;close.disabled=false;return;
-    }
     const started=performance.now(),send=$('#waRealSendF14C'),close=$('#waRealCloseF14C'),stop=$('#waRealStopF14C'),box=$('#waRealProgressF14C'),status=$('#waRealStatusF14C');waSetSendingF14V_(send,true);close.disabled=true;stop.hidden=false;$('#waRealJournalZ22').hidden=true;box.hidden=false;box.querySelector('span').textContent='מכין שליחה · בודק Media ושער דולר...';const bulkWindowZ22=waBulkProgressWindowZ22_(box,stop,$('#waRealJournalZ22'),'התקדמות שליחת WhatsApp',eligible.length);let prepared,prepareMsD34=0;const prepareStartedD34=performance.now();try{prepared=await API.request('prepareWhatsAppSendF14Z9',{templateId,eventId:state.activeEventId});prepareMsD34=performance.now()-prepareStartedD34;console.info('[WA PERF] prepareWhatsAppSend',Math.round(prepareMsD34),'ms');box.querySelector('span').textContent=`הכנה הושלמה · Media: ${prepared.mediaSource} · שער דולר: ${prepared.costSource} · Messages: ${eligible.length}`;}catch(e){status.innerHTML=`<p><strong>הכנת השליחה נכשלה:</strong> ${esc(e?.message||'שגיאה לא ידועה')}</p>`;status.className='wa-confirm-status-v1190a16 error';stop.hidden=true;waSetSendingF14V_(send,false);close.disabled=false;bulkWindowZ22.finish('הכנת השליחה נכשלה',true);return;}let ok=0,fail=0,done=0,perf={eventMs:0,ensureMs:0,guestsMs:0,configTemplateMs:0,mediaMs:0,rsvpMs:0,buildMs:0,metaMs:0,processMs:0,pricingMs:0,waLogWriteMs:0,costWriteMs:0,activityWriteMs:0,diagnosticMs:0,writeMs:0,totalMs:0};
     // FIX67: resolve the authorized server setting before reserving a campaign or contacting Meta.
     let chunkSize,concurrencyQ104,batchPauseMsQ106;
@@ -3311,7 +3376,7 @@ async function openGuestWhatsAppRealF14C_(preferredTemplateId='',preferredGuestI
               // The cache may have expired since the original campaign began.
               // Resume with the immutable server-saved media ID, never the newly prepared ID.
               const matchingContext=String(recovery.templateId||'')===String(templateId)&&
-                typeof recovery.mediaId==='string'&&!!recovery.mediaId.trim();
+                typeof recovery.mediaId==='string'&&(!!recovery.mediaId.trim()||recovery.kindQ182==='GENERIC');
               const validIds=ids.length===recovery.remainingCount&&new Set(ids).size===ids.length&&
                 ids.every(id=>byId.has(id));
               if(matchingContext&&validIds&&String(recovery.campaignId||'')){
@@ -3474,8 +3539,8 @@ const systemValueDefsZ53_=[
   {key:'WHATSAPP_PERSONAL_GREETING_DEFAULT',group:'WHATSAPP',label:'פנייה אישית — ברירת מחדל',value:'משפחה יקרה',description:'משמש כאשר למוזמן אין פנייה אישית.'},
   {key:'WHATSAPP_EVENT_DETAILS_FORMAT',group:'WHATSAPP',label:'פרטי האירוע',value:'{eventName}\n{eventDate} בשעה {eventTime}\n{eventVenue}\nכתובת: {eventAddress}',description:'מבנה הערך המורכב שמועבר לתבניות WhatsApp.'},
   {key:'WHATSAPP_EXTRA_NOTES_DEFAULT',group:'WHATSAPP',label:'הערות נוספות — ברירת מחדל',value:'',description:'ערך ברירת מחדל כאשר אין הערות נוספות.'},
-  {key:'WHATSAPP_TEST_BATCH_SIZE',group:'WHATSAPP',label:'גודל אצוות בדיקה',value:'20',description:'הודעות בכל בקשת שרת; בטווח 1–20 בגרסת ההשוואה.',min:1,max:20},
-  {key:'WHATSAPP_TEST_CONCURRENCY',group:'WHATSAPP',label:'שליחות מקבילות בבדיקה',value:'4',description:'בקשות Meta בו־זמנית; בטווח 1–5.',min:1,max:5},
+  {key:'WHATSAPP_TEST_BATCH_SIZE',group:'WHATSAPP',label:'גודל מנת שליחה קבוצתית',value:'20',description:'הודעות בכל בקשת שרת; בטווח 1–20 בגרסת ההשוואה.',min:1,max:20},
+  {key:'WHATSAPP_TEST_CONCURRENCY',group:'WHATSAPP',label:'שליחות מקבילות בקבוצה',value:'4',description:'בקשות Meta בו־זמנית; בטווח 1–5.',min:1,max:5},
   {key:'WHATSAPP_TEST_PAUSE_SECONDS',group:'WHATSAPP',label:'המתנה בין מנות — בשניות',value:'5',description:'המתנה בין סיום מנה לתחילת המנה הבאה. אינה כוללת זמני שרת ותקשורת.',min:0,max:60}
 ];
 const systemTokenLabelsZ53_={eventName:'שם האירוע',eventDate:'תאריך',eventTime:'שעה',eventVenue:'מיקום',eventAddress:'כתובת',personalGreeting:'פנייה אישית',guestName:'שם המוזמן',tableAssignment:'שיוך שולחן',extraNotes:'הערות נוספות'};
@@ -3563,7 +3628,7 @@ document.addEventListener("click",async e=>{
 
   const card=e.target.closest("[data-event]");if(card&&!e.target.closest("button,input,select")){setCurrentEvent_(card.dataset.event)}
   const er=e.target.closest(".edit-event");if(er){e.stopPropagation();eventForm(state.events.find(x=>x.id===er.dataset.id))}
-  const dr=e.target.closest(".delete-event");if(dr){e.stopPropagation();if(confirm("למחוק את האירוע ואת שיוכי המוזמנים שלו?")){const id=dr.dataset.id,started=performance.now();const r=await API.request("deleteEvent",{id});removeLocal_(state.events,id);state.guests=state.guests.filter(x=>String(x.eventId)!==String(id));state.tables=state.tables.filter(x=>String(x.eventId)!==String(id));if(String(state.activeEventId)===String(id)){state.activeEventId=null;restoreCurrentEvent_()}renderAll();mutationDone_("האירוע נמחק",r,started)}}
+
   const waRow=e.target.closest('[data-wa-send-row]');if(waRow){
     e.stopPropagation();
     const g=state.guests.find(x=>String(x.guestId||x.id)===String(waRow.dataset.waSendRow));
@@ -3653,17 +3718,18 @@ $('#guestStatsV178')?.addEventListener('click',e=>{
   // Clicking a card replaces ALL previous guest filters, rather than intersecting them.
   const value=card.dataset.guestStatValue||'';
   const wasActive=value!=='' && select.value===value &&
-    ['guestSearch','sideFilter','groupFilter','guestTableFilterV174','guestSendFilterA19P2F6',
+    ['guestRecordLimitQ181','guestSearch','sideFilter','groupFilter','guestTableFilterV174','guestSendFilterA19P2F6',
      kind==='rsvp'?'guestSeatingFilterV174':'statusFilter'].every(id=>!$('#'+id)?.value);
-  ['guestSearch','sideFilter','groupFilter','statusFilter','guestSeatingFilterV174',
+  ['guestRecordLimitQ181','guestSearch','sideFilter','groupFilter','statusFilter','guestSeatingFilterV174',
    'guestTableFilterV174','guestSendFilterA19P2F6','guestMessageStatusQ114'].forEach(id=>{const el=$('#'+id);if(el)el.value='';});
   // A second click toggles the active card off; "all records" is the empty filter.
   if(!wasActive)select.value=value;
   renderGuests();
 });
 ["guestSearch","sideFilter","groupFilter","statusFilter","guestSeatingFilterV174","guestTableFilterV174","guestSendFilterA19P2F6"].forEach(id=>$("#"+id).addEventListener(id==="guestSearch"?"input":"change",renderGuests));
+$("#guestRecordLimitQ181")?.addEventListener("input",renderGuests);
 $("#clearGuestFiltersV180")?.addEventListener("click",()=>{
-  ["guestSearch","sideFilter","groupFilter","statusFilter","guestSeatingFilterV174","guestTableFilterV174","guestSendFilterA19P2F6","guestMessageStatusQ114"].forEach(id=>{const el=$("#"+id);if(el)el.value=""});
+  ["guestRecordLimitQ181","guestSearch","sideFilter","groupFilter","statusFilter","guestSeatingFilterV174","guestTableFilterV174","guestSendFilterA19P2F6","guestMessageStatusQ114"].forEach(id=>{const el=$("#"+id);if(el)el.value=""});
   renderGuests();
 });
 $("#themeBtn").onclick=()=>setTheme(document.body.classList.contains("light")?"dark":"light");
@@ -3850,6 +3916,9 @@ function renderSeatingWorkspaceV170_(){
   if(!st||String(st.eventId)!==String(state.activeEventId)){host.innerHTML='<p class="muted">בחר אירוע כדי לטעון את השיוכים.</p>';return}
   const byId=Object.fromEntries(st.tables.map(t=>[String(t.id),t]));
   const sideSel=$('#tableLookupSideV15'),groupSel=$('#tableLookupGroupV15');
+  const scopeQ198=eventLookupTypeQ198_(activeEvent());
+  if(sideSel){sideSel.hidden=!scopeQ198?.usesSides;if(sideSel.hidden)sideSel.value='';}
+  if(groupSel){groupSel.hidden=!scopeQ198?.usesGroups;if(groupSel.hidden)groupSel.value='';}
   const q=String($('#tableLookupSearchV15')?.value||'').trim().toLowerCase();
   const readOnly=state.session?.role==='TableManager';
   let baseRows=st.guests.filter(g=>Number(g.confirmedCount)>0);
@@ -3874,14 +3943,14 @@ function renderSeatingWorkspaceV170_(){
   let rows=baseRows.filter(g=>matchesQ(g)&&(!side||String(g.side)===side)&&(!group||String(g.group)===group));
   const assigned=rows.filter(g=>g.seatingStatus==='FULL').length,partial=rows.filter(g=>g.seatingStatus==='PARTIAL').length;
   host.innerHTML=`<div class="table-summary"><span>נמצאו: <b>${rows.length}</b></span><span>שובצו במלואם: <b>${assigned}</b></span><span>שובצו חלקית: <b>${partial}</b></span></div>
-    <div class="table-wrap seating-scroll-d55z8" tabindex="0" aria-label="טבלת שיוכי מוזמנים — ניתן לגלול אופקית"><table class="admin-table seating-guests-table-d55z8"><thead><tr><th>מוזמן</th><th>טלפון</th><th>צד</th><th>קבוצה</th><th>מאושרים</th><th>שולחנות</th>${readOnly?'':'<th>פעולה</th>'}</tr></thead><tbody>${rows.map(g=>{
+    <div class="table-wrap seating-scroll-d55z8" tabindex="0" aria-label="טבלת שיוכי מוזמנים — ניתן לגלול אופקית"><table class="admin-table seating-guests-table-d55z8"><thead><tr><th>מוזמן</th><th>טלפון</th><th ${scopeQ198?.usesSides?"":"hidden"}>צד</th><th ${scopeQ198?.usesGroups?"":"hidden"}>קבוצה</th><th>מאושרים</th><th>שולחנות</th>${readOnly?'':'<th>פעולה</th>'}</tr></thead><tbody>${rows.map(g=>{
       const mine=st.assignments.filter(a=>String(a.guestId)===String(g.guestId));
       const labels=mine.map(a=>`שולחן ${esc(byId[String(a.tableId)]?.tableNumber||'—')} - ${Number(a.seats)||0}`).join(' | ');
       // TableManager: read-only compact summary, without expand arrow or popover.
       const seatsAssigned=mine.reduce((n,a)=>n+(Number(a.seats)||0),0);
       const compactLabel=!mine.length?'לא שובץ':mine.length===1?labels:mine.length+' שולחנות · '+seatsAssigned+' מקומות';
       const managerDetails=mine.length?labels:'לא שובץ';
-      return `<tr><td class="seating-guest-name-d55z8" title="${esc(g.name)}">${esc(g.name)}</td><td>${esc(displayUserPhone_(g.phone||''))}</td><td>${esc(g.side||'—')}</td><td>${esc(g.group||'—')}</td><td>${g.confirmedCount}</td><td class="seating-assignment-d55z8" title="${esc(mine.map(a=>`שולחן ${byId[String(a.tableId)]?.tableNumber||'—'} - ${Number(a.seats)||0}`).join(' | ')||'לא שובץ')}">${readOnly?managerDetails:(labels||'לא שובץ')}</td>${readOnly?'':`<td><button type="button" class="seating-row-btn-d55z8 seating-assign-btn-d55z8" data-seat-guest="${esc(g.guestId)}"><span aria-hidden="true">${mine.length?'✎':'＋'}</span> ${mine.length?'שינוי שיוך':'שיוך'}</button></td>`}</tr>`
+      return `<tr><td class="seating-guest-name-d55z8" title="${esc(g.name)}">${esc(g.name)}</td><td>${esc(displayUserPhone_(g.phone||''))}</td><td ${scopeQ198?.usesSides?"":"hidden"}>${esc(g.side||'—')}</td><td ${scopeQ198?.usesGroups?"":"hidden"}>${esc(g.group||'—')}</td><td>${g.confirmedCount}</td><td class="seating-assignment-d55z8" title="${esc(mine.map(a=>`שולחן ${byId[String(a.tableId)]?.tableNumber||'—'} - ${Number(a.seats)||0}`).join(' | ')||'לא שובץ')}">${readOnly?managerDetails:(labels||'לא שובץ')}</td>${readOnly?'':`<td><button type="button" class="seating-row-btn-d55z8 seating-assign-btn-d55z8" data-seat-guest="${esc(g.guestId)}"><span aria-hidden="true">${mine.length?'✎':'＋'}</span> ${mine.length?'שינוי שיוך':'שיוך'}</button></td>`}</tr>`
     }).join('')||`<tr><td colspan="${readOnly?6:7}">לא נמצאו מוזמנים בהתאם לחיפוש</td></tr>`}</tbody></table></div>`;
   ['tableLookupSearchV15','tableLookupSideV15','tableLookupGroupV15'].forEach(id=>{const el=$('#'+id);if(el&&!el.dataset.boundV15){el.dataset.boundV15='1';el.addEventListener(id==='tableLookupSearchV15'?'input':'change',renderSeatingWorkspaceV170_);}});
 }
@@ -4188,9 +4257,9 @@ function waLogInitFiltersZ55_(){
   waLogSyncEventQ149_();
   const sel=$('#waLogEventZ55B');if(!sel)return;
   const old=sel.value;
-  sel.innerHTML='<option value="">כל האירועים</option>'+state.events.map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
+  sel.innerHTML='<option value="">כל האירועים</option>'+state.events.filter(e=>!e.archivedAt).map(e=>`<option value="${esc(e.id)}">${esc(e.name)}</option>`).join('');
   const wanted=waLogFollowQ149?String(state.activeEventId||''):old;
-  sel.value=state.events.some(e=>String(e.id)===wanted)?wanted:'';waLogFollowQ149=false;
+  sel.value=state.events.some(e=>!e.archivedAt&&String(e.id)===wanted)?wanted:'';waLogFollowQ149=false;
 }
 async function loadWhatsAppLogZ55_(button){
   const body=$('#waLogBodyZ55B');if(!body)return;
@@ -4527,6 +4596,15 @@ async function waOfferInterruptedQ22_(manual=false){
   try{
     const checks=await Promise.allSettled([API.request('listWhatsAppRecoveryQ22',{}),API.request('listWhatsAppProductionRecoveryQ110',{})]);
     const test=checks[0].status==='fulfilled'?checks[0].value:null,production=checks[1].status==='fulfilled'?checks[1].value:null;
+    if(state.session?.token!==token)return;
+    const maintenanceQ179=test?.maintenanceQ179?test:production?.maintenanceQ179?production:null;
+    if(maintenanceQ179||(typeof eaBusyQ175!=='undefined'&&eaBusyQ175)){
+      waCloseInterruptedQ22_();
+      const job=maintenanceQ179?.archiveJobQ179;
+      if(job&&state.session.role==='Admin'&&typeof eaOpenQ175_==='function')await eaOpenQ175_(job.eventId,job);
+      else if(manual)showToast('מתבצעת פעולת תחזוקה. בדיקת שליחות תתאפשר לאחר סיומה.');
+      return;
+    }
     const data={items:Array.isArray(test?.items)?test.items:[],productionItemsQ110:Array.isArray(production?.items)?production.items:[],unavailable:!test||!production||!!test.unavailable||!!production.unavailable};
     if(state.session?.token!==token)return;
     if(!data||!Array.isArray(data.items))throw new Error('לא התקבלה תשובה תקינה לבדיקת השליחות');

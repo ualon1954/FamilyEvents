@@ -1,12 +1,12 @@
-<!-- V1.1.90A19P2F14Z58D5D55Z41FIX67Q174 -->
+<!-- V1.1.90A19P2F14Z58D5D55Z41FIX67Q203 -->
 <!doctype html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ניהול אירועים</title>
-  <link rel="icon" href="./favicon.ico?v=FIX67Q174" sizes="any">
-  <link rel="stylesheet" href="./css/styles.css?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q174">
+  <link rel="icon" href="./favicon.ico?v=FIX67Q203" sizes="any">
+  <link rel="stylesheet" href="./css/styles.css?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q203">
   <!-- embedded CSS fallback. Keeps the UI styled even if hosting/path setup blocks the external CSS file. -->
   <style id="embeddedStylesV1112">
 :root{--bg:#0d1117;--card:#161b22;--card2:#1f2630;--text:#f2f5f7;--muted:#9aa7b2;--line:#30363d;--accent:#4da3ff;--danger:#e5534b;--ok:#3fb950}
@@ -1111,11 +1111,11 @@ body.light #loginOverlay .login-field input{color-scheme:light}
 #eventForm>.actions,#eventForm>#eventSaveStatus{grid-column:1/-1}
 @media(max-width:650px){.event-editor-tabs-d55o{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.event-editor-tab-d55o{padding:9px 3px;font-size:13px}}
 </style>
-<link rel="stylesheet" href="css/guest-messages-q114.css?v=FIX67Q174">
-<link rel="stylesheet" href="css/guests-compact-q116.css?v=FIX67Q174">
-<link rel="stylesheet" href="css/dashboard-q123.css?v=FIX67Q174">
-<link rel="stylesheet" href="css/refresh-ui-q128.css?v=FIX67Q174">
-<link rel="stylesheet" href="css/whatsapp-quota-q161.css?v=FIX67Q174">
+<link rel="stylesheet" href="css/guest-messages-q114.css?v=FIX67Q203">
+<link rel="stylesheet" href="css/guests-compact-q116.css?v=FIX67Q203">
+<link rel="stylesheet" href="css/dashboard-q123.css?v=FIX67Q203">
+<link rel="stylesheet" href="css/refresh-ui-q128.css?v=FIX67Q203">
+<link rel="stylesheet" href="css/whatsapp-quota-q161.css?v=FIX67Q203">
 <style>
 #page-guests.no-seating-q165 [data-col="seating"],#page-guests.no-seating-q165 [data-seating-tab-q165],#page-guests.no-seating-q165 #guestSeatingPdfQ158,#page-guests.no-seating-q165 #guestSeatingFilterV174,#page-guests.no-seating-q165 #guestTableFilterV174{display:none!important}
 </style>
@@ -1212,7 +1212,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
     </div>
     <section id="guestMessageControlQ114" data-roles="Admin,EventManager" aria-label="בקרת הודעות WhatsApp">
       <div class="gm-toolbar-q114"><label for="guestMessagePurposeQ114">סוג הודעה<select id="guestMessagePurposeQ114"><option value="invitation">הזמנה לאירוע</option><option value="rsvp_update">תזכורת לאישור הגעה</option><option value="table_update">עדכון שולחן</option><option value="thank_you">תודה</option></select></label>
-      <label for="guestMessageStatusQ114">מצב הודעה<select id="guestMessageStatusQ114"><option value="">כל המצבים</option><option value="NEVER">טרם נשלחה</option><option value="PROCESSING">בתהליך שליחה</option><option value="PENDING">ממתינה למסירה</option><option value="DELIVERED">נמסרה / נקראה</option><option value="READ">נקראה</option><option value="FAILED">נכשלה</option><option value="REVIEW">דורשת בירור</option></select></label><button type="button" class="secondary" id="guestMessageRefreshQ114">רענן מצבי הודעות</button></div>
+      <label for="guestMessageStatusQ114">מצב הודעה<select id="guestMessageStatusQ114"><option value="">כל המצבים</option><option value="NEVER">טרם נשלחה</option><option value="PROCESSING">בתהליך שליחה</option><option value="PENDING">ממתינה למסירה</option><option value="DELIVERED">נמסרה / נקראה</option><option value="READ">נקראה</option><option value="FAILED">נכשלה</option><option value="REVIEW">דורשת בירור</option></select></label><span id="guestMessageLoadingQ190" role="status" aria-live="polite" hidden><span class="guest-message-spinner-q190" aria-hidden="true"></span><span data-loading-label-q190>טוען מצבי הודעות…</span></span><button type="button" class="secondary" id="guestMessageRefreshQ114">רענן מצבי הודעות</button></div>
       <p id="guestMessageNoticeQ114" role="status" aria-live="polite"></p><div id="guestMessageCardsQ114" aria-label="סיכומי מצב הודעות"></div>
       <p class="muted">במסך צר שדות צד, קבוצה וכמות זמינים בפרטי המוזמן. לחיצה על מצב הודעה מציגה את כל ההודעות שלו. מצב הודעה נפרד מאישור הגעה.</p>
     </section>
@@ -1228,6 +1228,7 @@ body.light #loginOverlay .login-field input{color-scheme:light}
       <select id="guestSendFilterA19P2F6" aria-label="סינון לפי שליחה"><option value="">שליחה: הכול</option><option value="yes">שליחה: כן</option><option value="no">שליחה: לא</option></select>
       <select id="guestSeatingFilterV174" aria-label="סינון מצב שיוך"><option value="">כל מצבי השיוך</option><option value="UNASSIGNED">לא משויך</option><option value="PARTIAL">משויך חלקית</option><option value="FULL">משויך במלואו</option><option value="NOT_REQUIRED">לא נדרש שיבוץ</option><option value="REMAINING">נותרו אנשים לשיבוץ</option></select>
       <select id="guestTableFilterV174" aria-label="סינון לפי שולחן"><option value="">כל השולחנות</option></select>
+      <label class="guest-record-limit-q181" data-roles="Admin" title="הזן מספר שלם חיובי. שדה ריק מציג את כל הרשומות שתואמות לסינון."><span>מספר רשומות</span><input id="guestRecordLimitQ181" type="number" min="1" step="1" inputmode="numeric" placeholder="הכול" aria-label="מספר רשומות מרבי להצגה ולבחירה" aria-describedby="guestCountStatusV178"></label>
       <button type="button" id="clearGuestFiltersV180" class="guest-clear-filters-v180" aria-label="נקה סינון" title="נקה את כל הסינונים והחיפוש"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16l-6 7v5l-4 2v-7z"/><path d="m16 17 5 5m0-5-5 5"/></svg><span>נקה סינון</span></button>
     </div>
     <div id="guestCountStatusV178" class="guest-count-status-v178" role="status" aria-live="polite"></div>
@@ -1313,6 +1314,12 @@ body.light #loginOverlay .login-field input{color-scheme:light}
     <h1>מרכז ניטור WhatsApp</h1>
     <p>אצוות, שגיאות, חסימות וזמנים עבור האירוע הנבחר. הנתונים מתעדכנים בלחיצה על רענון; אין פעולת שליחה במסך זה.</p>
     <div class="actions"><button type="button" id="waMonitorRefreshQ17">רענן ניטור</button><button type="button" id="waMonitorReportQ17" class="secondary">הצג דוח להעתקה</button><button type="button" id="waMonitorTestQ17" class="secondary">מסך בדיקות והתאוששות</button></div>
+    <section class="panel" data-role="Admin" style="display:none" aria-labelledby="waNameTitleQ184">
+      <h2 id="waNameTitleQ184">שם התצוגה של המספר השולח</h2>
+      <p>בדיקת השם והסטטוס מול Meta עבור מספר השליחה הרגיל. הבדיקה אינה תלויה באירוע הנבחר.</p>
+      <button type="button" id="waNameCheckQ184" class="secondary">בדוק שם תצוגה מול Meta</button>
+      <div id="waNameResultQ184" role="status" aria-live="polite"></div>
+    </section>
     <details class="panel" data-role="Admin"><summary>איפוס נתוני אירוע בדיקה</summary><p>איפוס יומן WhatsApp, כל העלויות וחיוויי ההודעות לאירוע הנבחר. רשימת המוזמנים נשמרת; אישורי ההגעה ושיוכי השולחנות מתאפסים. האיפוס מתבצע ללא גיבוי.</p><button type="button" id="eventResetPreviewQ148" class="secondary">הצג פירוט לפני איפוס</button></details>
     <div id="waMonitorOutputQ17" role="status" aria-live="polite"></div>
   </section>
@@ -1435,20 +1442,23 @@ body.light #loginOverlay .login-field input{color-scheme:light}
   </div>
 </div>
 
-<script src="js/config.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q174"></script>
-<script src="js/version.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q174"></script>
-<script src="js/session.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q174"></script>
-<script src="js/api.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q174"></script>
-<script src="js/guest-messages-q114.js?v=FIX67Q174"></script>
-<script src="js/refresh-ui-q128.js?v=FIX67Q174"></script>
-<script src="js/dashboard-admin-q154.js?v=FIX67Q174"></script>
-<script src="js/dashboard-q123.js?v=FIX67Q174"></script>
-<script src="js/app.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q174-JOURNALUI1"></script>
-<script src="js/templates.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q174"></script>
-<script src="js/whatsapp-simulation-q42.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q174"></script>
-<script src="js/guests-compact-q116.js?v=FIX67Q174"></script>
-<script src="js/event-reset-q148.js?v=FIX67Q174"></script>
-<script src="js/guest-seating-pdf-q158.js?v=FIX67Q174"></script>
-<script src="js/whatsapp-quota-q161.js?v=FIX67Q174"></script>
+<script src="js/config.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q203"></script>
+<script src="js/version.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q203"></script>
+<script src="js/session.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q203"></script>
+<script src="js/api.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q203"></script>
+<script src="js/guest-messages-q114.js?v=FIX67Q203"></script>
+<script src="js/refresh-ui-q128.js?v=FIX67Q203"></script>
+<script src="js/dashboard-admin-q154.js?v=FIX67Q203"></script>
+<script src="js/dashboard-q123.js?v=FIX67Q203"></script>
+<script src="js/event-lookups-q198.js?v=FIX67Q203"></script>
+<script src="js/app.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q203-JOURNALUI1"></script>
+<script src="js/templates.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q203"></script>
+<script src="js/whatsapp-simulation-q42.js?v=V1.1.90A19P2F14Z58D5D55Z41FIX67Q203"></script>
+<script src="js/guests-compact-q116.js?v=FIX67Q203"></script>
+<script src="js/event-reset-q148.js?v=FIX67Q203"></script>
+<script src="js/guest-seating-pdf-q158.js?v=FIX67Q203"></script>
+<script src="js/whatsapp-quota-q161.js?v=FIX67Q203"></script>
+<script src="js/event-archive-q175.js?v=FIX67Q203"></script>
+<script src="js/whatsapp-display-name-q184.js?v=FIX67Q203"></script>
 </body>
 </html>
