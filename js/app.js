@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q207 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q209 */
 // Only use a candidate returned by the current, event-scoped inspection.
 function waQuarantineCandidateFromInspectionQ9_(result,eventId){
   const c=result&&result.quarantineCandidate;
@@ -3003,7 +3003,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
         const fix20ApiTotal=fix20Samples.reduce((n,x)=>n+x.apiMs,0);
         const fix20WaitTotal=fix20Waits.reduce((n,x)=>n+x,0);
         const fix20Rows=dispatchPhaseRowsFIX67+waPreparationRowsQ10_(fix20Samples)+waRsvpRowsQ11_(fix20Samples)+waMediaRowsQ12_(fix20Samples)+waChunkTimingRowsQ16_(fix20Samples)+'<dt>שמירת אבחון מרוכזת לאחר הפניות</dt><dd>'+waFormatElapsedF14V_(fix20Samples.reduce((n,x)=>n+(Number(x.diagnosticsMs)||0),0))+'</dd>'+Object.entries(fix20Keys).map(([key,label])=>`<dt>${esc(label)}</dt><dd>${fix20Samples.some(x=>typeof x.server?.[key]==='number')?waFormatElapsedF14V_(fix20Sum(key)):'לא נמדד בנפרד'}</dd>`).join('');
-        const fix20TimingHtml=`<div class="wa-timing-d37"><h3>FIX67Q207 — מדידת בקשות אצווה</h3><dl><dt>אצוות עם פירוט מדידה פרטני</dt><dd>${fix20Samples.filter(x=>x.server).length}/${fix20Samples.length}</dd><dt>טיפול בתור הניסיונות החוזרים, כולל המתנות ותקשורת</dt><dd>${waFormatElapsedF14V_(retryQueueMsQ51)}</dd><dt>קריאות API של המנות, כולל תקשורת</dt><dd>${waFormatElapsedF14V_(fix20RoundTrip)}</dd><dt>זמן פונקציית השליחה בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ServerTotal)}</dd><dt>זמן טיפול API בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ApiTotal)}</dd><dt>זמן מחוץ לטיפול API (הערכה)</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא ניתן לחשב ללא תשובת שרת':waFormatElapsedF14V_(Math.max(0,fix20RoundTrip-fix20ApiTotal))}</dd><dt>המתנה להגדרות לאחר אישור השליחה</dt><dd>${waFormatElapsedF14V_(settingsWaitMsQ10)}</dd><dt>השהיות בין מנות</dt><dd>${waFormatElapsedF14V_(fix20WaitTotal)}</dd><dt>המתנה מתוכננת לקצב טלפון הבדיקה בדפדפן</dt><dd>${waFormatElapsedF14V_(testRateBrowserWaitQ48)}</dd>${fix20Rows}</dl><p class="muted">רכיבי משנה עשויים לחפוף; אין לסכום אותם. נתוני שרת מתקבלים רק מהודעות שהחזירו תשובה.</p></div>`;
+        const fix20TimingHtml=`<div class="wa-timing-d37"><h3>FIX67Q209 — מדידת בקשות אצווה</h3><dl><dt>אצוות עם פירוט מדידה פרטני</dt><dd>${fix20Samples.filter(x=>x.server).length}/${fix20Samples.length}</dd><dt>טיפול בתור הניסיונות החוזרים, כולל המתנות ותקשורת</dt><dd>${waFormatElapsedF14V_(retryQueueMsQ51)}</dd><dt>קריאות API של המנות, כולל תקשורת</dt><dd>${waFormatElapsedF14V_(fix20RoundTrip)}</dd><dt>זמן פונקציית השליחה בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ServerTotal)}</dd><dt>זמן טיפול API בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ApiTotal)}</dd><dt>זמן מחוץ לטיפול API (הערכה)</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא ניתן לחשב ללא תשובת שרת':waFormatElapsedF14V_(Math.max(0,fix20RoundTrip-fix20ApiTotal))}</dd><dt>המתנה להגדרות לאחר אישור השליחה</dt><dd>${waFormatElapsedF14V_(settingsWaitMsQ10)}</dd><dt>השהיות בין מנות</dt><dd>${waFormatElapsedF14V_(fix20WaitTotal)}</dd><dt>המתנה מתוכננת לקצב טלפון הבדיקה בדפדפן</dt><dd>${waFormatElapsedF14V_(testRateBrowserWaitQ48)}</dd>${fix20Rows}</dl><p class="muted">רכיבי משנה עשויים לחפוף; אין לסכום אותם. נתוני שרת מתקבלים רק מהודעות שהחזירו תשובה.</p></div>`;
         console.info('[WA FIX20 PERF]',{samples:fix20Samples.length,roundTripMs:Math.round(fix20RoundTrip),serverMs:Math.round(fix20ServerTotal),apiMs:Math.round(fix20ApiTotal),waitMs:Math.round(fix20WaitTotal),breakdown:Object.fromEntries(Object.keys(fix20Keys).map(k=>[k,fix20Sum(k)]))});
         const timingHtml=`<div class="wa-timing-d37"><h3>פירוט זמנים — TEST</h3><dl><dt>קריאת API כולל תקשורת</dt><dd>${waFormatElapsedF14V_(roundTripMs)}</dd><dt>פירוט מהשרת</dt><dd>${serverTiming?'התקבל':'לא התקבל נתון'}</dd>${serverTiming}</dl><p class="muted">זמן קריאת API כולל זמן שרת, תקשורת והמתנה; אין לחבר אותו לזמני השרת.</p></div>`;
         console.info('[WA PERF] sendAnyTemplateToTestNumber',{roundTripMs:Math.round(roundTripMs),serverPerfAvailable:!!serverTiming});
@@ -3912,6 +3912,10 @@ async function loadSeatingV170_(){
     if(sequence===seatingLoadSequenceQ66_)seatingLoadNoticeQ66_(false,current()?errorMessage:'');
   }
 }
+function tableManagerAssignmentsQ208_(assignments,byId){
+ if(!assignments.length)return 'לא שובץ';
+ return '<div class="table-manager-assignments-q208" role="list" aria-label="פירוט שיוך לשולחנות">'+assignments.map(a=>'<div class="table-manager-assignment-q208" role="listitem"><span class="table-manager-number-q208">שולחן <b dir="ltr">'+esc(String(byId[String(a.tableId)]?.tableNumber??'—'))+'</b></span><span class="table-manager-seats-q208"><b dir="ltr">'+(Number(a.seats)||0)+'</b> '+(Number(a.seats)===1?'מקום':'מקומות')+'</span></div>').join('')+'</div>';
+}
 function renderSeatingWorkspaceV170_(){
   const host=$('#seatingWorkspaceV170');if(!host)return;
   const st=state.seating;
@@ -3951,7 +3955,7 @@ function renderSeatingWorkspaceV170_(){
       // TableManager: read-only compact summary, without expand arrow or popover.
       const seatsAssigned=mine.reduce((n,a)=>n+(Number(a.seats)||0),0);
       const compactLabel=!mine.length?'לא שובץ':mine.length===1?labels:mine.length+' שולחנות · '+seatsAssigned+' מקומות';
-      const managerDetails=mine.length?labels:'לא שובץ';
+      const managerDetails=tableManagerAssignmentsQ208_(mine,byId);
       return `<tr><td class="seating-guest-name-d55z8" title="${esc(g.name)}">${esc(g.name)}</td><td>${esc(displayUserPhone_(g.phone||''))}</td><td ${scopeQ198?.usesSides?"":"hidden"}>${esc(g.side||'—')}</td><td ${scopeQ198?.usesGroups?"":"hidden"}>${esc(g.group||'—')}</td><td>${g.confirmedCount}</td><td class="seating-assignment-d55z8" title="${esc(mine.map(a=>`שולחן ${byId[String(a.tableId)]?.tableNumber||'—'} - ${Number(a.seats)||0}`).join(' | ')||'לא שובץ')}">${readOnly?managerDetails:(labels||'לא שובץ')}</td>${readOnly?'':`<td><button type="button" class="seating-row-btn-d55z8 seating-assign-btn-d55z8" data-seat-guest="${esc(g.guestId)}"><span aria-hidden="true">${mine.length?'✎':'＋'}</span> ${mine.length?'שינוי שיוך':'שיוך'}</button></td>`}</tr>`
     }).join('')||`<tr><td colspan="${readOnly?6:7}">לא נמצאו מוזמנים בהתאם לחיפוש</td></tr>`}</tbody></table></div>`;
   ['tableLookupSearchV15','tableLookupSideV15','tableLookupGroupV15'].forEach(id=>{const el=$('#'+id);if(el&&!el.dataset.boundV15){el.dataset.boundV15='1';el.addEventListener(id==='tableLookupSearchV15'?'input':'change',renderSeatingWorkspaceV170_);}});
