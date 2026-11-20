@@ -2306,3 +2306,18 @@ body.light #guestFiltersA5 .guest-record-limit-q181 input{color-scheme:light}
 #page-seating .table-manager-seats-q208{display:flex;gap:5px;align-items:baseline;font-size:.94rem;color:var(--text)}
 
 #page-seating .table-manager-seats-q208{border-inline-start:1px solid var(--line);padding-inline-start:9px}
+
+#tablesBody tr[data-table-guests-q211]{cursor:pointer}
+#tablesBody tr[data-table-guests-q211]:hover{outline:1px solid var(--accent);outline-offset:-1px}
+
+/* Accessible RSVP auto-refresh switch. */
+.guest-auto-settings-q212{margin-block:20px}
+.guest-auto-switch-q212{display:flex;align-items:center;gap:12px;position:relative;cursor:pointer;width:fit-content;max-width:100%}
+.guest-auto-switch-q212 input{position:absolute;opacity:0;width:1px;height:1px}
+.guest-auto-track-q212{width:48px;height:28px;border-radius:20px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.guest-auto-track-q212::after{content:"";position:absolute;top:4px;right:4px;width:20px;height:20px;background:white;border-radius:50%;box-shadow:0 1px 4px #0004;transition:transform .2s}
+.guest-auto-switch-q212 input:checked+.guest-auto-track-q212{background:#16854d}
+.guest-auto-switch-q212 input:checked+.guest-auto-track-q212::after{transform:translateX(-20px)}
+.guest-auto-switch-q212 input:focus-visible+.guest-auto-track-q212{outline:3px solid var(--accent);outline-offset:3px}
+.guest-auto-switch-q212 input:disabled+.guest-auto-track-q212{opacity:.6}
+@media(prefers-reduced-motion:reduce){.guest-auto-track-q212,.guest-auto-track-q212::after{transition:none}}

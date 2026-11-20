@@ -24,3 +24,5 @@ js/guest-messages-q114.js
 css/guest-messages-q114.css
 
 js/event-lookups-q198.js
+
+js/guest-auto-refresh-q212.js

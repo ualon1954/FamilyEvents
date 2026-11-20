@@ -1,4 +1,4 @@
-/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q209 */
+/* V1.1.90A19P2F14Z58D5D55Z41FIX67Q213 */
 // Only use a candidate returned by the current, event-scoped inspection.
 function waQuarantineCandidateFromInspectionQ9_(result,eventId){
   const c=result&&result.quarantineCandidate;
@@ -1266,8 +1266,48 @@ function renderTables(){
 
   $("#tableSummary").innerHTML=state.activeEventId?`<span>שולחנות: <b>${rows.length}</b></span><span>מקומות: <b class="table-seats-q205">${rows.reduce((s,t)=>s+t.seats,0)}</b></span><span>תפוסים: <b class="table-occupied-q205">${rows.reduce((s,t)=>s+t.occupied,0)}</b></span><span>פנויים: <b class="table-free-q205">${rows.reduce((s,t)=>s+t.free,0)}</b></span>`:`<span>יש לבחור אירוע פעיל</span>`;
   renderSeatingWorkspaceV170_();
-  $("#tablesBody").innerHTML=rows.map(t=>`<tr><td>${esc(t.tableNumber)}</td><td class="table-seats-q205">${t.seats}</td><td class="table-occupied-q205">${t.occupied}</td><td class="table-free-q205">${t.free}</td><td>${tableReadOnly?"צפייה בלבד":`<button type="button" class="edit-table seating-row-btn-d55z8" data-id="${t.id}" title="עריכת שולחן" aria-label="עריכת שולחן ${esc(t.tableNumber)}"><span aria-hidden="true">✎</span> עריכה</button> <button type="button" class="danger delete-table seating-row-btn-d55z8" data-id="${t.id}" title="מחיקת שולחן" aria-label="מחיקת שולחן ${esc(t.tableNumber)}"><span aria-hidden="true">🗑</span> מחיקה</button>`}</td></tr>`).join("") || `<tr><td colspan="5" class="empty-cell">${state.activeEventId?"אין שולחנות באירוע זה":"יש לבחור אירוע"}</td></tr>`;
+  $("#tablesBody").innerHTML=rows.map(t=>`<tr ${tableHasAssignmentsQ211_(t.id)?`data-table-guests-q211="${esc(t.id)}" tabindex="0" title="לחיצה כפולה להצגת המוזמנים המשויכים לשולחן"`:""}><td>${esc(t.tableNumber)}</td><td class="table-seats-q205">${t.seats}</td><td class="table-occupied-q205">${t.occupied}</td><td class="table-free-q205">${t.free}</td><td>${tableReadOnly?"צפייה בלבד":`<button type="button" class="edit-table seating-row-btn-d55z8" data-id="${t.id}" title="עריכת שולחן" aria-label="עריכת שולחן ${esc(t.tableNumber)}"><span aria-hidden="true">✎</span> עריכה</button> <button type="button" class="danger delete-table seating-row-btn-d55z8" data-id="${t.id}" title="מחיקת שולחן" aria-label="מחיקת שולחן ${esc(t.tableNumber)}"><span aria-hidden="true">🗑</span> מחיקה</button>`}</td></tr>`).join("") || `<tr><td colspan="5" class="empty-cell">${state.activeEventId?"אין שולחנות באירוע זה":"יש לבחור אירוע"}</td></tr>`;
 }
+
+function tableHasAssignmentsQ211_(tableId) {
+  const seating = state.seating;
+  return String(seating?.eventId) === String(state.activeEventId)
+    && (seating.assignments || []).some(a => String(a.tableId) === String(tableId));
+}
+
+function showTableGuestsQ211_(tableId) {
+  if (!tableHasAssignmentsQ211_(tableId)) return;
+  const seating = state.seating;
+  const table = seating.tables.find(t => String(t.id) === String(tableId));
+  if (!table) return;
+  const guests = new Map(seating.guests.map(g => [String(g.guestId), g]));
+  const assigned = new Map();
+  for (const assignment of seating.assignments) {
+    if (String(assignment.tableId) !== String(tableId)) continue;
+    const guestId = String(assignment.guestId);
+    assigned.set(guestId, (assigned.get(guestId) || 0) + (Number(assignment.seats) || 0));
+  }
+  const rows = [...assigned].map(([guestId, seats]) => ({
+    guest: guests.get(guestId), seats
+  })).sort((a, b) => String(a.guest?.name || '').localeCompare(String(b.guest?.name || ''), 'he'));
+  modal(`<h2>מוזמנים בשולחן <bdi>${esc(table.tableNumber)}</bdi></h2>
+    <p>${rows.length} רשומות מוזמנים · ${rows.reduce((total, row) => total + row.seats, 0)} מקומות משויכים</p>
+    <div class="table-wrap"><table class="admin-table"><thead><tr><th>מוזמן</th><th>טלפון</th><th>מקומות בשולחן</th></tr></thead>
+    <tbody>${rows.map(({guest, seats}) => `<tr><td>${esc(guest?.name || 'מוזמן לא זמין')}</td><td><bdi>${esc(displayUserPhone_(guest?.phone || ''))}</bdi></td><td>${seats}</td></tr>`).join('')}</tbody></table></div>`);
+}
+
+document.addEventListener('dblclick', event => {
+  if (event.target.closest?.('button, a, input, select')) return;
+  const row = event.target.closest?.('#tablesBody tr[data-table-guests-q211]');
+  if (row) showTableGuestsQ211_(row.dataset.tableGuestsQ211);
+});
+document.addEventListener('keydown', event => {
+  const row = event.target.closest?.('#tablesBody tr[data-table-guests-q211]');
+  if (row && event.target === row && event.key === 'Enter') {
+    event.preventDefault();
+    showTableGuestsQ211_(row.dataset.tableGuestsQ211);
+  }
+});
 
 function tableActionDialogQ74_(message,confirmDelete=false,onConfirm=null,titleQ77=""){
   return new Promise(resolve=>{
@@ -3003,7 +3043,7 @@ async function waOpenWhatsAppTestQ23_(resumeQ22=null,autoResumeQ27=false){
         const fix20ApiTotal=fix20Samples.reduce((n,x)=>n+x.apiMs,0);
         const fix20WaitTotal=fix20Waits.reduce((n,x)=>n+x,0);
         const fix20Rows=dispatchPhaseRowsFIX67+waPreparationRowsQ10_(fix20Samples)+waRsvpRowsQ11_(fix20Samples)+waMediaRowsQ12_(fix20Samples)+waChunkTimingRowsQ16_(fix20Samples)+'<dt>שמירת אבחון מרוכזת לאחר הפניות</dt><dd>'+waFormatElapsedF14V_(fix20Samples.reduce((n,x)=>n+(Number(x.diagnosticsMs)||0),0))+'</dd>'+Object.entries(fix20Keys).map(([key,label])=>`<dt>${esc(label)}</dt><dd>${fix20Samples.some(x=>typeof x.server?.[key]==='number')?waFormatElapsedF14V_(fix20Sum(key)):'לא נמדד בנפרד'}</dd>`).join('');
-        const fix20TimingHtml=`<div class="wa-timing-d37"><h3>FIX67Q209 — מדידת בקשות אצווה</h3><dl><dt>אצוות עם פירוט מדידה פרטני</dt><dd>${fix20Samples.filter(x=>x.server).length}/${fix20Samples.length}</dd><dt>טיפול בתור הניסיונות החוזרים, כולל המתנות ותקשורת</dt><dd>${waFormatElapsedF14V_(retryQueueMsQ51)}</dd><dt>קריאות API של המנות, כולל תקשורת</dt><dd>${waFormatElapsedF14V_(fix20RoundTrip)}</dd><dt>זמן פונקציית השליחה בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ServerTotal)}</dd><dt>זמן טיפול API בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ApiTotal)}</dd><dt>זמן מחוץ לטיפול API (הערכה)</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא ניתן לחשב ללא תשובת שרת':waFormatElapsedF14V_(Math.max(0,fix20RoundTrip-fix20ApiTotal))}</dd><dt>המתנה להגדרות לאחר אישור השליחה</dt><dd>${waFormatElapsedF14V_(settingsWaitMsQ10)}</dd><dt>השהיות בין מנות</dt><dd>${waFormatElapsedF14V_(fix20WaitTotal)}</dd><dt>המתנה מתוכננת לקצב טלפון הבדיקה בדפדפן</dt><dd>${waFormatElapsedF14V_(testRateBrowserWaitQ48)}</dd>${fix20Rows}</dl><p class="muted">רכיבי משנה עשויים לחפוף; אין לסכום אותם. נתוני שרת מתקבלים רק מהודעות שהחזירו תשובה.</p></div>`;
+        const fix20TimingHtml=`<div class="wa-timing-d37"><h3>FIX67Q213 — מדידת בקשות אצווה</h3><dl><dt>אצוות עם פירוט מדידה פרטני</dt><dd>${fix20Samples.filter(x=>x.server).length}/${fix20Samples.length}</dd><dt>טיפול בתור הניסיונות החוזרים, כולל המתנות ותקשורת</dt><dd>${waFormatElapsedF14V_(retryQueueMsQ51)}</dd><dt>קריאות API של המנות, כולל תקשורת</dt><dd>${waFormatElapsedF14V_(fix20RoundTrip)}</dd><dt>זמן פונקציית השליחה בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ServerTotal)}</dd><dt>זמן טיפול API בשרת</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא התקבל פירוט מלא':waFormatElapsedF14V_(fix20ApiTotal)}</dd><dt>זמן מחוץ לטיפול API (הערכה)</dt><dd>${fix20Samples.some(x=>x.responseMissingQ13)?'לא ניתן לחשב ללא תשובת שרת':waFormatElapsedF14V_(Math.max(0,fix20RoundTrip-fix20ApiTotal))}</dd><dt>המתנה להגדרות לאחר אישור השליחה</dt><dd>${waFormatElapsedF14V_(settingsWaitMsQ10)}</dd><dt>השהיות בין מנות</dt><dd>${waFormatElapsedF14V_(fix20WaitTotal)}</dd><dt>המתנה מתוכננת לקצב טלפון הבדיקה בדפדפן</dt><dd>${waFormatElapsedF14V_(testRateBrowserWaitQ48)}</dd>${fix20Rows}</dl><p class="muted">רכיבי משנה עשויים לחפוף; אין לסכום אותם. נתוני שרת מתקבלים רק מהודעות שהחזירו תשובה.</p></div>`;
         console.info('[WA FIX20 PERF]',{samples:fix20Samples.length,roundTripMs:Math.round(fix20RoundTrip),serverMs:Math.round(fix20ServerTotal),apiMs:Math.round(fix20ApiTotal),waitMs:Math.round(fix20WaitTotal),breakdown:Object.fromEntries(Object.keys(fix20Keys).map(k=>[k,fix20Sum(k)]))});
         const timingHtml=`<div class="wa-timing-d37"><h3>פירוט זמנים — TEST</h3><dl><dt>קריאת API כולל תקשורת</dt><dd>${waFormatElapsedF14V_(roundTripMs)}</dd><dt>פירוט מהשרת</dt><dd>${serverTiming?'התקבל':'לא התקבל נתון'}</dd>${serverTiming}</dl><p class="muted">זמן קריאת API כולל זמן שרת, תקשורת והמתנה; אין לחבר אותו לזמני השרת.</p></div>`;
         console.info('[WA PERF] sendAnyTemplateToTestNumber',{roundTripMs:Math.round(roundTripMs),serverPerfAvailable:!!serverTiming});
@@ -3573,7 +3613,7 @@ function systemSettingsCardsQ20_(rows){
   const numbers=systemValueDefsZ53_.filter(d=>d.min!==undefined&&d.group!=='SECURITY').map(card).join('');
   const security=systemValueDefsZ53_.filter(d=>d.group==='SECURITY').map(card).join('');
   const texts=systemValueDefsZ53_.filter(d=>d.min===undefined).map(card).join('');
-  return `<div class="system-settings-q20" dir="rtl"><h2>הגדרות מערכת</h2><section aria-label="התחברות ואבטחה"><h3>התחברות ואבטחה</h3><div class="system-values-grid-z53">${security}</div></section><p>עדכן את המספר ולחץ שמירה. לפני בדיקה חדשה, סגור ופתח מחדש את מסך בדיקות WhatsApp.</p><section aria-label="שליחת הודעות לבדיקה"><h3>שליחת הודעות לבדיקה</h3><div class="system-values-grid-z53">${numbers}</div></section><details class="system-text-settings-q20"><summary>נוסח ההודעות ותצוגה מקדימה</summary><p class="muted">כאן אפשר לשנות פנייה אישית, פרטי אירוע והערות קבועות.</p><div class="system-values-grid-z53">${texts}</div></details></div>`;
+  return `<div class="system-settings-q20" dir="rtl"><h2>הגדרות מערכת</h2>${guestAutoRefreshSettingsHtmlQ212_(rows)}<section aria-label="התחברות ואבטחה"><h3>התחברות ואבטחה</h3><div class="system-values-grid-z53">${security}</div></section><p>עדכן את המספר ולחץ שמירה. לפני בדיקה חדשה, סגור ופתח מחדש את מסך בדיקות WhatsApp.</p><section aria-label="שליחת הודעות לבדיקה"><h3>שליחת הודעות לבדיקה</h3><div class="system-values-grid-z53">${numbers}</div></section><details class="system-text-settings-q20"><summary>נוסח ההודעות ותצוגה מקדימה</summary><p class="muted">כאן אפשר לשנות פנייה אישית, פרטי אירוע והערות קבועות.</p><div class="system-values-grid-z53">${texts}</div></details></div>`;
 }
 async function renderSystemValuesAdminZ53_(){
   const c=$('#adminContent');if(!c)return;c.innerHTML='<div class="admin-loading-z53b6"><span class="admin-spinner-z53b6" aria-hidden="true"></span><strong>טוען הגדרות…</strong></div>';
@@ -3895,6 +3935,15 @@ function seatingLoadNoticeQ66_(busy,message=''){
   host.setAttribute('role','status');host.setAttribute('aria-busy',String(busy));
   if(busy)host.innerHTML='<span class="seating-spinner-v171" aria-hidden="true"></span> טוען נתוני שיוך...';
   else host.textContent=message;
+  const managerNotice = $('#tableManagerSeatingNoticeQ210');
+  if (!managerNotice) return;
+  const show = state.session?.role === 'TableManager' && (busy || !!message);
+  managerNotice.hidden = !show;
+  if (show && busy) {
+    managerNotice.innerHTML = '<span class="seating-spinner-v171" aria-hidden="true"></span> טוען שיוכי שולחנות…';
+  } else {
+    managerNotice.textContent = show ? 'טעינת שיוכי השולחנות נכשלה: ' + message : '';
+  }
 }
 async function loadSeatingV170_(){
   const sequence=++seatingLoadSequenceQ66_;
@@ -3919,7 +3968,7 @@ function tableManagerAssignmentsQ208_(assignments,byId){
 function renderSeatingWorkspaceV170_(){
   const host=$('#seatingWorkspaceV170');if(!host)return;
   const st=state.seating;
-  if(!st||String(st.eventId)!==String(state.activeEventId)){host.innerHTML='<p class="muted">בחר אירוע כדי לטעון את השיוכים.</p>';return}
+  if(!st||String(st.eventId)!==String(state.activeEventId)){host.innerHTML=state.activeEventId&&state.session?.role==='TableManager'?'':'<p class="muted">בחר אירוע כדי לטעון את השיוכים.</p>';return}
   const byId=Object.fromEntries(st.tables.map(t=>[String(t.id),t]));
   const sideSel=$('#tableLookupSideV15'),groupSel=$('#tableLookupGroupV15');
   const scopeQ198=eventLookupTypeQ198_(activeEvent());
@@ -4199,10 +4248,13 @@ document.getElementById("guestsBody")?.addEventListener("dblclick",e=>{
 // public RSVP updates are made in another same-origin tab. 
 let rsvpRefreshBusyV1189A4_=false;
 let rsvpRefreshNeededV1189A4_=false;
+let rsvpRefreshSilentQ213=false;
+let rsvpRefreshManualQueuedQ213=false;
 let rsvpRevisionQ64={token:'',eventId:'',revision:''};
 const guestUpdatedQ67_=new Map();
 let guestManualBusyQ128=false;
 function renderGuestRefreshQ67_(){
+ if(rsvpRefreshSilentQ213&&!guestManualBusyQ128)return;
  const button=$('#guestRefreshQ67'),label=$('#guestUpdatedQ67');
  const entry=guestUpdatedQ67_.get(String(state.activeEventId||''));
  if(label){
@@ -4214,16 +4266,24 @@ function renderGuestRefreshQ67_(){
 
 }
 $('#guestRefreshQ67')?.addEventListener('click',async()=>{if(guestManualBusyQ128)return;guestManualBusyQ128=true;renderGuestRefreshQ67_();try{await refreshGuestsAfterRsvpV1189A4_(true);await guestMessagesLoadQ114_(true);}finally{guestManualBusyQ128=false;renderGuestRefreshQ67_();}});
-async function refreshGuestsAfterRsvpV1189A4_(manualQ67=false,entryQ71=false){
+async function refreshGuestsAfterRsvpV1189A4_(manualQ67=false,entryQ71=false,automaticQ212=false){
+ if(automaticQ212&&(!guestAutoRefreshReadyQ212_()||guestSendWritesQ212>0))return;
+ const writeRevisionQ212=guestSendRevisionQ212;
  manualQ67=manualQ67===true;
  if(!state.session||!['Admin','EventManager'].includes(state.session.role)||!state.activeEventId||document.hidden||!['guests','dashboard','seating'].includes(currentPage)||$('#modal')?.classList.contains('show'))return;
- if(rsvpRefreshBusyV1189A4_){if(!manualQ67||entryQ71===true)rsvpRefreshNeededV1189A4_=true;return;}
+ if(rsvpRefreshBusyV1189A4_){rsvpRefreshNeededV1189A4_=true;rsvpRefreshManualQueuedQ213=rsvpRefreshManualQueuedQ213||manualQ67;return;}
  const token=state.session.token,eventId=String(state.activeEventId);
  const revision=!manualQ67&&rsvpRevisionQ64.token===token&&rsvpRevisionQ64.eventId===eventId?rsvpRevisionQ64.revision:'';
- rsvpRefreshBusyV1189A4_=true;renderGuestRefreshQ67_();
+ let updatedQ213=false;
+ rsvpRefreshBusyV1189A4_=true;rsvpRefreshSilentQ213=automaticQ212;
+ if(!automaticQ212)renderGuestRefreshQ67_();
  try{
-  const result=await API.request('getRsvpEventUpdatesQ64',{eventId,revision},manualQ67?{}:{skipActivityQ31:true});
+  const result=await API.request(automaticQ212?'pollGuestRsvpQ212':'getRsvpEventUpdatesQ64',{eventId,revision},manualQ67?{}:{skipActivityQ31:true});
   if(state.session?.token!==token||String(state.activeEventId)!==eventId||result?.eventId!==eventId||document.hidden)return;
+  if(automaticQ212){
+    guestAutoRefreshConfigQ212=result.autoRefresh||guestAutoRefreshConfigQ212;
+    if(!guestAutoRefreshConfigQ212.enabled||!guestAutoRefreshReadyQ212_()||guestSendWritesQ212>0||writeRevisionQ212!==guestSendRevisionQ212)return;
+  }
   if(result.busy){if(manualQ67)showToast('הנתונים מתעדכנים כעת. נסה לרענן שוב בעוד מספר שניות.','info');return;}
   if(typeof result.revision!=='string'||typeof result.changed!=='boolean')throw Error('תשובת עדכון אישורי ההגעה אינה תקינה');
   // Do not replace data or close a seating editor opened while the read was running.
@@ -4235,16 +4295,27 @@ async function refreshGuestsAfterRsvpV1189A4_(manualQ67=false,entryQ71=false){
     renderGuests();renderDashboard();if(currentPage==='seating')renderTables();
   }
   rsvpRevisionQ64={token,eventId,revision:result.revision};
-  guestUpdatedQ67_.set(eventId,{token,at:new Date()});renderGuestRefreshQ67_();
+  if(!automaticQ212||result.changed){
+    guestUpdatedQ67_.set(eventId,{token,at:new Date()});
+    updatedQ213=true;
+  }
+  if(!automaticQ212)renderGuestRefreshQ67_();
  }catch(err){console.warn('RSVP guest refresh failed',err);if(manualQ67&&state.session?.token===token&&String(state.activeEventId)===eventId)showToast('רענון המוזמנים נכשל: '+(err.message||String(err)),'error');}
- finally{rsvpRefreshBusyV1189A4_=false;renderGuestRefreshQ67_();if(rsvpRefreshNeededV1189A4_){rsvpRefreshNeededV1189A4_=false;void refreshGuestsAfterRsvpV1189A4_();}}
+ finally{
+  rsvpRefreshBusyV1189A4_=false;rsvpRefreshSilentQ213=false;
+  if(!automaticQ212||updatedQ213||guestManualBusyQ128)renderGuestRefreshQ67_();
+  if(rsvpRefreshNeededV1189A4_){
+    const manual=rsvpRefreshManualQueuedQ213;
+    rsvpRefreshNeededV1189A4_=false;rsvpRefreshManualQueuedQ213=false;
+    void refreshGuestsAfterRsvpV1189A4_(manual);
+  }
+ }
 }
 window.addEventListener('storage',e=>{
  if(e.key!=='events_rsvp_updated_v1189a4'||!e.newValue)return;
  void refreshGuestsAfterRsvpV1189A4_();
 });
-// Q69: refresh only on explicit manual action or a same-origin RSVP change notification.
-// No interval polling or refresh merely on returning to this tab.
+// Q212 automatic checks reuse the event revision and shared refresh flow.
 
 /* WhatsApp log UI */
 let waLogRowsZ55=[];
@@ -4524,6 +4595,7 @@ document.addEventListener('change',async event=>{
   const enabled=toggle.checked;
   const guest=state.guests.find(g=>String(g.guestId||g.id)===guestId);
   if(!guest)return;
+  guestSendWritesQ212++;guestSendRevisionQ212++;
   guest.sendWhatsApp=enabled;
   renderGuests();
   try{
@@ -4533,7 +4605,7 @@ document.addEventListener('change',async event=>{
     guest.sendWhatsApp=!enabled;
     renderGuests();
     showToast(error?.message||'עדכון השליחה נכשל','error');
-  }
+  }finally{guestSendWritesQ212--;guestSendRevisionQ212++;}
 });
 
 /* Q17 admin monitoring. No retry/send operations on this page. */
